@@ -1,0 +1,33 @@
+{
+  "name": "@meridian/abstraction",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Meridian abstraction engine (ROADMAP Phase 3): level chains, cuts, and (later) induced edges and LOD resolution as pure functions over immutable snapshots. Imports @meridian/graph-core and @meridian/graph-store only.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/graph-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@meridian/adapter-markdown": "workspace:*",
+    "@meridian/conformance-kit": "workspace:*",
+    "@meridian/plugin-api": "workspace:*",
+    "@types/node": "^24.0.0",
+    "fast-check": "^4.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

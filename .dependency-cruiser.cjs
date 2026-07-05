@@ -51,6 +51,25 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
+      name: 'abstraction-only-core-and-store',
+      severity: 'error',
+      comment:
+        'abstraction imports graph-core and graph-store only (§20; ROADMAP Phase 3 §12) — no domain, no presentation, no AI, not even plugin-api.',
+      from: { path: '^packages/abstraction/src' },
+      to: {
+        pathNot: '^packages/abstraction/src|^packages/graph-core|^packages/graph-store',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'abstraction-no-node-builtins',
+      severity: 'error',
+      comment:
+        'abstraction stays isomorphic (browser + workers + Node): no node:* imports.',
+      from: { path: '^packages/abstraction/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
       name: 'plugin-api-types-only',
       severity: 'error',
       comment:
@@ -111,8 +130,8 @@ module.exports = {
       name: 'core-never-sees-plugins',
       severity: 'error',
       comment:
-        'graph-core/graph-store may not import plugin-* or any adapter (ROADMAP Phase 2 §12) — domain logic cannot leak into the core.',
-      from: { path: '^packages/(graph-core|graph-store)/src' },
+        'graph-core/graph-store/abstraction may not import plugin-* or any adapter (ROADMAP Phase 2 §12, Phase 3 §12) — domain logic cannot leak into the core, not even as types.',
+      from: { path: '^packages/(graph-core|graph-store|abstraction)/src' },
       to: { path: '^packages/(plugin-api|plugin-host|conformance-kit|adapters)' },
     },
     {

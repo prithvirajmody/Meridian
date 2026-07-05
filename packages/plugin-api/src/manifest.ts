@@ -6,6 +6,7 @@
  */
 import type { AttrValueType } from '@meridian/graph-core';
 import type { CapabilityKind } from './capabilities.js';
+import type { LevelChainSpec } from './levels.js';
 
 /**
  * The `ns:name` grammar for namespaced kinds and attr keys. Mirrors
@@ -40,4 +41,7 @@ export interface PluginManifest {
   readonly kinds?: readonly string[];
   /** Attr keys this plugin's output may use, with declared types (U8). */
   readonly attrSchemas?: Readonly<Record<string, AttrSchema>>;
+  /** Optional named abstraction levels for this plugin's domain (§7.2.1). A
+   * parser that declares none gets a default containment-depth chain (P3). */
+  readonly levelChain?: LevelChainSpec;
 }

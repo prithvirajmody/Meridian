@@ -8,9 +8,16 @@
 // Wire-form types plugins build against, re-exported because plugins and the
 // host see only this package (§20): the document IS the IR (§6.1).
 export type { AttrValueType, GraphDocument, SemanticCoords } from '@meridian/graph-core';
+export type {
+  AbstractionContext,
+  AbstractionProposal,
+  AbstractionProvider,
+  ProposedGroup,
+} from './abstraction.js';
 export { CAPABILITY_KINDS } from './capabilities.js';
 export type { CapabilityKind } from './capabilities.js';
 export type { EdgeCoords, IdFacade, PluginContext, PluginLogger } from './context.js';
+export type { LevelChainSpec, LevelSpec } from './levels.js';
 export { NAMESPACED_KEY_PATTERN } from './manifest.js';
 export type { AttrSchema, CapabilityDeclaration, PluginManifest } from './manifest.js';
 export type {
