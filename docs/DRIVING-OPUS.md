@@ -60,7 +60,10 @@ spec in the first message than with drip-fed instructions.
 
 ## 2. The per-phase loop
 
-Each roadmap phase runs the same five-beat loop:
+Each roadmap phase runs the same five-beat loop. For Phases 3–12 the build
+beat (step 2) is pre-sliced into single-session subphases in
+[SUBPHASES.md](SUBPHASES.md) — run one subphase per session, in order,
+committing after each.
 
 1. **ADR beat.** Prompt: *"Read ROADMAP.md Phase N §8 ('Technical decisions
    that must be finalized'). Draft each listed ADR into docs/adr/, following
