@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+
+# Test & coverage
+coverage/
+playwright-report/
+test-results/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# Logs
+*.log
