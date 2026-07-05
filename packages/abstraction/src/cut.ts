@@ -24,10 +24,20 @@ import {
 import { collectLeafPaths, countSubtreeLeaves, forestRootGraphs, totalLeaves } from './forest.js';
 import type { LevelChain } from './level-chain.js';
 
-/** Why a node is in the cut. The Phase 3B vocabulary is a subset of
- * ADR-0012's `CutTrace` reasons; `pin`/`collapse`/`expand-parent`/`cold`/
- * `budget` arrive with the resolver (3C/3D). */
-export type CutReason = 'level' | 'leaf';
+/** Why a node is in the cut — the fixed ADR-0012 vocabulary, extended with
+ * `budget` (ADR-0014). `buildCut` (the 3B default cut) emits only the `level`
+ * and `leaf` subset; the resolver (3D) uses the full set:
+ * - `level` — emitted because its depth is the base level `b`.
+ * - `leaf` — emitted because it cannot be descended (a leaf, or ragged path).
+ * - `pin` — emitted because it is pinned (held at its own granularity).
+ * - `collapse` — emitted because it is collapsed (held above its level).
+ * - `expand-parent` — emitted because an ancestor was expanded down to it
+ *   (it sits below `b`).
+ * - `cold` — emitted because its detail is unhydrated (reserved; P11 — no cold
+ *   state exists in P3, where empty detail reads as `leaf`).
+ * - `budget` — emitted because budget degradation rolled a frontier up to it
+ *   (ADR-0014). */
+export type CutReason = 'level' | 'leaf' | 'pin' | 'collapse' | 'expand-parent' | 'cold' | 'budget';
 
 /** One member of the cut with its inclusion reason and the leaf count of the
  * subtree it stands in for (its summary weight; ADR-0012's dependency set). */

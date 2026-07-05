@@ -32,9 +32,14 @@ is the band containing `z`. `hysteresis` is a width `h ≥ 0`:
 - Resolution is **pure**, so the prior level is an explicit input: the resolver
   accepts an optional `prevLevel` (added to `LodRequest`; see Open questions).
 - With `prevLevel` present and `|nominalLevel(z) − prevLevel| ≤ 1`: the level
-  changes `prevLevel → prevLevel+1` only when `z ≥ p_{prevLevel} + h/2`, and
-  `prevLevel → prevLevel−1` only when `z < p_{prevLevel−1} − h/2`; otherwise it
+  changes `prevLevel → prevLevel+1` only when `z ≥ p_{prevLevel+1} + h/2`, and
+  `prevLevel → prevLevel−1` only when `z < p_{prevLevel} − h/2`; otherwise it
   stays `prevLevel`. Hovering at a boundary never flaps (§5.4).
+  *(Amended during 3D: the original subscripts were off by one — with band
+  `i = [pᵢ, pᵢ₊₁)`, the boundary crossed going `prev → prev+1` is
+  `p_{prev+1}`, and going `prev → prev−1` is `p_prev`. This is the only
+  reading under which the no-flap guarantee holds; `zoom-policy.ts`
+  implements it.)*
 - A jump of more than one band (`|nominal − prevLevel| > 1`) **snaps** to
   `nominalLevel` — a fast/teleport zoom is not sticky.
 - With `prevLevel` absent (a fresh resolve), the level is `nominalLevel(z)`,
