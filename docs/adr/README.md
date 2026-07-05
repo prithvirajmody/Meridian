@@ -70,6 +70,9 @@ so the decision history stays legible.
 | [0009](0009-plugin-loading-model.md) | Plugin loading model: in-process packages, isolation-shaped contract | Proposed | §7.1–7.2, §14.2–14.4, P5 | 2 |
 | [0010](0010-plugin-api-versioning.md) | plugin-api versioning policy: semver with declared checkpoints | Proposed | §3.3, §14.2, P12 | 2 |
 | [0011](0011-capability-model.md) | Capability model: enumerated kinds, extended per phase | Proposed | §14.1, §14.3 | 2 |
+| [0012](0012-zoom-semantics.md) | Zoom semantics: continuous scalar → discrete level cut, hysteresis + per-node overrides | Proposed | §5.1, §5.4, ADR-A3 | 3 |
+| [0013](0013-induced-edge-aggregation.md) | Induced-edge aggregation: group by kind, sum weight, cap witnesses, exact ChangeSet invalidation | Proposed | §5.3, §5.5, ADR-A3 | 3 |
+| [0014](0014-node-budget-salience.md) | Node budget & salience v1: collapse lowest-salience subtrees, coverage wins over budget | Proposed | §5.1, §8.1, ADR-A3 | 3 |
 
 Later phases extend this registry (ADR-0009+ at Phase 2, and so on). The
 constitution's `ADR-A5…A12` are pre-recorded there and become numbered ADRs in
