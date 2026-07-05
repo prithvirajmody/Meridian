@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/malformed.json
+  errors (1):
+    [malformed-json] not valid JSON: Expected property name or '}' in JSON at position 2 (line 1 column 3)

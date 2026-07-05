@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/shared-detail.meridian.json
+  errors (1):
+    [multiple-containment] graph "g-shared" is the detail of more than one node (also of node "n-second-owner" in graph "g-one") — a graph has at most one containing node (U3)

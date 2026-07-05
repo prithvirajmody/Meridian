@@ -1,0 +1,15 @@
+fixtures/valid/deep-nest.meridian.json
+  graphs             6
+  nodes              11
+  edges              5
+  roots              1
+  max depth          5
+  nodes with detail  5
+  nodes by kind:
+    demo:function  1
+    demo:module    3
+    demo:step      6
+    demo:value     1
+  edges by kind:
+    core:precedes    3
+    core:references  2

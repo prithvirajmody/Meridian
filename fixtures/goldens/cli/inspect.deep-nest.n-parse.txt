@@ -1,0 +1,9 @@
+node n-parse — "parse args" (demo:step)
+  graph        g-main "main()" — depth 3
+  path         g-project "Deep Nest Demo" › g-app "Application" › g-main "main()"
+  provenance   source demo://project/app/main/parse [10,60]
+  attrs        (none)
+  detail       g-parse "parse args" — 2 nodes, 1 edge
+  edges out (1):
+    [core:precedes] → n-run "run"
+  edges in (0):

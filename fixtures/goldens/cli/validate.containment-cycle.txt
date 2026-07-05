@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/containment-cycle.meridian.json
+  errors (1):
+    [containment-cycle] containment cycle: "g-x" → "g-y" → "g-x" (U2 — containment is a forest; domain cycles belong in edges, not containment)

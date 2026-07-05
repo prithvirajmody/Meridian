@@ -1,0 +1,15 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-one"],
+  "graphs": [
+    {
+      "id": "g-one",
+      "meta": { "label": "Node without provenance", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        { "id": "n-orphan", "kind": "demo:thing", "label": "no origin (U7 violation)" }
+      ],
+      "edges": []
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/missing-provenance.meridian.json
+  errors (1):
+    [structural] at graphs.0.nodes.0.provenance: Invalid input: expected object, received undefined

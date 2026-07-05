@@ -1,0 +1,36 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-one"],
+  "graphs": [
+    {
+      "id": "g-one",
+      "meta": { "label": "Two nodes claim the same detail graph", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        {
+          "id": "n-first-owner",
+          "kind": "demo:thing",
+          "label": "first owner",
+          "detail": { "graph": "g-shared" },
+          "provenance": { "origin": "source" }
+        },
+        {
+          "id": "n-second-owner",
+          "kind": "demo:thing",
+          "label": "second owner",
+          "detail": { "graph": "g-shared" },
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g-shared",
+      "meta": { "label": "The shared graph", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        { "id": "n-inner", "kind": "demo:thing", "label": "inner", "provenance": { "origin": "source" } }
+      ],
+      "edges": []
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "file": "fixtures/valid/deep-nest.meridian.json",
+  "node": {
+    "id": "n-parse",
+    "kind": "demo:step",
+    "label": "parse args",
+    "graph": "g-main",
+    "path": [
+      {
+        "graph": "g-project",
+        "label": "Deep Nest Demo"
+      },
+      {
+        "graph": "g-app",
+        "label": "Application"
+      },
+      {
+        "graph": "g-main",
+        "label": "main()"
+      }
+    ],
+    "attrs": {},
+    "provenance": {
+      "origin": "source",
+      "uri": "demo://project/app/main/parse",
+      "span": [
+        10,
+        60
+      ]
+    },
+    "detail": {
+      "graph": "g-parse",
+      "label": "parse args",
+      "nodes": 2,
+      "edges": 1
+    },
+    "outgoing": [
+      {
+        "id": "e-parse-run",
+        "kind": "core:precedes",
+        "dst": "n-run"
+      }
+    ],
+    "incoming": []
+  }
+}

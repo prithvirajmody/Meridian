@@ -1,0 +1,2 @@
+OK fixtures/valid/flat-simple.meridian.json
+  graphs 1 · nodes 2 · edges 1 · roots 1 · max depth 1

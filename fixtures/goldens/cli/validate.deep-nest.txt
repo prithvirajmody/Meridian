@@ -1,0 +1,4 @@
+OK fixtures/valid/deep-nest.meridian.json
+  graphs 6 · nodes 11 · edges 5 · roots 1 · max depth 5
+  warnings (1):
+    [unregistered-namespace] node "n-util": attr namespace "demo" has no registered schema — tolerated in Phase 0, rejected at the IR gate from Phase 2 (U8)

@@ -1,0 +1,28 @@
+{
+  "name": "meridian-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint .",
+    "depcruise": "depcruise packages/graph-core/src apps/cli/src --config .dependency-cruiser.cjs",
+    "bench": "turbo run build --filter=@meridian/graph-core && node benchmarks/decode-validate.bench.mjs",
+    "goldens:update": "turbo run build && UPDATE_GOLDENS=1 pnpm --filter @meridian/cli test",
+    "meridian": "node apps/cli/dist/main.js",
+    "ci": "pnpm lint && pnpm typecheck && pnpm depcruise && pnpm build && pnpm test && pnpm bench"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "dependency-cruiser": "^16.10.0",
+    "eslint": "^9.30.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.35.0"
+  }
+}

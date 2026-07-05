@@ -1,0 +1,250 @@
+{
+  "formatVersion": 1,
+  "producer": {
+    "name": "hand-authored",
+    "version": "1"
+  },
+  "roots": [],
+  "graphs": [
+    {
+      "id": "g0",
+      "meta": {
+        "label": "ring member 0",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "demo:thing",
+          "label": "holds g1",
+          "detail": {
+            "graph": "g1"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g1",
+      "meta": {
+        "label": "ring member 1",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "kind": "demo:thing",
+          "label": "holds g2",
+          "detail": {
+            "graph": "g2"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g2",
+      "meta": {
+        "label": "ring member 2",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n2",
+          "kind": "demo:thing",
+          "label": "holds g3",
+          "detail": {
+            "graph": "g3"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g3",
+      "meta": {
+        "label": "ring member 3",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n3",
+          "kind": "demo:thing",
+          "label": "holds g4",
+          "detail": {
+            "graph": "g4"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g4",
+      "meta": {
+        "label": "ring member 4",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n4",
+          "kind": "demo:thing",
+          "label": "holds g5",
+          "detail": {
+            "graph": "g5"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g5",
+      "meta": {
+        "label": "ring member 5",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n5",
+          "kind": "demo:thing",
+          "label": "holds g6",
+          "detail": {
+            "graph": "g6"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g6",
+      "meta": {
+        "label": "ring member 6",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n6",
+          "kind": "demo:thing",
+          "label": "holds g7",
+          "detail": {
+            "graph": "g7"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g7",
+      "meta": {
+        "label": "ring member 7",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n7",
+          "kind": "demo:thing",
+          "label": "holds g8",
+          "detail": {
+            "graph": "g8"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g8",
+      "meta": {
+        "label": "ring member 8",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n8",
+          "kind": "demo:thing",
+          "label": "holds g9",
+          "detail": {
+            "graph": "g9"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g9",
+      "meta": {
+        "label": "ring member 9",
+        "domain": "demo",
+        "provenance": {
+          "origin": "source"
+        }
+      },
+      "nodes": [
+        {
+          "id": "n9",
+          "kind": "demo:thing",
+          "label": "holds g0",
+          "detail": {
+            "graph": "g0"
+          },
+          "provenance": {
+            "origin": "source"
+          }
+        }
+      ],
+      "edges": []
+    }
+  ]
+}

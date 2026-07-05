@@ -1,0 +1,35 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": [],
+  "graphs": [
+    {
+      "id": "g-x",
+      "meta": { "label": "X contains Y", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        {
+          "id": "n-x",
+          "kind": "demo:thing",
+          "label": "x",
+          "detail": { "graph": "g-y" },
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g-y",
+      "meta": { "label": "Y contains X", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        {
+          "id": "n-y",
+          "kind": "demo:thing",
+          "label": "y",
+          "detail": { "graph": "g-x" },
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": []
+    }
+  ]
+}

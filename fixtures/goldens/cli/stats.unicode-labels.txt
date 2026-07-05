@@ -1,0 +1,11 @@
+fixtures/valid/unicode-labels.meridian.json
+  graphs             1
+  nodes              4
+  edges              1
+  roots              1
+  max depth          1
+  nodes with detail  0
+  nodes by kind:
+    demo:thing  4
+  edges by kind:
+    core:references  1

@@ -1,0 +1,2 @@
+OK fixtures/valid/unicode-labels.meridian.json
+  graphs 1 · nodes 4 · edges 1 · roots 1 · max depth 1

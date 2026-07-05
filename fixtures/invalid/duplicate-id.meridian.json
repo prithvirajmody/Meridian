@@ -1,0 +1,16 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-one"],
+  "graphs": [
+    {
+      "id": "g-one",
+      "meta": { "label": "Duplicate node ID", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        { "id": "n-dup", "kind": "demo:thing", "label": "first", "provenance": { "origin": "source" } },
+        { "id": "n-dup", "kind": "demo:thing", "label": "second", "provenance": { "origin": "source" } }
+      ],
+      "edges": []
+    }
+  ]
+}

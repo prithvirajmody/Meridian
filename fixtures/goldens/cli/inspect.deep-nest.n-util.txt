@@ -1,0 +1,9 @@
+node n-util — "utilities" (demo:module)
+  graph        g-lib "Library" — depth 2
+  path         g-project "Deep Nest Demo" › g-lib "Library"
+  provenance   source demo://project/lib/util
+  attrs:
+    demo:loc = 320
+  detail       (none)
+  edges out (0):
+  edges in (0):

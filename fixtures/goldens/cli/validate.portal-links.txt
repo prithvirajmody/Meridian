@@ -1,0 +1,5 @@
+OK fixtures/valid/portal-links.meridian.json
+  graphs 3 · nodes 4 · edges 1 · roots 1 · max depth 2
+  warnings (2):
+    [unregistered-namespace] edge "e-a-calls-b": attr namespace "portal" has no registered schema — tolerated in Phase 0, rejected at the IR gate from Phase 2 (U8)
+    [unregistered-namespace] edge "e-a-calls-b": attr namespace "portal" has no registered schema — tolerated in Phase 0, rejected at the IR gate from Phase 2 (U8)

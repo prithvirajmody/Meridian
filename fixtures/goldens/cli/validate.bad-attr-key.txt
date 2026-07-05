@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/bad-attr-key.meridian.json
+  errors (1):
+    [invalid-attr-key] node "n-bad": attr key "BadKey" must match ns:name with [a-z][a-z0-9-]* parts (ADR-0003)

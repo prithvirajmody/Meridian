@@ -1,0 +1,5 @@
+{
+  "comment": "Perf budgets are versioned CI contracts (ADR-A12): exceeding one fails the build. Budgets only ratchet down (ROADMAP §5.2).",
+  "100k-decode-validate-ms": 1500,
+  "100k-stats-ms": 200
+}

@@ -1,0 +1,21 @@
+{
+  "file": "fixtures/valid/deep-nest.meridian.json",
+  "stats": {
+    "graphs": 6,
+    "nodes": 11,
+    "edges": 5,
+    "roots": 1,
+    "maxDepth": 5,
+    "nodesWithDetail": 5,
+    "nodesByKind": {
+      "demo:function": 1,
+      "demo:module": 3,
+      "demo:step": 6,
+      "demo:value": 1
+    },
+    "edgesByKind": {
+      "core:precedes": 3,
+      "core:references": 2
+    }
+  }
+}

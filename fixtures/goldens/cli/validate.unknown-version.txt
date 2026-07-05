@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/unknown-version.meridian.json
+  errors (1):
+    [unsupported-version] at formatVersion: document formatVersion 99 is newer than this build (supports 1) — refusing rather than guessing (ADR-0004)

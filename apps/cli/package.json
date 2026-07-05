@@ -1,0 +1,23 @@
+{
+  "name": "@meridian/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "meridian — headless CLI proving the semantic core without pixels.",
+  "bin": {
+    "meridian": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/graph-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

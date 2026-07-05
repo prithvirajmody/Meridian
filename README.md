@@ -13,12 +13,18 @@ single Universal Semantic Graph. See the governing documents:
 
 ## Status
 
-Pre–Phase 0. The repo currently contains only the governing documents and
-standing instructions (`CLAUDE.md`). Next step per the operator's guide:
+**Phase 0 build complete, gate not yet closed.** ADR-0001…0004 are drafted
+([docs/adr/](docs/adr/), status *Proposed* — human review pending). The
+monorepo, `@meridian/graph-core`, the `meridian` CLI, the fixture corpus,
+and the full verification harness are in place and green.
 
-> Read docs/ARCHITECTURE.md fully, then docs/ROADMAP.md Phase 0. Begin the
-> ADR beat: draft ADR-0001 through ADR-0004 into docs/adr/ and stop for my
-> review. Do not scaffold the monorepo yet.
+```
+pnpm install
+pnpm test                # unit + property + failure + golden suites
+pnpm ci                  # lint · typecheck · depcruise · build · test · bench
+pnpm meridian validate fixtures/valid/deep-nest.meridian.json
+```
 
-Finalized decisions live as ADRs in [docs/adr/](docs/adr/). A decision without
-a merged ADR is not finalized.
+Golden files change only via `pnpm goldens:update` (reviewed), never by
+hand. Finalized decisions live as ADRs in [docs/adr/](docs/adr/) — a
+decision without a merged ADR is not finalized.

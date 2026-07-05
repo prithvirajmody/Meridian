@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/duplicate-id.meridian.json
+  errors (1):
+    [duplicate-id] node "n-dup" appears more than once in graph "g-one"

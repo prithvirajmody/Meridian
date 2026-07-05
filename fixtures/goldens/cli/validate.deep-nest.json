@@ -1,0 +1,32 @@
+{
+  "file": "fixtures/valid/deep-nest.meridian.json",
+  "ok": true,
+  "stats": {
+    "graphs": 6,
+    "nodes": 11,
+    "edges": 5,
+    "roots": 1,
+    "maxDepth": 5,
+    "nodesWithDetail": 5,
+    "nodesByKind": {
+      "demo:function": 1,
+      "demo:module": 3,
+      "demo:step": 6,
+      "demo:value": 1
+    },
+    "edgesByKind": {
+      "core:precedes": 3,
+      "core:references": 2
+    }
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "code": "unregistered-namespace",
+      "severity": "warning",
+      "message": "node \"n-util\": attr namespace \"demo\" has no registered schema — tolerated in Phase 0, rejected at the IR gate from Phase 2 (U8)",
+      "graphId": "g-lib",
+      "elementId": "n-util"
+    }
+  ]
+}

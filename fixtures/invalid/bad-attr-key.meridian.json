@@ -1,0 +1,21 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-one"],
+  "graphs": [
+    {
+      "id": "g-one",
+      "meta": { "label": "Un-namespaced attribute key", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        {
+          "id": "n-bad",
+          "kind": "demo:thing",
+          "label": "bad attrs",
+          "attrs": { "BadKey": 1 },
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": []
+    }
+  ]
+}

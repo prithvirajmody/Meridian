@@ -1,0 +1,38 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-solo"],
+  "graphs": [
+    {
+      "id": "g-solo",
+      "meta": {
+        "label": "Smallest valid space",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "fixtures/valid/flat-simple.meridian.json" }
+      },
+      "nodes": [
+        {
+          "id": "n-one",
+          "kind": "demo:thing",
+          "label": "one",
+          "provenance": { "origin": "source" }
+        },
+        {
+          "id": "n-two",
+          "kind": "demo:thing",
+          "label": "two",
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-one-two",
+          "src": "n-one",
+          "dst": "n-two",
+          "kind": "core:references",
+          "provenance": { "origin": "source" }
+        }
+      ]
+    }
+  ]
+}

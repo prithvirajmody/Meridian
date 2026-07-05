@@ -1,0 +1,78 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-root"],
+  "graphs": [
+    {
+      "id": "g-root",
+      "meta": {
+        "label": "Portal rule demo (ADR-0001 §4.3): the deep link moduleA.f → moduleB.g is recorded here, at the lowest common graph, between the sibling ancestors, with deep endpoints as metadata",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "fixtures/valid/portal-links.meridian.json" }
+      },
+      "nodes": [
+        {
+          "id": "n-mod-a",
+          "kind": "demo:module",
+          "label": "module A",
+          "detail": { "graph": "g-a" },
+          "provenance": { "origin": "source" }
+        },
+        {
+          "id": "n-mod-b",
+          "kind": "demo:module",
+          "label": "module B",
+          "detail": { "graph": "g-b" },
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-a-calls-b",
+          "src": "n-mod-a",
+          "dst": "n-mod-b",
+          "kind": "core:references",
+          "attrs": {
+            "portal:via-src": "n-a-f",
+            "portal:via-dst": "n-b-g"
+          },
+          "provenance": { "origin": "derived" }
+        }
+      ]
+    },
+    {
+      "id": "g-a",
+      "meta": {
+        "label": "module A",
+        "domain": "demo",
+        "provenance": { "origin": "source" }
+      },
+      "nodes": [
+        {
+          "id": "n-a-f",
+          "kind": "demo:function",
+          "label": "f()",
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g-b",
+      "meta": {
+        "label": "module B",
+        "domain": "demo",
+        "provenance": { "origin": "source" }
+      },
+      "nodes": [
+        {
+          "id": "n-b-g",
+          "kind": "demo:function",
+          "label": "g()",
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": []
+    }
+  ]
+}

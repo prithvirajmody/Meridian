@@ -1,0 +1,50 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-unicode"],
+  "graphs": [
+    {
+      "id": "g-unicode",
+      "meta": {
+        "label": "Unicode stress — 図書館 · مكتبة · 🚀",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "fixtures/valid/unicode-labels.meridian.json" }
+      },
+      "nodes": [
+        {
+          "id": "n-cjk",
+          "kind": "demo:thing",
+          "label": "図書館カタログ",
+          "provenance": { "origin": "source" }
+        },
+        {
+          "id": "n-emoji",
+          "kind": "demo:thing",
+          "label": "🚀 Launch ✨ (with ZWJ: 👩‍🔬)",
+          "provenance": { "origin": "source" }
+        },
+        {
+          "id": "n-rtl",
+          "kind": "demo:thing",
+          "label": "مكتبة الوسائط",
+          "provenance": { "origin": "source" }
+        },
+        {
+          "id": "n-decomposed",
+          "kind": "demo:thing",
+          "label": "cafe\u0301",
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-u1",
+          "src": "n-cjk",
+          "dst": "n-emoji",
+          "kind": "core:references",
+          "provenance": { "origin": "source" }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-project"],
+  "graphs": [
+    {
+      "id": "g-project",
+      "meta": {
+        "label": "Deep Nest Demo",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "fixtures/valid/deep-nest.meridian.json" }
+      },
+      "nodes": [
+        {
+          "id": "n-app",
+          "kind": "demo:module",
+          "label": "Application",
+          "detail": { "graph": "g-app" },
+          "provenance": { "origin": "source", "uri": "demo://project/app" }
+        },
+        {
+          "id": "n-lib",
+          "kind": "demo:module",
+          "label": "Library",
+          "detail": { "graph": "g-lib" },
+          "provenance": { "origin": "source", "uri": "demo://project/lib" }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-app-lib",
+          "src": "n-app",
+          "dst": "n-lib",
+          "kind": "core:references",
+          "weight": 1,
+          "provenance": { "origin": "derived" }
+        }
+      ]
+    },
+    {
+      "id": "g-app",
+      "meta": {
+        "label": "Application",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "demo://project/app" }
+      },
+      "nodes": [
+        {
+          "id": "n-main",
+          "kind": "demo:function",
+          "label": "main()",
+          "detail": { "graph": "g-main" },
+          "provenance": { "origin": "source", "uri": "demo://project/app/main", "span": [0, 120] }
+        },
+        {
+          "id": "n-config",
+          "kind": "demo:value",
+          "label": "config",
+          "provenance": { "origin": "source", "uri": "demo://project/app/config", "span": [121, 160] }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-main-config",
+          "src": "n-main",
+          "dst": "n-config",
+          "kind": "core:references",
+          "provenance": { "origin": "derived" }
+        }
+      ]
+    },
+    {
+      "id": "g-main",
+      "meta": {
+        "label": "main()",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "demo://project/app/main" }
+      },
+      "nodes": [
+        {
+          "id": "n-parse",
+          "kind": "demo:step",
+          "label": "parse args",
+          "detail": { "graph": "g-parse" },
+          "provenance": { "origin": "source", "uri": "demo://project/app/main/parse", "span": [10, 60] }
+        },
+        {
+          "id": "n-run",
+          "kind": "demo:step",
+          "label": "run",
+          "provenance": { "origin": "source", "uri": "demo://project/app/main/run", "span": [61, 118] }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-parse-run",
+          "src": "n-parse",
+          "dst": "n-run",
+          "kind": "core:precedes",
+          "provenance": { "origin": "derived" }
+        }
+      ]
+    },
+    {
+      "id": "g-parse",
+      "meta": {
+        "label": "parse args",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "demo://project/app/main/parse" }
+      },
+      "nodes": [
+        {
+          "id": "n-tokenize",
+          "kind": "demo:step",
+          "label": "tokenize",
+          "detail": { "graph": "g-tokenize" },
+          "provenance": { "origin": "source", "uri": "demo://project/app/main/parse/tokenize" }
+        },
+        {
+          "id": "n-check",
+          "kind": "demo:step",
+          "label": "check flags",
+          "provenance": { "origin": "source", "uri": "demo://project/app/main/parse/check" }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-tok-check",
+          "src": "n-tokenize",
+          "dst": "n-check",
+          "kind": "core:precedes",
+          "weight": 0.8,
+          "provenance": { "origin": "derived" }
+        }
+      ]
+    },
+    {
+      "id": "g-tokenize",
+      "meta": {
+        "label": "tokenize",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "demo://project/app/main/parse/tokenize" }
+      },
+      "nodes": [
+        {
+          "id": "n-scan",
+          "kind": "demo:step",
+          "label": "scan chars",
+          "provenance": { "origin": "source", "uri": "demo://project/app/main/parse/tokenize/scan" }
+        },
+        {
+          "id": "n-emit",
+          "kind": "demo:step",
+          "label": "emit token",
+          "provenance": { "origin": "ai", "model": "claude-opus-4-8", "confidence": 0.9 }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-scan-emit",
+          "src": "n-scan",
+          "dst": "n-emit",
+          "kind": "core:precedes",
+          "provenance": { "origin": "derived" }
+        }
+      ]
+    },
+    {
+      "id": "g-lib",
+      "meta": {
+        "label": "Library",
+        "domain": "demo",
+        "provenance": { "origin": "source", "uri": "demo://project/lib" }
+      },
+      "nodes": [
+        {
+          "id": "n-util",
+          "kind": "demo:module",
+          "label": "utilities",
+          "attrs": { "demo:loc": 320 },
+          "provenance": { "origin": "source", "uri": "demo://project/lib/util" }
+        }
+      ],
+      "edges": []
+    }
+  ]
+}

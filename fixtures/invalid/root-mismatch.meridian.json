@@ -1,0 +1,29 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-parent", "g-child"],
+  "graphs": [
+    {
+      "id": "g-parent",
+      "meta": { "label": "Parent", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        {
+          "id": "n-holder",
+          "kind": "demo:thing",
+          "label": "holds the child",
+          "detail": { "graph": "g-child" },
+          "provenance": { "origin": "source" }
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "g-child",
+      "meta": { "label": "Contained, yet listed as root", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        { "id": "n-inner", "kind": "demo:thing", "label": "inner", "provenance": { "origin": "source" } }
+      ],
+      "edges": []
+    }
+  ]
+}

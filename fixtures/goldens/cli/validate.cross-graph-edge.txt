@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/cross-graph-edge.meridian.json
+  errors (1):
+    [dangling-edge-endpoint] edge "e-crossing" dst "n-there" is a node of graph "g-two", not of "g-one" — cross-graph edges are forbidden; record the link at the lowest common graph (portal rule, ADR-0001)

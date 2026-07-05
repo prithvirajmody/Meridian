@@ -1,0 +1,15 @@
+{
+  "file": "fixtures/invalid/dangling-edge.meridian.json",
+  "ok": false,
+  "stats": null,
+  "errors": [
+    {
+      "code": "dangling-edge-endpoint",
+      "severity": "error",
+      "message": "edge \"e-bad\" dst \"n-ghost\" does not resolve to a node in graph \"g-one\" (U1)",
+      "graphId": "g-one",
+      "elementId": "e-bad"
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,31 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-one", "g-two"],
+  "graphs": [
+    {
+      "id": "g-one",
+      "meta": { "label": "Edge tries to cross graphs", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        { "id": "n-here", "kind": "demo:thing", "label": "here", "provenance": { "origin": "source" } }
+      ],
+      "edges": [
+        {
+          "id": "e-crossing",
+          "src": "n-here",
+          "dst": "n-there",
+          "kind": "core:references",
+          "provenance": { "origin": "source" }
+        }
+      ]
+    },
+    {
+      "id": "g-two",
+      "meta": { "label": "The other graph", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        { "id": "n-there", "kind": "demo:thing", "label": "there", "provenance": { "origin": "source" } }
+      ],
+      "edges": []
+    }
+  ]
+}

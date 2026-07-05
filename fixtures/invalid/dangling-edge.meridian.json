@@ -1,0 +1,23 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-one"],
+  "graphs": [
+    {
+      "id": "g-one",
+      "meta": { "label": "Dangling edge", "domain": "demo", "provenance": { "origin": "source" } },
+      "nodes": [
+        { "id": "n-real", "kind": "demo:thing", "label": "real", "provenance": { "origin": "source" } }
+      ],
+      "edges": [
+        {
+          "id": "e-bad",
+          "src": "n-real",
+          "dst": "n-ghost",
+          "kind": "core:references",
+          "provenance": { "origin": "source" }
+        }
+      ]
+    }
+  ]
+}

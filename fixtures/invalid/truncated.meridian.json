@@ -1,0 +1,9 @@
+{
+  "formatVersion": 1,
+  "producer": { "name": "hand-authored", "version": "1" },
+  "roots": ["g-solo"],
+  "graphs": [
+    {
+      "id": "g-solo",
+      "meta": {
+        "label": "Smallest valid spa

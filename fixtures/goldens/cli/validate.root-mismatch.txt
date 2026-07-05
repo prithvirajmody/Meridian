@@ -1,0 +1,3 @@
+INVALID fixtures/invalid/root-mismatch.meridian.json
+  errors (1):
+    [root-mismatch] roots lists graph "g-child", but it is contained by a node (roots are derived, never trusted — ADR-0001)
