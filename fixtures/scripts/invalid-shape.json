@@ -1,0 +1,8 @@
+{
+  "origin": { "actor": "" },
+  "ops": [
+    { "t": "node:zap", "graph": "g-lib" },
+    { "t": "node:add", "graph": "g-lib", "node": { "id": "x", "kind": "k:v", "label": 1, "provenance": { "origin": "nope" } } },
+    { "t": "edge:remove", "graph": "", "id": "e" }
+  ]
+}

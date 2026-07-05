@@ -1,0 +1,309 @@
+{
+  "file": "fixtures/valid/deep-nest.meridian.json",
+  "script": "fixtures/scripts/session.json",
+  "ok": true,
+  "from": {
+    "counter": 0,
+    "site": "local"
+  },
+  "to": {
+    "counter": 1,
+    "site": "local"
+  },
+  "delta": {
+    "baseVersion": {
+      "counter": 0,
+      "site": "local"
+    },
+    "origin": {
+      "actor": "demo-session"
+    },
+    "ops": [
+      {
+        "t": "graph:add",
+        "graph": "g-vendor",
+        "meta": {
+          "label": "Vendor",
+          "domain": "demo",
+          "provenance": {
+            "origin": "source",
+            "uri": "demo://project/vendor"
+          }
+        }
+      },
+      {
+        "t": "node:add",
+        "graph": "g-vendor",
+        "node": {
+          "id": "n-leftpad",
+          "kind": "demo:module",
+          "label": "left-pad",
+          "provenance": {
+            "origin": "source",
+            "uri": "demo://project/vendor/left-pad"
+          }
+        }
+      },
+      {
+        "t": "node:add",
+        "graph": "g-vendor",
+        "node": {
+          "id": "n-chalk",
+          "kind": "demo:module",
+          "label": "chalk",
+          "provenance": {
+            "origin": "source",
+            "uri": "demo://project/vendor/chalk"
+          }
+        }
+      },
+      {
+        "t": "edge:add",
+        "graph": "g-vendor",
+        "edge": {
+          "id": "e-chalk-leftpad",
+          "src": "n-chalk",
+          "dst": "n-leftpad",
+          "kind": "core:references",
+          "provenance": {
+            "origin": "derived"
+          }
+        }
+      },
+      {
+        "t": "node:add",
+        "graph": "g-project",
+        "node": {
+          "id": "n-vendor",
+          "kind": "demo:module",
+          "label": "Vendor",
+          "detail": {
+            "graph": "g-vendor"
+          },
+          "provenance": {
+            "origin": "source",
+            "uri": "demo://project/vendor"
+          }
+        }
+      },
+      {
+        "t": "edge:add",
+        "graph": "g-project",
+        "edge": {
+          "id": "e-app-vendor",
+          "src": "n-app",
+          "dst": "n-vendor",
+          "kind": "core:references",
+          "weight": 2,
+          "provenance": {
+            "origin": "derived"
+          }
+        }
+      },
+      {
+        "t": "node:attr",
+        "graph": "g-lib",
+        "id": "n-util",
+        "key": "demo:loc",
+        "prev": 320,
+        "next": 400
+      },
+      {
+        "t": "node:attr",
+        "graph": "g-lib",
+        "id": "n-util",
+        "key": "demo:reviewed",
+        "next": true
+      },
+      {
+        "t": "node:attr",
+        "graph": "g-app",
+        "id": "n-config",
+        "key": "demo:format",
+        "next": "toml"
+      },
+      {
+        "t": "graph:meta",
+        "graph": "g-lib",
+        "prev": {
+          "label": "Library",
+          "domain": "demo",
+          "provenance": {
+            "origin": "source",
+            "uri": "demo://project/lib"
+          }
+        },
+        "next": {
+          "label": "Library v2",
+          "domain": "demo",
+          "provenance": {
+            "origin": "source",
+            "uri": "demo://project/lib"
+          }
+        }
+      },
+      {
+        "t": "edge:remove",
+        "graph": "g-app",
+        "id": "e-main-config",
+        "prev": {
+          "id": "e-main-config",
+          "src": "n-main",
+          "dst": "n-config",
+          "kind": "core:references",
+          "provenance": {
+            "origin": "derived"
+          }
+        }
+      },
+      {
+        "t": "node:remove",
+        "graph": "g-app",
+        "id": "n-config",
+        "prev": {
+          "id": "n-config",
+          "kind": "demo:value",
+          "label": "config",
+          "attrs": {
+            "demo:format": "toml"
+          },
+          "provenance": {
+            "origin": "source",
+            "uri": "demo://project/app/config",
+            "span": [
+              121,
+              160
+            ]
+          }
+        }
+      },
+      {
+        "t": "node:add",
+        "graph": "g-app",
+        "node": {
+          "id": "n-env",
+          "kind": "demo:value",
+          "label": "env",
+          "provenance": {
+            "origin": "source",
+            "uri": "demo://project/app/env"
+          }
+        }
+      },
+      {
+        "t": "edge:add",
+        "graph": "g-app",
+        "edge": {
+          "id": "e-main-env",
+          "src": "n-main",
+          "dst": "n-env",
+          "kind": "core:references",
+          "provenance": {
+            "origin": "derived"
+          }
+        }
+      },
+      {
+        "t": "graph:add",
+        "graph": "g-run",
+        "meta": {
+          "label": "run details",
+          "domain": "demo",
+          "provenance": {
+            "origin": "derived"
+          }
+        }
+      },
+      {
+        "t": "node:add",
+        "graph": "g-run",
+        "node": {
+          "id": "n-exec",
+          "kind": "demo:step",
+          "label": "execute",
+          "provenance": {
+            "origin": "derived"
+          }
+        }
+      },
+      {
+        "t": "node:detail",
+        "graph": "g-main",
+        "id": "n-run",
+        "next": {
+          "graph": "g-run"
+        }
+      },
+      {
+        "t": "node:attr",
+        "graph": "g-tokenize",
+        "id": "n-emit",
+        "key": "demo:verified",
+        "next": true
+      },
+      {
+        "t": "edge:add",
+        "graph": "g-lib",
+        "edge": {
+          "id": "e-util-self",
+          "src": "n-util",
+          "dst": "n-util",
+          "kind": "demo:recurses",
+          "provenance": {
+            "origin": "derived"
+          }
+        }
+      },
+      {
+        "t": "node:attr",
+        "graph": "g-project",
+        "id": "n-vendor",
+        "key": "demo:pinned",
+        "next": true
+      }
+    ]
+  },
+  "touched": {
+    "graphs": [
+      "g-app",
+      "g-lib",
+      "g-main",
+      "g-project",
+      "g-run",
+      "g-tokenize",
+      "g-vendor"
+    ],
+    "nodes": [
+      "n-app",
+      "n-chalk",
+      "n-config",
+      "n-emit",
+      "n-env",
+      "n-exec",
+      "n-leftpad",
+      "n-main",
+      "n-run",
+      "n-util",
+      "n-vendor"
+    ]
+  },
+  "stats": {
+    "graphs": 8,
+    "nodes": 15,
+    "edges": 8,
+    "roots": 1,
+    "maxDepth": 5,
+    "nodesWithDetail": 7,
+    "nodesByKind": {
+      "demo:function": 1,
+      "demo:module": 6,
+      "demo:step": 7,
+      "demo:value": 1
+    },
+    "edgesByKind": {
+      "core:precedes": 3,
+      "core:references": 4,
+      "demo:recurses": 1
+    }
+  }
+}

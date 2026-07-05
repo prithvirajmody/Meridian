@@ -1,0 +1,2 @@
+INGEST FAILED fixtures/corpora/markdown/reject/binary.bin
+  [no-parser] no registered parser claims "fixtures/corpora/markdown/reject/binary.bin" (0 claimants)

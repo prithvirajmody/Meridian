@@ -11,11 +11,12 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "eslint .",
-    "depcruise": "depcruise packages/graph-core/src apps/cli/src --config .dependency-cruiser.cjs",
-    "bench": "turbo run build --filter=@meridian/graph-core && node benchmarks/decode-validate.bench.mjs",
+    "depcruise": "depcruise packages/graph-core/src packages/graph-store/src packages/plugin-api/src packages/plugin-host/src packages/conformance-kit/src packages/adapters/markdown/src apps/cli/src --config .dependency-cruiser.cjs",
+    "bench": "turbo run build && node benchmarks/decode-validate.bench.mjs && node benchmarks/store-deltas.bench.mjs && node benchmarks/ingest-markdown.bench.mjs",
     "goldens:update": "turbo run build && UPDATE_GOLDENS=1 pnpm --filter @meridian/cli test",
     "meridian": "node apps/cli/dist/main.js",
-    "ci": "pnpm lint && pnpm typecheck && pnpm depcruise && pnpm build && pnpm test && pnpm bench"
+    "audit:strings": "! grep -ril markdown packages/graph-core/src packages/graph-store/src packages/plugin-api/src packages/plugin-host/src packages/conformance-kit/src",
+    "ci": "pnpm lint && pnpm typecheck && pnpm depcruise && pnpm audit:strings && pnpm build && pnpm test && pnpm bench"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",

@@ -1,0 +1,6 @@
+REJECTED fixtures/scripts/watch-3-teardown.json (not a completed delta)
+  errors (4):
+    [invalid-delta] at ops[1].prev: edge:remove in a completed delta carries its prev payload — thin ops cannot be inverted (ADR-0005)
+    [invalid-delta] at ops[2].prev: node:remove in a completed delta carries its prev payload — thin ops cannot be inverted (ADR-0005)
+    [invalid-delta] at ops[3].prev: node:remove in a completed delta carries its prev payload — thin ops cannot be inverted (ADR-0005)
+    [invalid-delta] at ops[4].prev: graph:remove in a completed delta carries its prev payload — thin ops cannot be inverted (ADR-0005)

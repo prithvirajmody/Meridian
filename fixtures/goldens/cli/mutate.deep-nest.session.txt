@@ -1,0 +1,23 @@
+OK fixtures/valid/deep-nest.meridian.json
+  v0 → v1 · demo-session · 20 ops (edge:add 4, edge:remove 1, graph:add 2, graph:meta 1, node:add 5, node:attr 5, node:detail 1, node:remove 1) · touched 7 graphs, 11 nodes
+      [0] graph:add g-vendor "Vendor"
+      [1] node:add g-vendor n-leftpad "left-pad"
+      [2] node:add g-vendor n-chalk "chalk"
+      [3] edge:add g-vendor e-chalk-leftpad n-chalk → n-leftpad [core:references]
+      [4] node:add g-project n-vendor "Vendor"
+      [5] edge:add g-project e-app-vendor n-app → n-vendor [core:references]
+      [6] node:attr g-lib n-util demo:loc 320 → 400
+      [7] node:attr g-lib n-util demo:reviewed (unset) → true
+      [8] node:attr g-app n-config demo:format (unset) → "toml"
+      [9] graph:meta g-lib "Library" → "Library v2"
+      [10] edge:remove g-app e-main-config
+      [11] node:remove g-app n-config
+      [12] node:add g-app n-env "env"
+      [13] edge:add g-app e-main-env n-main → n-env [core:references]
+      [14] graph:add g-run "run details"
+      [15] node:add g-run n-exec "execute"
+      [16] node:detail g-main n-run (none) → g-run
+      [17] node:attr g-tokenize n-emit demo:verified (unset) → true
+      [18] edge:add g-lib e-util-self n-util → n-util [demo:recurses]
+      [19] node:attr g-project n-vendor demo:pinned (unset) → true
+  now: graphs 8 · nodes 15 · edges 8 · roots 1 · max depth 5

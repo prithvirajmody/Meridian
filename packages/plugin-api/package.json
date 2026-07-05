@@ -1,0 +1,29 @@
+{
+  "name": "@meridian/plugin-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Meridian plugin contract: types, capability descriptors, and the API version constant. Deliberately dependency-thin — type-only imports from @meridian/graph-core, nothing else.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/graph-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

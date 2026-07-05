@@ -1,0 +1,7 @@
+REJECTED fixtures/scripts/invalid-shape.json (script does not parse)
+  errors (5):
+    [invalid-delta] at origin: expected { actor: non-empty string } — history without issuers is forbidden (§3.1)
+    [invalid-delta] at ops[0].t: unknown op type "node:zap" — vocabulary v1 is graph:add, graph:remove, graph:meta, node:add, node:remove, node:attr, node:detail, edge:add, edge:remove (ADR-0005)
+    [invalid-delta] at ops[1].node.label: expected a string
+    [invalid-delta] at ops[1].node.provenance.origin: expected 'source' | 'derived' | 'ai'
+    [invalid-delta] at ops[2].graph: expected a non-empty string

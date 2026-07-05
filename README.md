@@ -13,17 +13,26 @@ single Universal Semantic Graph. See the governing documents:
 
 ## Status
 
-**Phase 0 build complete, gate not yet closed.** ADR-0001…0004 are drafted
-([docs/adr/](docs/adr/), status *Proposed* — human review pending). The
-monorepo, `@meridian/graph-core`, the `meridian` CLI, the fixture corpus,
-and the full verification harness are in place and green.
+**Phases 0–2 built, gates green; ADR review pending.** ADR-0001…0011 are
+drafted ([docs/adr/](docs/adr/), status *Proposed* — human review pending).
+In place: the monorepo; `@meridian/graph-core` (model, IDs, validation,
+codec) with the Phase 2 U8 vocabulary gate; `@meridian/graph-store` (op-based
+deltas, the one write path); the plugin boundary — `@meridian/plugin-api`
+(versioned contract), `@meridian/plugin-host` (registry, arbitration,
+isolation), `@meridian/conformance-kit` (executable adapter law) — and the
+first domain adapter, `@meridian/adapter-markdown`; the `meridian` CLI
+(`validate` · `stats` · `inspect` · `mutate` · `invert` · `watch` · `ingest`
+· `plugins list`); fixtures, corpora, goldens, and perf budgets as CI gates.
 
 ```
 pnpm install
-pnpm test                # unit + property + failure + golden suites
-pnpm ci                  # lint · typecheck · depcruise · build · test · bench
-pnpm meridian validate fixtures/valid/deep-nest.meridian.json
+pnpm test                # unit + property + failure + golden + conformance suites
+pnpm run ci              # lint · typecheck · depcruise · string audit · build · test · bench
+pnpm meridian ingest fixtures/corpora/markdown/links.md
 ```
+
+(Use `pnpm run ci` — bare `pnpm ci` is pnpm's own clean-install command, not
+this script.)
 
 Golden files change only via `pnpm goldens:update` (reviewed), never by
 hand. Finalized decisions live as ADRs in [docs/adr/](docs/adr/) — a

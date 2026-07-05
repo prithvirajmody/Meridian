@@ -1,0 +1,14 @@
+watching fixtures/valid/deep-nest.meridian.json — v0 · 6 graphs · 11 nodes · 5 edges
+v0 → v1 · watch-demo-1 · 2 ops (graph:meta 1, node:attr 1) · touched 1 graph, 1 node
+    [0] node:attr g-lib n-util demo:loc 320 → 321
+    [1] graph:meta g-lib "Library" → "Library (hot)"
+REJECTED fixtures/scripts/watch-2-stale.json
+  errors (1):
+    [stale-delta] delta baseVersion v0@local does not match store version v1@local — rebase/merge is a Phase 12 concern; v1 refuses (ADR-0007)
+v1 → v2 · watch-demo-3 · 5 ops (edge:remove 1, graph:remove 1, node:detail 1, node:remove 2) · touched 2 graphs, 3 nodes
+    [0] node:detail g-parse n-tokenize g-tokenize → (none)
+    [1] edge:remove g-tokenize e-scan-emit
+    [2] node:remove g-tokenize n-scan
+    [3] node:remove g-tokenize n-emit
+    [4] graph:remove g-tokenize
+done: v2 · 2 applied, 1 rejected

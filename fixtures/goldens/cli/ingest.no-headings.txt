@@ -1,0 +1,5 @@
+INGESTED fixtures/corpora/markdown/no-headings.md
+  adapter    markdown (@meridian/adapter-markdown)
+  emitted    1 document · 0 deltas
+  graphs 1 · nodes 3 · edges 0 · roots 1 · max depth 1
+  provenance source 4 · derived 0 · ai 0

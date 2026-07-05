@@ -1,0 +1,7 @@
+{
+  "origin": { "actor": "watch-demo-1" },
+  "ops": [
+    { "t": "node:attr", "graph": "g-lib", "id": "n-util", "key": "demo:loc", "next": 321 },
+    { "t": "graph:meta", "graph": "g-lib", "next": { "label": "Library (hot)", "domain": "demo", "provenance": { "origin": "source", "uri": "demo://project/lib" } } }
+  ]
+}

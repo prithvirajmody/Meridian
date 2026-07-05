@@ -1,0 +1,5 @@
+INGESTED fixtures/corpora/markdown/pathological-nesting.md
+  adapter    markdown (@meridian/adapter-markdown)
+  emitted    1 document · 0 deltas
+  graphs 10 · nodes 12 · edges 0 · roots 1 · max depth 7
+  provenance source 22 · derived 0 · ai 0

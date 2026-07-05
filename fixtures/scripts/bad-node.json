@@ -1,0 +1,7 @@
+{
+  "origin": { "actor": "demo-bad" },
+  "ops": [
+    { "t": "node:attr", "graph": "g-lib", "id": "n-util", "key": "demo:loc", "next": 999 },
+    { "t": "node:attr", "graph": "g-app", "id": "n-ghost", "key": "demo:x", "next": 1 }
+  ]
+}

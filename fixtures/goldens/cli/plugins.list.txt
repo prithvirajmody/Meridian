@@ -1,0 +1,5 @@
+plugins (1):
+  @meridian/adapter-markdown 0.1.0 — plugin-api ^0.1.0
+    capabilities  domain-parser:markdown
+    kinds         doc:break, doc:code, doc:html, doc:links-to, doc:list, doc:paragraph, doc:quote, doc:section
+    attrs         doc:index, doc:items, doc:lang, doc:level, doc:ordered

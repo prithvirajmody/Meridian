@@ -1,0 +1,30 @@
+{
+  "name": "@meridian/graph-store",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Meridian mutation layer: immutable snapshots, op-based deltas, transactions, subscriptions, indices, queries. Imports @meridian/graph-core and nothing else.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/graph-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "fast-check": "^4.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

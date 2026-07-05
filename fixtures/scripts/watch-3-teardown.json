@@ -1,0 +1,10 @@
+{
+  "origin": { "actor": "watch-demo-3" },
+  "ops": [
+    { "t": "node:detail", "graph": "g-parse", "id": "n-tokenize" },
+    { "t": "edge:remove", "graph": "g-tokenize", "id": "e-scan-emit" },
+    { "t": "node:remove", "graph": "g-tokenize", "id": "n-scan" },
+    { "t": "node:remove", "graph": "g-tokenize", "id": "n-emit" },
+    { "t": "graph:remove", "graph": "g-tokenize" }
+  ]
+}

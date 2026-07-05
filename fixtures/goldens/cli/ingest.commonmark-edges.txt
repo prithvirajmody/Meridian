@@ -1,0 +1,5 @@
+INGESTED fixtures/corpora/markdown/commonmark-edges.md
+  adapter    markdown (@meridian/adapter-markdown)
+  emitted    1 document · 0 deltas
+  graphs 10 · nodes 22 · edges 1 · roots 1 · max depth 4
+  provenance source 33 · derived 0 · ai 0

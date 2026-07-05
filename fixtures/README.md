@@ -13,6 +13,14 @@ changed contract.
 
 ## Layout
 
+- `corpora/markdown/` — the Phase 2 adapter corpus: `basic`, CommonMark edge
+  cases (setext, skipped depths, fences/indented code, nested lists, quotes,
+  html blocks, unicode, duplicate headings), `links` (portal-rule anchors,
+  multiplicity, broken anchors), `pathological-nesting`, `no-headings`,
+  `empty`, and `reject/binary.bin` (must fail ingest, never the host).
+  Consumed by the conformance kit and the `ingest.*` CLI goldens.
+
+
 - `valid/` — documents that must decode, validate, and round-trip (I3):
   - `deep-nest` — 6 graphs, 5 containment levels, weights, an `ai`-origin
     element, a namespaced attr (exercises the Phase 0
@@ -26,6 +34,17 @@ changed contract.
 - `invalid/` — adversarial documents, each rejected with a precise, located,
   typed error (see `packages/graph-core/test/codec.failure.test.ts` for the
   expected code per file).
+- `scripts/` — op-delta scripts for `meridian mutate|watch --apply`
+  (Phase 1, ADR-0005 wire form):
+  - `session.json` — the 20-op demo editing session against `deep-nest`
+    (every op type except `graph:remove`; see `docs/demos/phase-01.md`).
+  - `bad-node.json` / `stale.json` / `invalid-shape.json` — rejection cases
+    (atomic rollback, stale baseVersion, script-gate aggregation).
+  - `watch-1.json` / `watch-2-stale.json` / `watch-3-teardown.json` — the
+    `watch --apply` stream (teardown exercises detail-release +
+    `graph:remove`).
+- `deltas/` — completed (invertible) deltas for `meridian invert`:
+  - `small-undoable.delta.json` — hand-written, prev payloads included.
 - `goldens/cli/` — byte-exact expected CLI output per fixture/command,
   asserted by `apps/cli/test/golden.test.ts`.
 

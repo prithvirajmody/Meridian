@@ -6,12 +6,14 @@
  */
 import {
   ATTR_KEY_PATTERN,
+  attrValueMatchesType,
   CORE_NAMESPACE,
   isValidAttrValue,
   KIND_PATTERN,
   namespaceOf,
   RESERVED_CORE_ATTR_KEYS,
   type AttrBag,
+  type AttrValueType,
 } from './attrs.js';
 import { COORD_SEPARATOR, type GraphId, type NodeId } from './ids.js';
 import type { GraphSpace, SourceRef } from './model.js';
@@ -36,6 +38,9 @@ export type IssueCode =
   | 'invalid-attr-key'
   | 'reserved-core-key'
   | 'unregistered-namespace'
+  | 'unregistered-attr-key'
+  | 'attr-type-mismatch'
+  | 'unregistered-kind'
   | 'invalid-attr-value'
   | 'invalid-weight'
   | 'invalid-domain'
@@ -55,6 +60,27 @@ export interface ValidationResult {
   readonly ok: boolean;
   readonly errors: Issue[];
   readonly warnings: Issue[];
+}
+
+/**
+ * The registered vocabulary in force at an IR gate (U8): every non-`core`
+ * attr key must be declared with a value type, every non-`core` kind must be
+ * declared. Registration itself is a plugin concern (manifests, ADR-0011);
+ * this type is deliberately domain- and plugin-agnostic.
+ */
+export interface VocabularyRegistry {
+  readonly attrs: ReadonlyMap<string, AttrValueType>;
+  readonly kinds: ReadonlySet<string>;
+}
+
+export interface ValidateOptions {
+  /**
+   * When present, U8 is enforced: unregistered namespaces/keys/kinds become
+   * errors and declared attr value types are checked. When absent (Phase 0/1
+   * callers: fixtures, store round-trips), unregistered namespaces stay
+   * warnings, as before.
+   */
+  readonly vocabulary?: VocabularyRegistry;
 }
 
 class Collector {
@@ -134,11 +160,24 @@ function checkKind(
   kind: string,
   what: string,
   where: { graphId?: string; elementId?: string },
+  vocabulary?: VocabularyRegistry,
 ): void {
   if (!KIND_PATTERN.test(kind)) {
     c.error(
       'invalid-kind',
       `${what}: kind "${kind}" must match ns:name with [a-z][a-z0-9-]* parts (ADR-0003)`,
+      where,
+    );
+    return;
+  }
+  if (
+    vocabulary !== undefined &&
+    namespaceOf(kind) !== CORE_NAMESPACE &&
+    !vocabulary.kinds.has(kind)
+  ) {
+    c.error(
+      'unregistered-kind',
+      `${what}: kind "${kind}" is not declared by any vocabulary registered at this gate (U8)`,
       where,
     );
   }
@@ -149,9 +188,12 @@ function checkAttrs(
   attrs: AttrBag,
   what: string,
   where: { graphId?: string; elementId?: string },
+  vocabulary?: VocabularyRegistry,
+  vocabularyNamespaces?: ReadonlySet<string>,
 ): void {
   for (const [key, value] of Object.entries(attrs)) {
     checkNfcString(c, key, `${what}: attr key "${key}"`, where);
+    let declared: AttrValueType | undefined;
     if (!ATTR_KEY_PATTERN.test(key)) {
       c.error(
         'invalid-attr-key',
@@ -168,12 +210,29 @@ function checkAttrs(
             : `${what}: attr key "${key}" is not in the closed core registry (ADR-0003 — core grows only by ADR)`,
           where,
         );
-      } else {
+      } else if (vocabulary === undefined) {
         c.warning(
           'unregistered-namespace',
           `${what}: attr namespace "${ns}" has no registered schema — tolerated in Phase 0, rejected at the IR gate from Phase 2 (U8)`,
           where,
         );
+      } else {
+        declared = vocabulary.attrs.get(key);
+        if (declared === undefined) {
+          if (ns !== undefined && vocabularyNamespaces?.has(ns)) {
+            c.error(
+              'unregistered-attr-key',
+              `${what}: attr key "${key}" is not declared by namespace "${ns}"'s registered schema (U8)`,
+              where,
+            );
+          } else {
+            c.error(
+              'unregistered-namespace',
+              `${what}: attr namespace "${ns}" is not registered at this gate (U8)`,
+              where,
+            );
+          }
+        }
       }
     }
     if (!isValidAttrValue(value)) {
@@ -182,14 +241,32 @@ function checkAttrs(
         `${what}: attr "${key}" must be a scalar or homogeneous array of non-null scalars, numbers finite (ADR-0003)`,
         where,
       );
-    } else if (typeof value === 'string') {
-      checkNfcString(c, value, `${what}: attr "${key}" value`, where);
+    } else {
+      if (typeof value === 'string') {
+        checkNfcString(c, value, `${what}: attr "${key}" value`, where);
+      }
+      if (declared !== undefined && !attrValueMatchesType(value, declared)) {
+        c.error(
+          'attr-type-mismatch',
+          `${what}: attr "${key}" is declared ${declared} but the value is not (U8)`,
+          where,
+        );
+      }
     }
   }
 }
 
-export function validate(space: GraphSpace): ValidationResult {
+export function validate(space: GraphSpace, opts: ValidateOptions = {}): ValidationResult {
   const c = new Collector();
+  const vocabulary = opts.vocabulary;
+  const vocabularyNamespaces =
+    vocabulary === undefined
+      ? undefined
+      : new Set(
+          [...vocabulary.attrs.keys()]
+            .map((k) => namespaceOf(k))
+            .filter((ns): ns is string => ns !== undefined),
+        );
 
   // Global indices, one pass: id → where (duplicate detection, U4 loudness)
   // and node → owning graph (for precise cross-graph-edge messages).
@@ -234,9 +311,9 @@ export function validate(space: GraphSpace): ValidationResult {
       checkIdShape(c, nodeId, `node "${nodeId}" id`, where);
       claim(nodeId, `node "${nodeId}" in graph "${graphId}"`, where);
       nodeLocation.set(nodeId, graphId);
-      checkKind(c, node.kind, `node "${nodeId}"`, where);
+      checkKind(c, node.kind, `node "${nodeId}"`, where, vocabulary);
       checkNfcString(c, node.label, `node "${nodeId}" label`, where);
-      checkAttrs(c, node.attrs, `node "${nodeId}"`, where);
+      checkAttrs(c, node.attrs, `node "${nodeId}"`, where, vocabulary, vocabularyNamespaces);
       checkProvenance(c, node.provenance, `node "${nodeId}"`, where);
       if (node.detail && !space.graphs.has(node.detail.graph)) {
         c.error(
@@ -272,11 +349,11 @@ export function validate(space: GraphSpace): ValidationResult {
           );
         }
       }
-      checkKind(c, edge.kind, `edge "${edgeId}"`, where);
+      checkKind(c, edge.kind, `edge "${edgeId}"`, where, vocabulary);
       if (edge.weight !== undefined && !Number.isFinite(edge.weight)) {
         c.error('invalid-weight', `edge "${edgeId}": weight must be finite`, where);
       }
-      checkAttrs(c, edge.attrs, `edge "${edgeId}"`, where);
+      checkAttrs(c, edge.attrs, `edge "${edgeId}"`, where, vocabulary, vocabularyNamespaces);
       checkProvenance(c, edge.provenance, `edge "${edgeId}"`, where);
     }
   }

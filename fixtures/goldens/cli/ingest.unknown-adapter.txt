@@ -1,0 +1,2 @@
+INGEST FAILED fixtures/corpora/markdown/basic.md
+  [unknown-parser] no registered parser has domain "nope"

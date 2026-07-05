@@ -24,6 +24,33 @@ export const RESERVED_CORE_ATTR_KEYS: ReadonlySet<string> = new Set([
   'core:layers',
 ]);
 
+/**
+ * The declarable value shapes for a registered attribute key (U8). Plugins
+ * declare one per namespaced key; the IR gate enforces it from Phase 2.
+ */
+export type AttrValueType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'null'
+  | 'string-array'
+  | 'number-array'
+  | 'boolean-array';
+
+/**
+ * Does an (already shape-valid) attr value satisfy a declared type?
+ * The empty array carries no element type and satisfies every array type.
+ */
+export function attrValueMatchesType(value: AttrValue, type: AttrValueType): boolean {
+  if (Array.isArray(value)) {
+    if (!type.endsWith('-array')) return false;
+    if (value.length === 0) return true;
+    return type === `${typeof value[0]}-array`;
+  }
+  if (value === null) return type === 'null';
+  return type === typeof value;
+}
+
 export function namespaceOf(key: string): string | undefined {
   const i = key.indexOf(':');
   return i === -1 ? undefined : key.slice(0, i);

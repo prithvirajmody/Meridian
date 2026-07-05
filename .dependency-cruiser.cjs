@@ -32,11 +32,100 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
-      name: 'cli-sees-only-graph-core',
+      name: 'graph-store-only-graph-core',
       severity: 'error',
-      comment: 'apps depend downward; cli may use graph-core only (Phase 0).',
+      comment:
+        'graph-store imports only graph-core (§20; ROADMAP Phase 1 §12) — no zod, no domain, no presentation.',
+      from: { path: '^packages/graph-store/src' },
+      to: {
+        pathNot: '^packages/graph-store/src|^packages/graph-core',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'graph-store-no-node-builtins',
+      severity: 'error',
+      comment:
+        'graph-store stays isomorphic (browser + workers + Node): no node:* imports.',
+      from: { path: '^packages/graph-store/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
+      name: 'plugin-api-types-only',
+      severity: 'error',
+      comment:
+        'plugin-api is the versioned contract: types + descriptors only; its single allowed dependency edge, graph-core, must stay type-only (§20; ADR-0011).',
+      from: { path: '^packages/plugin-api/src' },
+      to: {
+        pathNot: '^packages/plugin-api/src',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'plugin-host-only-plugin-api',
+      severity: 'error',
+      comment:
+        'plugin-host registers, validates, resolves, isolates — through the contract only: plugin-api + zod, nothing else (§20).',
+      from: { path: '^packages/plugin-host/src' },
+      to: {
+        pathNot:
+          '^packages/plugin-host/src|^packages/plugin-api|^node_modules/(\\.pnpm/)?zod',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'plugin-host-no-node-builtins',
+      severity: 'error',
+      comment: 'plugin-host stays isomorphic (browser + workers + Node): no node:* imports.',
+      from: { path: '^packages/plugin-host/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
+      name: 'conformance-kit-only-contract-and-core',
+      severity: 'error',
+      comment:
+        'conformance-kit tests the contract: plugin-api + graph-core + vitest (§20). Node builtins allowed — it is a test harness.',
+      from: { path: '^packages/conformance-kit/src' },
+      to: {
+        pathNot:
+          '^packages/conformance-kit/src|^packages/plugin-api|^packages/graph-core|^node_modules/(\\.pnpm/)?(vitest|@vitest)',
+        dependencyTypesNot: ['type-only', 'core'],
+      },
+    },
+    {
+      name: 'adapters-see-only-plugin-api',
+      severity: 'error',
+      comment:
+        'adapters and all third-party plugins see only plugin-api; importing any other Meridian package (or another adapter) breaks the hourglass (§20).',
+      from: { path: '^packages/adapters/([^/]+)/src' },
+      to: { path: '^packages/', pathNot: '^packages/adapters/$1/src|^packages/plugin-api' },
+    },
+    {
+      name: 'adapters-no-node-builtins',
+      severity: 'error',
+      comment: 'adapters stay isomorphic (browser + workers + Node): no node:* imports.',
+      from: { path: '^packages/adapters/[^/]+/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
+      name: 'core-never-sees-plugins',
+      severity: 'error',
+      comment:
+        'graph-core/graph-store may not import plugin-* or any adapter (ROADMAP Phase 2 §12) — domain logic cannot leak into the core.',
+      from: { path: '^packages/(graph-core|graph-store)/src' },
+      to: { path: '^packages/(plugin-api|plugin-host|conformance-kit|adapters)' },
+    },
+    {
+      name: 'cli-sees-only-core-packages',
+      severity: 'error',
+      comment:
+        'apps depend downward; cli is the composition root: graph-core, graph-store, plugin-api, plugin-host, and built-in adapters (Phase 2).',
       from: { path: '^apps/cli/src' },
-      to: { path: '^packages/', pathNot: '^packages/graph-core' },
+      to: {
+        path: '^packages/',
+        pathNot:
+          '^packages/(graph-core|graph-store|plugin-api|plugin-host|adapters/markdown)',
+      },
     },
     {
       name: 'src-never-imports-tests',

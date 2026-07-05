@@ -1,0 +1,4 @@
+REJECTED fixtures/scripts/bad-node.json
+  errors (1):
+    [unknown-node] ops[1] node:attr: node "n-ghost" is not in graph "g-app"
+  nothing applied — deltas are atomic (fixtures/valid/deep-nest.meridian.json unchanged)

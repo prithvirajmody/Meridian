@@ -1,0 +1,9 @@
+{
+  "baseVersion": { "counter": 3, "site": "local" },
+  "origin": { "actor": "hand" },
+  "ops": [
+    { "t": "node:attr", "graph": "g-lib", "id": "n-util", "key": "demo:loc", "prev": 320, "next": 400 },
+    { "t": "edge:remove", "graph": "g-app", "id": "e-main-config", "prev": { "id": "e-main-config", "src": "n-main", "dst": "n-config", "kind": "core:references", "provenance": { "origin": "derived" } } },
+    { "t": "node:remove", "graph": "g-app", "id": "n-config", "prev": { "id": "n-config", "kind": "demo:value", "label": "config", "provenance": { "origin": "source", "uri": "demo://project/app/config", "span": [121, 160] } } }
+  ]
+}

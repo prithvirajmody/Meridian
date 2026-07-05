@@ -1,0 +1,330 @@
+{
+  "source": "fixtures/corpora/markdown/basic.md",
+  "ok": true,
+  "adapter": "markdown",
+  "plugin": "@meridian/adapter-markdown",
+  "report": {
+    "documents": 1,
+    "deltas": 0,
+    "provenance": {
+      "source": 16,
+      "derived": 0,
+      "ai": 0
+    },
+    "warnings": []
+  },
+  "stats": {
+    "graphs": 6,
+    "nodes": 10,
+    "edges": 0,
+    "roots": 1,
+    "maxDepth": 4,
+    "nodesWithDetail": 5,
+    "nodesByKind": {
+      "doc:paragraph": 5,
+      "doc:section": 5
+    },
+    "edgesByKind": {}
+  },
+  "written": [],
+  "document": {
+    "formatVersion": 1,
+    "producer": {
+      "name": "@meridian/adapter-markdown",
+      "version": "0.1.0"
+    },
+    "roots": [
+      "gd6v53yn3hiw3hw74utqb5ob6au"
+    ],
+    "graphs": [
+      {
+        "id": "gd6v53yn3hiw3hw74utqb5ob6au",
+        "meta": {
+          "label": "A Small Book",
+          "domain": "markdown",
+          "provenance": {
+            "origin": "source",
+            "uri": "fixtures/corpora/markdown/basic.md",
+            "span": [
+              0,
+              271
+            ]
+          }
+        },
+        "nodes": [
+          {
+            "id": "nituwrfskpsbp4nx3xakwtfbqxu",
+            "kind": "doc:section",
+            "label": "A Small Book",
+            "detail": {
+              "graph": "gituwrfskpsbp4nx3xakwtfbqxu"
+            },
+            "attrs": {
+              "doc:index": 0,
+              "doc:level": 1
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                0,
+                14
+              ]
+            }
+          }
+        ],
+        "edges": []
+      },
+      {
+        "id": "gi5rzztjteiwrk5vxklinl6f4dy",
+        "meta": {
+          "label": "Going Further",
+          "domain": "markdown",
+          "provenance": {
+            "origin": "source",
+            "uri": "fixtures/corpora/markdown/basic.md",
+            "span": [
+              176,
+              192
+            ]
+          }
+        },
+        "nodes": [
+          {
+            "id": "nuxvtqgrzapgaxylfrss6ktcjcy",
+            "kind": "doc:section",
+            "label": "Details",
+            "detail": {
+              "graph": "guxvtqgrzapgaxylfrss6ktcjcy"
+            },
+            "attrs": {
+              "doc:index": 0,
+              "doc:level": 3
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                194,
+                205
+              ]
+            }
+          }
+        ],
+        "edges": []
+      },
+      {
+        "id": "giio3cw3dvyslmt3sp3ztga5tia",
+        "meta": {
+          "label": "First Steps",
+          "domain": "markdown",
+          "provenance": {
+            "origin": "source",
+            "uri": "fixtures/corpora/markdown/basic.md",
+            "span": [
+              63,
+              77
+            ]
+          }
+        },
+        "nodes": [
+          {
+            "id": "njh2y37zgxwsn7rdumukzsdcosq",
+            "kind": "doc:paragraph",
+            "label": "The first section has a paragraph.",
+            "attrs": {
+              "doc:index": 0
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                79,
+                113
+              ]
+            }
+          },
+          {
+            "id": "nsl6ecd22owpdzdckn5eulkcuaa",
+            "kind": "doc:paragraph",
+            "label": "And a second paragraph with emphasis and inline code.",
+            "attrs": {
+              "doc:index": 1
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                115,
+                174
+              ]
+            }
+          }
+        ],
+        "edges": []
+      },
+      {
+        "id": "gituwrfskpsbp4nx3xakwtfbqxu",
+        "meta": {
+          "label": "A Small Book",
+          "domain": "markdown",
+          "provenance": {
+            "origin": "source",
+            "uri": "fixtures/corpora/markdown/basic.md",
+            "span": [
+              0,
+              14
+            ]
+          }
+        },
+        "nodes": [
+          {
+            "id": "nhjj7u6ymniw22rbnpf3syda23i",
+            "kind": "doc:paragraph",
+            "label": "An introductory paragraph before any section.",
+            "attrs": {
+              "doc:index": 0
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                16,
+                61
+              ]
+            }
+          },
+          {
+            "id": "ni5rzztjteiwrk5vxklinl6f4dy",
+            "kind": "doc:section",
+            "label": "Going Further",
+            "detail": {
+              "graph": "gi5rzztjteiwrk5vxklinl6f4dy"
+            },
+            "attrs": {
+              "doc:index": 2,
+              "doc:level": 2
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                176,
+                192
+              ]
+            }
+          },
+          {
+            "id": "niio3cw3dvyslmt3sp3ztga5tia",
+            "kind": "doc:section",
+            "label": "First Steps",
+            "detail": {
+              "graph": "giio3cw3dvyslmt3sp3ztga5tia"
+            },
+            "attrs": {
+              "doc:index": 1,
+              "doc:level": 2
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                63,
+                77
+              ]
+            }
+          },
+          {
+            "id": "nqeywdavwcu4pci73jedqu5hgli",
+            "kind": "doc:section",
+            "label": "Wrapping Up",
+            "detail": {
+              "graph": "gqeywdavwcu4pci73jedqu5hgli"
+            },
+            "attrs": {
+              "doc:index": 3,
+              "doc:level": 2
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                239,
+                253
+              ]
+            }
+          }
+        ],
+        "edges": []
+      },
+      {
+        "id": "gqeywdavwcu4pci73jedqu5hgli",
+        "meta": {
+          "label": "Wrapping Up",
+          "domain": "markdown",
+          "provenance": {
+            "origin": "source",
+            "uri": "fixtures/corpora/markdown/basic.md",
+            "span": [
+              239,
+              253
+            ]
+          }
+        },
+        "nodes": [
+          {
+            "id": "ngrfhglkv7wbvna6vtde75s5yua",
+            "kind": "doc:paragraph",
+            "label": "Final thoughts.",
+            "attrs": {
+              "doc:index": 0
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                255,
+                270
+              ]
+            }
+          }
+        ],
+        "edges": []
+      },
+      {
+        "id": "guxvtqgrzapgaxylfrss6ktcjcy",
+        "meta": {
+          "label": "Details",
+          "domain": "markdown",
+          "provenance": {
+            "origin": "source",
+            "uri": "fixtures/corpora/markdown/basic.md",
+            "span": [
+              194,
+              205
+            ]
+          }
+        },
+        "nodes": [
+          {
+            "id": "n4gcukjowzibl4lch2djubifvsi",
+            "kind": "doc:paragraph",
+            "label": "A nested subsection paragraph.",
+            "attrs": {
+              "doc:index": 0
+            },
+            "provenance": {
+              "origin": "source",
+              "uri": "fixtures/corpora/markdown/basic.md",
+              "span": [
+                207,
+                237
+              ]
+            }
+          }
+        ],
+        "edges": []
+      }
+    ]
+  }
+}

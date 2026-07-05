@@ -20,7 +20,9 @@ function run(args: string[]) {
 }
 
 const V = 'fixtures/valid';
+const C = 'fixtures/corpora/markdown';
 const I = 'fixtures/invalid';
+const S = 'fixtures/scripts';
 
 interface Case {
   golden: string;
@@ -54,6 +56,29 @@ const cases: Case[] = [
   { golden: 'inspect.deep-nest.n-parse.txt', args: ['inspect', `${V}/deep-nest.meridian.json`, 'n-parse'], exit: 0 },
   { golden: 'inspect.deep-nest.n-parse.json', args: ['inspect', `${V}/deep-nest.meridian.json`, 'n-parse', '--json'], exit: 0 },
   { golden: 'inspect.deep-nest.n-util.txt', args: ['inspect', `${V}/deep-nest.meridian.json`, 'n-util'], exit: 0 },
+  // Phase 1: mutate / invert / watch.
+  { golden: 'mutate.deep-nest.session.txt', args: ['mutate', `${V}/deep-nest.meridian.json`, '--script', `${S}/session.json`], exit: 0 },
+  { golden: 'mutate.deep-nest.session.json', args: ['mutate', `${V}/deep-nest.meridian.json`, '--script', `${S}/session.json`, '--json'], exit: 0 },
+  { golden: 'mutate.deep-nest.bad-node.txt', args: ['mutate', `${V}/deep-nest.meridian.json`, '--script', `${S}/bad-node.json`], exit: 1 },
+  { golden: 'mutate.deep-nest.stale.txt', args: ['mutate', `${V}/deep-nest.meridian.json`, '--script', `${S}/stale.json`], exit: 1 },
+  { golden: 'mutate.deep-nest.invalid-shape.txt', args: ['mutate', `${V}/deep-nest.meridian.json`, '--script', `${S}/invalid-shape.json`], exit: 1 },
+  { golden: 'invert.small-undoable.json', args: ['invert', 'fixtures/deltas/small-undoable.delta.json'], exit: 0 },
+  { golden: 'invert.thin-rejected.txt', args: ['invert', `${S}/watch-3-teardown.json`], exit: 1 },
+  { golden: 'watch.deep-nest.apply.txt', args: ['watch', `${V}/deep-nest.meridian.json`, '--apply', `${S}/watch-1.json,${S}/watch-2-stale.json,${S}/watch-3-teardown.json`], exit: 1 },
+  { golden: 'watch.deep-nest.apply.json', args: ['watch', `${V}/deep-nest.meridian.json`, '--apply', `${S}/watch-1.json,${S}/watch-2-stale.json,${S}/watch-3-teardown.json`, '--json'], exit: 1 },
+  // Phase 2: ingest / plugins.
+  { golden: 'ingest.basic.txt', args: ['ingest', `${C}/basic.md`], exit: 0 },
+  { golden: 'ingest.basic.json', args: ['ingest', `${C}/basic.md`, '--json'], exit: 0 },
+  { golden: 'ingest.links.txt', args: ['ingest', `${C}/links.md`], exit: 0 },
+  { golden: 'ingest.links.json', args: ['ingest', `${C}/links.md`, '--json'], exit: 0 },
+  { golden: 'ingest.commonmark-edges.txt', args: ['ingest', `${C}/commonmark-edges.md`], exit: 0 },
+  { golden: 'ingest.pathological-nesting.txt', args: ['ingest', `${C}/pathological-nesting.md`], exit: 0 },
+  { golden: 'ingest.no-headings.txt', args: ['ingest', `${C}/no-headings.md`], exit: 0 },
+  { golden: 'ingest.empty.txt', args: ['ingest', `${C}/empty.md`], exit: 0 },
+  { golden: 'ingest.binary.txt', args: ['ingest', `${C}/reject/binary.bin`], exit: 1 },
+  { golden: 'ingest.unknown-adapter.txt', args: ['ingest', `${C}/basic.md`, '--adapter', 'nope'], exit: 1 },
+  { golden: 'plugins.list.txt', args: ['plugins', 'list'], exit: 0 },
+  { golden: 'plugins.list.json', args: ['plugins', 'list', '--json'], exit: 0 },
 ];
 
 describe('CLI golden files', () => {

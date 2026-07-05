@@ -1,0 +1,48 @@
+{
+  "apiVersion": "0.1.0",
+  "plugins": [
+    {
+      "name": "@meridian/adapter-markdown",
+      "version": "0.1.0",
+      "apiVersion": "^0.1.0",
+      "capabilities": [
+        {
+          "kind": "domain-parser",
+          "id": "markdown"
+        }
+      ],
+      "kinds": [
+        "doc:section",
+        "doc:paragraph",
+        "doc:code",
+        "doc:list",
+        "doc:quote",
+        "doc:html",
+        "doc:break",
+        "doc:links-to"
+      ],
+      "attrSchemas": {
+        "doc:index": {
+          "type": "number",
+          "description": "0-based reading order within its graph"
+        },
+        "doc:level": {
+          "type": "number",
+          "description": "heading depth as written (1–6)"
+        },
+        "doc:lang": {
+          "type": "string",
+          "description": "fenced code block language tag"
+        },
+        "doc:items": {
+          "type": "number",
+          "description": "top-level item count of a list"
+        },
+        "doc:ordered": {
+          "type": "boolean",
+          "description": "whether a list is ordered"
+        }
+      }
+    }
+  ]
+}

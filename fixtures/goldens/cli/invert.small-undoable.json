@@ -1,0 +1,45 @@
+{
+  "origin": {
+    "actor": "hand"
+  },
+  "ops": [
+    {
+      "t": "node:add",
+      "graph": "g-app",
+      "node": {
+        "id": "n-config",
+        "kind": "demo:value",
+        "label": "config",
+        "provenance": {
+          "origin": "source",
+          "uri": "demo://project/app/config",
+          "span": [
+            121,
+            160
+          ]
+        }
+      }
+    },
+    {
+      "t": "edge:add",
+      "graph": "g-app",
+      "edge": {
+        "id": "e-main-config",
+        "src": "n-main",
+        "dst": "n-config",
+        "kind": "core:references",
+        "provenance": {
+          "origin": "derived"
+        }
+      }
+    },
+    {
+      "t": "node:attr",
+      "graph": "g-lib",
+      "id": "n-util",
+      "key": "demo:loc",
+      "prev": 400,
+      "next": 320
+    }
+  ]
+}

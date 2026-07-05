@@ -1,0 +1,33 @@
+{
+  "name": "@meridian/conformance-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Executable law for Meridian plugin capabilities: a Vitest suite factory every domain parser must pass (IR validity, determinism, identity stability, crash containment). Imports @meridian/plugin-api and @meridian/graph-core only.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/graph-core": "workspace:*",
+    "@meridian/plugin-api": "workspace:*"
+  },
+  "peerDependencies": {
+    "vitest": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

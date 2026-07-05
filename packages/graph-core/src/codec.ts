@@ -17,7 +17,7 @@ import type {
   SourceRef,
 } from './model.js';
 import { canonAttrValue, canonNumber, canonProvenance, nfc } from './normalize.js';
-import { validate, type Issue } from './validate.js';
+import { validate, type Issue, type ValidateOptions } from './validate.js';
 import { PKG_VERSION } from './version.js';
 
 export const CURRENT_FORMAT_VERSION = 1;
@@ -122,12 +122,15 @@ function nfcProvenance(p: z.infer<typeof provenanceSchema>): SourceRef {
   return canonProvenance(p as SourceRef);
 }
 
+/** Options for `decode`. `vocabulary` turns the semantic pass into an IR gate (U8). */
+export type DecodeOptions = ValidateOptions;
+
 /**
  * Decode a `GraphDocument` (or its JSON text) into a valid `GraphSpace`.
  * There is no partially-valid result: any structural or semantic error fails
  * the decode, with all errors located, aggregated, and typed.
  */
-export function decode(input: string | unknown): DecodeResult {
+export function decode(input: string | unknown, opts: DecodeOptions = {}): DecodeResult {
   let raw: unknown;
   if (typeof input === 'string') {
     try {
@@ -275,7 +278,7 @@ export function decode(input: string | unknown): DecodeResult {
     roots: doc.roots.map((r) => nfc(r) as GraphId),
   };
 
-  const result = validate(space);
+  const result = validate(space, opts);
   const errors = [...dupErrors, ...result.errors];
   if (errors.length > 0) return fail(errors, result.warnings);
   return { ok: true, space, warnings: result.warnings };

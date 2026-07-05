@@ -1,5 +1,10 @@
 {
-  "comment": "Perf budgets are versioned CI contracts (ADR-A12): exceeding one fails the build. Budgets only ratchet down (ROADMAP §5.2).",
+  "comment": "Perf budgets are versioned CI contracts (ADR-A12): exceeding one fails the build. Budgets only ratchet down (ROADMAP \u00a75.2). Names containing 'min' are floors (value must be >= budget).",
   "100k-decode-validate-ms": 1500,
-  "100k-stats-ms": 200
+  "100k-stats-ms": 200,
+  "store-10k-op-delta-ms": 50,
+  "store-1k-transactions-100k-space-ms": 2000,
+  "store-100k-snapshots-ms": 100,
+  "store-100-version-chain-min-node-share": 0.9,
+  "ingest-5mb-markdown-ms": 2000
 }

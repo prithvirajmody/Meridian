@@ -63,7 +63,14 @@ so the decision history stays legible.
 | [0002](0002-identity-deterministic-ids.md) | Identity: deterministic, content-addressed IDs | Proposed | §3.1 (Identity), U4 | 0 |
 | [0003](0003-attribute-typing.md) | Attribute typing: typed core keys + namespaced extension bag | Proposed | §3.1 (Metadata), U8 | 0 |
 | [0004](0004-document-format-and-versioning.md) | Document format & versioning policy | Proposed | ADR-A4, §6 | 0 |
+| [0005](0005-op-based-deltas.md) | Op-based deltas as the only write path; op vocabulary v1 | Proposed | ADR-A2, P2, U5–U6 | 1 |
+| [0006](0006-cow-structural-sharing.md) | Copy-on-write snapshots: graph-granular structural sharing | Proposed | P3, P13, §4.1 | 1 |
+| [0007](0007-version-stamps.md) | Version stamps: monotonic counter + reserved site component | Proposed | §3.1 (Versioning), U5 | 1 |
+| [0008](0008-subscription-semantics.md) | Subscription semantics: batched, async, non-re-entrant | Proposed | P11, §1.4, §13.1 | 1 |
+| [0009](0009-plugin-loading-model.md) | Plugin loading model: in-process packages, isolation-shaped contract | Proposed | §7.1–7.2, §14.2–14.4, P5 | 2 |
+| [0010](0010-plugin-api-versioning.md) | plugin-api versioning policy: semver with declared checkpoints | Proposed | §3.3, §14.2, P12 | 2 |
+| [0011](0011-capability-model.md) | Capability model: enumerated kinds, extended per phase | Proposed | §14.1, §14.3 | 2 |
 
-Later phases extend this registry (ADR-0005+ at Phase 1, and so on). The
+Later phases extend this registry (ADR-0009+ at Phase 2, and so on). The
 constitution's `ADR-A5…A12` are pre-recorded there and become numbered ADRs in
 the phase that implements them.

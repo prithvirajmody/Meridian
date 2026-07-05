@@ -1,0 +1,4 @@
+REJECTED fixtures/scripts/stale.json
+  errors (1):
+    [stale-delta] delta baseVersion v5@local does not match store version v0@local — rebase/merge is a Phase 12 concern; v1 refuses (ADR-0007)
+  nothing applied — deltas are atomic (fixtures/valid/deep-nest.meridian.json unchanged)

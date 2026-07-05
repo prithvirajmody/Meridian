@@ -1,0 +1,7 @@
+{
+  "baseVersion": { "counter": 5, "site": "local" },
+  "origin": { "actor": "demo-stale" },
+  "ops": [
+    { "t": "node:attr", "graph": "g-lib", "id": "n-util", "key": "demo:loc", "next": 1 }
+  ]
+}
