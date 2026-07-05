@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
-    "@meridian/graph-core": "workspace:*"
+    "@meridian/graph-core": "workspace:*",
+    "@meridian/graph-store": "workspace:*"
   },
   "devDependencies": {
     "@meridian/adapter-markdown": "workspace:*",

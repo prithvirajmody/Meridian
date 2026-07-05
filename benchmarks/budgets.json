@@ -6,5 +6,7 @@
   "store-1k-transactions-100k-space-ms": 2000,
   "store-100k-snapshots-ms": 100,
   "store-100-version-chain-min-node-share": 0.9,
-  "ingest-5mb-markdown-ms": 2000
+  "ingest-5mb-markdown-ms": 2000,
+  "abstraction-cut-cold-ms": 150,
+  "abstraction-cut-warm-ms": 30
 }

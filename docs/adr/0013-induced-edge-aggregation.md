@@ -27,6 +27,13 @@ ancestor of node `x` in the cut (every node maps to exactly one, by I5). Then:
   **excluded** from the induced set; its count is retained in that node's summary
   stats (surfaced by the deterministic summarizer, not as an induced self-loop).
 - `A(u) ≠ A(v)`: the edge contributes to the induced edge `A(u) → A(v)`.
+- `A(x)` **undefined** (clarified during 3C): I5 guarantees a unique visible
+  ancestor for *leaves*; an endpoint that is a container lying strictly *above*
+  the cut (its detail was descended past) has no visible ancestor. Such an edge
+  is **omitted** from the induced set — the total, deterministic reading. Since
+  base edges are intra-graph (U1), this affects only edges attached directly to
+  an expanded container, and both production and brute-force implementations
+  apply it identically.
 
 **Grouping key.** `(src = A(u), dst = A(v), kind = K)` using the edge's **declared
 `kind` string verbatim** (e.g. `code:calls`), *not* collapsed to its core-taxonomy

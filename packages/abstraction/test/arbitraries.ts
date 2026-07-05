@@ -8,8 +8,10 @@
  */
 import fc from 'fast-check';
 import {
+  addEdge,
   addGraph,
   addNode,
+  asEdgeId,
   asGraphId,
   asNodeId,
   type GraphId,
@@ -84,3 +86,49 @@ export function materialize(shape: readonly TreeNode[]): GraphSpace {
 
 /** A random valid containment forest as a GraphSpace. */
 export const forestSpaceArb: fc.Arbitrary<GraphSpace> = forestShapeArb.map(materialize);
+
+/** A random intra-graph edge plan over an already-materialized space: each
+ * spec names a graph and two of its nodes by modular index (so it always
+ * resolves), plus a verbatim kind and an optional weight. Endpoints share a
+ * graph (U1) and may coincide (self-loops, exercising internal exclusion). */
+const EDGE_KINDS = ['rel:a', 'rel:b', 'rel:c'] as const;
+
+/** Wrap a space arbitrary to also sprinkle random intra-graph edges through
+ * it — the material the induced-edge suites need (the base forest arb carries
+ * none). Deterministic per seed. */
+export function withEdges(spaceArb: fc.Arbitrary<GraphSpace>): fc.Arbitrary<GraphSpace> {
+  return spaceArb.chain((space) => {
+    const graphIds = [...space.graphs.keys()];
+    const specArb = fc.record({
+      g: fc.nat(Math.max(0, graphIds.length - 1)),
+      s: fc.nat(),
+      d: fc.nat(),
+      kind: fc.constantFrom(...EDGE_KINDS),
+      weight: fc.option(fc.integer({ min: 1, max: 5 }), { nil: undefined }),
+    });
+    return fc.array(specArb, { maxLength: 40 }).map((specs) => {
+      let s = space;
+      let counter = 0;
+      for (const spec of specs) {
+        const graphId = graphIds[spec.g];
+        if (graphId === undefined) continue;
+        const nodeIds = [...s.graphs.get(graphId)!.nodes.keys()];
+        if (nodeIds.length === 0) continue;
+        const src = nodeIds[spec.s % nodeIds.length]!;
+        const dst = nodeIds[spec.d % nodeIds.length]!;
+        s = addEdge(s, graphId, {
+          id: asEdgeId(`e-${counter++}`),
+          src,
+          dst,
+          kind: spec.kind,
+          ...(spec.weight !== undefined ? { weight: spec.weight } : {}),
+          provenance: SRC,
+        });
+      }
+      return s;
+    });
+  });
+}
+
+/** A random valid containment forest carrying random intra-graph edges. */
+export const forestSpaceWithEdgesArb: fc.Arbitrary<GraphSpace> = withEdges(forestSpaceArb);

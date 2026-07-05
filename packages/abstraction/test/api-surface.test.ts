@@ -9,13 +9,23 @@ import * as api from '../src/index.js';
 describe('@meridian/abstraction public surface', () => {
   it('exports exactly the committed runtime names', () => {
     expect(Object.keys(api).sort()).toEqual([
+      'CutStaleError',
+      'FANOUT_CAP',
+      'InducedEdgeCache',
+      'WITNESS_CAP',
+      'aggregateEdges',
       'buildCut',
       'buildLevelChain',
+      'buildNodeCover',
+      'capFanOut',
       'collectLeafPaths',
+      'compareInduced',
       'countSubtreeLeaves',
       'forestRootGraphs',
+      'inducedAdjacency',
       'isLeaf',
       'maxDepth',
+      'memberAdjacency',
       'totalLeaves',
       'verifyCoverage',
     ]);

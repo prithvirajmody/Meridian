@@ -60,6 +60,9 @@ importers:
       '@meridian/graph-core':
         specifier: workspace:*
         version: link:../graph-core
+      '@meridian/graph-store':
+        specifier: workspace:*
+        version: link:../graph-store
     devDependencies:
       '@meridian/adapter-markdown':
         specifier: workspace:*
