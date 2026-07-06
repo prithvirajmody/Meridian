@@ -73,6 +73,10 @@ so the decision history stays legible.
 | [0012](0012-zoom-semantics.md) | Zoom semantics: continuous scalar → discrete level cut, hysteresis + per-node overrides | Proposed | §5.1, §5.4, ADR-A3 | 3 |
 | [0013](0013-induced-edge-aggregation.md) | Induced-edge aggregation: group by kind, sum weight, cap witnesses, exact ChangeSet invalidation | Proposed | §5.3, §5.5, ADR-A3 | 3 |
 | [0014](0014-node-budget-salience.md) | Node budget & salience v1: collapse lowest-salience subtrees, coverage wins over budget | Proposed | §5.1, §8.1, ADR-A3 | 3 |
+| [0015](0015-coordinate-system-units.md) | Coordinate system & units: world-space float64, y-down, renderer owns pixels | Proposed | §20, §5.1, ADR-A1 | 4 |
+| [0016](0016-stability-contract.md) | Stability contract: normalized displacement, a scored [0,1] number, gated at 0.90 | Proposed | §5.4, §5.5, ADR-A3 | 4 |
+| [0017](0017-worker-protocol.md) | Worker protocol: Comlink host, transferable typed arrays, cancel-preempting AbortSignal, grid crash-fallback | Proposed | §1.4, §14, ADR-0009 | 4 |
+| [0018](0018-default-provider-heuristic.md) | Default provider heuristic: a pure classifier over (cut, inducedEdges) | Proposed | §5.1, §5.2, ADR-A3 | 4 |
 
 Later phases extend this registry (ADR-0009+ at Phase 2, and so on). The
 constitution's `ADR-A5…A12` are pre-recorded there and become numbered ADRs in
