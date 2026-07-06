@@ -26,3 +26,7 @@ test-results/
 
 # Logs
 *.log
+
+# Regenerated golden-test inputs (ingested corpus docs produced by the CLI
+# cut-golden test itself; never committed — see apps/cli/test/cut-golden.test.ts)
+fixtures/.cut-inputs/

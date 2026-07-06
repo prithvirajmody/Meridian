@@ -29,6 +29,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@meridian/abstraction':
+        specifier: workspace:*
+        version: link:../../packages/abstraction
       '@meridian/adapter-markdown':
         specifier: workspace:*
         version: link:../../packages/adapters/markdown

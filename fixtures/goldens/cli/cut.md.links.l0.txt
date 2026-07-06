@@ -1,0 +1,7 @@
+cut fixtures/.cut-inputs/links.meridian.json — level 0/3 · zoom 0.125
+  chain      markdown · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   6/6 leaves — covers ✓
+  nodes (1):
+    nzsmcby4mlkjz5jhnrlxm5nwcla "Linked Document" (doc:section) · level · covers 6
+  induced edges (0):
+  frontier   expandable 1 · collapsible 0

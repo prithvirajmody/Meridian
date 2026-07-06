@@ -1,0 +1,7 @@
+cut fixtures/.cut-inputs/basic.meridian.json — level 0/3 · zoom 0.125
+  chain      markdown · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   5/5 leaves — covers ✓
+  nodes (1):
+    nituwrfskpsbp4nx3xakwtfbqxu "A Small Book" (doc:section) · level · covers 5
+  induced edges (0):
+  frontier   expandable 1 · collapsible 0

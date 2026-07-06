@@ -1,0 +1,6 @@
+cut fixtures/.cut-inputs/empty.meridian.json — level 0/0 · zoom 0.5
+  chain      markdown · 0 levels
+  coverage   0/0 leaves — covers ✓
+  nodes (0):
+  induced edges (0):
+  frontier   expandable 0 · collapsible 0

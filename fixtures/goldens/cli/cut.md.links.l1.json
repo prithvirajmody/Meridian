@@ -1,0 +1,214 @@
+{
+  "file": "fixtures/.cut-inputs/links.meridian.json",
+  "ok": true,
+  "level": 1,
+  "maxLevel": 3,
+  "zoom": 0.375,
+  "chain": {
+    "domain": "markdown",
+    "depth": 4,
+    "levels": [
+      {
+        "index": 0,
+        "name": "level-0"
+      },
+      {
+        "index": 1,
+        "name": "level-1"
+      },
+      {
+        "index": 2,
+        "name": "level-2"
+      },
+      {
+        "index": 3,
+        "name": "level-3"
+      }
+    ]
+  },
+  "coverage": {
+    "leaves": 6,
+    "coveredLeaves": 6,
+    "covers": true
+  },
+  "cut": [
+    {
+      "id": "nbgs3istm5vt23xb6irkc6rfu2a",
+      "label": "Appendix",
+      "kind": "doc:section",
+      "graph": "gzsmcby4mlkjz5jhnrlxm5nwcla",
+      "reason": "level",
+      "coveredLeaves": 1
+    },
+    {
+      "id": "nlgjgqdz6hqdhwvkapntc3t34fi",
+      "label": "Chapter Two",
+      "kind": "doc:section",
+      "graph": "gzsmcby4mlkjz5jhnrlxm5nwcla",
+      "reason": "level",
+      "coveredLeaves": 2
+    },
+    {
+      "id": "nnv4p3aezh6u5guh2w2siakv35q",
+      "label": "See the appendix and details from the top.",
+      "kind": "doc:paragraph",
+      "graph": "gzsmcby4mlkjz5jhnrlxm5nwcla",
+      "reason": "leaf",
+      "coveredLeaves": 1
+    },
+    {
+      "id": "nqkl5gk7v5anlaitfnepx4l26lu",
+      "label": "Chapter One",
+      "kind": "doc:section",
+      "graph": "gzsmcby4mlkjz5jhnrlxm5nwcla",
+      "reason": "level",
+      "coveredLeaves": 2
+    }
+  ],
+  "inducedEdges": [
+    {
+      "src": "nlgjgqdz6hqdhwvkapntc3t34fi",
+      "srcLabel": "Chapter Two",
+      "dst": "nqkl5gk7v5anlaitfnepx4l26lu",
+      "dstLabel": "Chapter One",
+      "kind": "doc:links-to",
+      "weight": 1,
+      "multiplicity": 1,
+      "samples": [
+        "ee7jnunwx5hjjhsv3cyhbrrpyze"
+      ]
+    },
+    {
+      "src": "nnv4p3aezh6u5guh2w2siakv35q",
+      "srcLabel": "See the appendix and details from the top.",
+      "dst": "nbgs3istm5vt23xb6irkc6rfu2a",
+      "dstLabel": "Appendix",
+      "kind": "doc:links-to",
+      "weight": 1,
+      "multiplicity": 1,
+      "samples": [
+        "ectqmebbxa5kgiijzfekg7lmpw4"
+      ]
+    },
+    {
+      "src": "nnv4p3aezh6u5guh2w2siakv35q",
+      "srcLabel": "See the appendix and details from the top.",
+      "dst": "nqkl5gk7v5anlaitfnepx4l26lu",
+      "dstLabel": "Chapter One",
+      "kind": "doc:links-to",
+      "weight": 1,
+      "multiplicity": 1,
+      "samples": [
+        "ejspy7on6dbiurpd6opuxd6bu6m"
+      ]
+    },
+    {
+      "src": "nqkl5gk7v5anlaitfnepx4l26lu",
+      "srcLabel": "Chapter One",
+      "dst": "nbgs3istm5vt23xb6irkc6rfu2a",
+      "dstLabel": "Appendix",
+      "kind": "doc:links-to",
+      "weight": 2,
+      "multiplicity": 1,
+      "samples": [
+        "evjwse77woi7x6goa2n2icncilm"
+      ]
+    },
+    {
+      "src": "nqkl5gk7v5anlaitfnepx4l26lu",
+      "srcLabel": "Chapter One",
+      "dst": "nlgjgqdz6hqdhwvkapntc3t34fi",
+      "dstLabel": "Chapter Two",
+      "kind": "doc:links-to",
+      "weight": 1,
+      "multiplicity": 1,
+      "samples": [
+        "elf5yx54zbzoiaaktunp6uskugi"
+      ]
+    }
+  ],
+  "cappedEdges": {
+    "edges": [
+      {
+        "src": "nlgjgqdz6hqdhwvkapntc3t34fi",
+        "srcLabel": "Chapter Two",
+        "dst": "nqkl5gk7v5anlaitfnepx4l26lu",
+        "dstLabel": "Chapter One",
+        "kind": "doc:links-to",
+        "weight": 1,
+        "multiplicity": 1,
+        "samples": [
+          "ee7jnunwx5hjjhsv3cyhbrrpyze"
+        ]
+      },
+      {
+        "src": "nnv4p3aezh6u5guh2w2siakv35q",
+        "srcLabel": "See the appendix and details from the top.",
+        "dst": "nbgs3istm5vt23xb6irkc6rfu2a",
+        "dstLabel": "Appendix",
+        "kind": "doc:links-to",
+        "weight": 1,
+        "multiplicity": 1,
+        "samples": [
+          "ectqmebbxa5kgiijzfekg7lmpw4"
+        ]
+      },
+      {
+        "src": "nnv4p3aezh6u5guh2w2siakv35q",
+        "srcLabel": "See the appendix and details from the top.",
+        "dst": "nqkl5gk7v5anlaitfnepx4l26lu",
+        "dstLabel": "Chapter One",
+        "kind": "doc:links-to",
+        "weight": 1,
+        "multiplicity": 1,
+        "samples": [
+          "ejspy7on6dbiurpd6opuxd6bu6m"
+        ]
+      },
+      {
+        "src": "nqkl5gk7v5anlaitfnepx4l26lu",
+        "srcLabel": "Chapter One",
+        "dst": "nbgs3istm5vt23xb6irkc6rfu2a",
+        "dstLabel": "Appendix",
+        "kind": "doc:links-to",
+        "weight": 2,
+        "multiplicity": 1,
+        "samples": [
+          "evjwse77woi7x6goa2n2icncilm"
+        ]
+      },
+      {
+        "src": "nqkl5gk7v5anlaitfnepx4l26lu",
+        "srcLabel": "Chapter One",
+        "dst": "nlgjgqdz6hqdhwvkapntc3t34fi",
+        "dstLabel": "Chapter Two",
+        "kind": "doc:links-to",
+        "weight": 1,
+        "multiplicity": 1,
+        "samples": [
+          "elf5yx54zbzoiaaktunp6uskugi"
+        ]
+      }
+    ],
+    "residuals": []
+  },
+  "frontier": {
+    "expandable": [
+      "nbgs3istm5vt23xb6irkc6rfu2a",
+      "nlgjgqdz6hqdhwvkapntc3t34fi",
+      "nqkl5gk7v5anlaitfnepx4l26lu"
+    ],
+    "collapsible": [
+      "nbgs3istm5vt23xb6irkc6rfu2a",
+      "nlgjgqdz6hqdhwvkapntc3t34fi",
+      "nnv4p3aezh6u5guh2w2siakv35q",
+      "nqkl5gk7v5anlaitfnepx4l26lu"
+    ]
+  },
+  "provenance": {
+    "zoom": 0.375,
+    "nominalLevel": 1,
+    "level": 1,
+    "ignoredOverrides": []
+  }
+}

@@ -1,0 +1,8 @@
+cut fixtures/.cut-inputs/pathological-nesting.meridian.json — level 0/6 · zoom 0.0714
+  chain      markdown · 7 levels (level-0 → level-1 → level-2 → level-3 → level-4 → level-5 → level-6)
+  coverage   3/3 leaves — covers ✓
+  nodes (2):
+    nkxafl3okstjvibol6lxcbnwk7q "Second Tree" (doc:section) · level · covers 2
+    nxmz5i7sdrywdpvwpq7onmtfc3y "L1" (doc:section) · level · covers 1
+  induced edges (0):
+  frontier   expandable 2 · collapsible 0

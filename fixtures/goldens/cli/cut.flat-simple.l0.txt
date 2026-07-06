@@ -1,0 +1,9 @@
+cut fixtures/valid/flat-simple.meridian.json — level 0/0 · zoom 0.5
+  chain      demo · 1 level (level-0)
+  coverage   2/2 leaves — covers ✓
+  nodes (2):
+    n-one "one" (demo:thing) · leaf · covers 1
+    n-two "two" (demo:thing) · leaf · covers 1
+  induced edges (1):
+    n-one "one" → n-two "two" [core:references] · weight 1 · ×1 (e-one-two)
+  frontier   expandable 0 · collapsible 0

@@ -1,0 +1,8 @@
+cut fixtures/valid/portal-links.meridian.json — level 1/1 · zoom 0.75
+  chain      demo · 2 levels (level-0 → level-1)
+  coverage   2/2 leaves — covers ✓
+  nodes (2):
+    n-a-f "f()" (demo:function) · leaf · covers 1
+    n-b-g "g()" (demo:function) · leaf · covers 1
+  induced edges (0):
+  frontier   expandable 0 · collapsible 2

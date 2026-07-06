@@ -1,0 +1,13 @@
+cut fixtures/valid/deep-nest.meridian.json — level 4/4 · zoom 0.9
+  chain      demo · 5 levels (level-0 → level-1 → level-2 → level-3 → level-4)
+  coverage   6/6 leaves — covers ✓
+  nodes (6):
+    n-check "check flags" (demo:step) · leaf · covers 1
+    n-config "config" (demo:value) · leaf · covers 1
+    n-emit "emit token" (demo:step) · leaf · covers 1
+    n-run "run" (demo:step) · leaf · covers 1
+    n-scan "scan chars" (demo:step) · leaf · covers 1
+    n-util "utilities" (demo:module) · leaf · covers 1
+  induced edges (1):
+    n-scan "scan chars" → n-emit "emit token" [core:precedes] · weight 1 · ×1 (e-scan-emit)
+  frontier   expandable 0 · collapsible 3

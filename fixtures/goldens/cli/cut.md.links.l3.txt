@@ -1,0 +1,12 @@
+cut fixtures/.cut-inputs/links.meridian.json — level 3/3 · zoom 0.875
+  chain      markdown · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   6/6 leaves — covers ✓
+  nodes (6):
+    naglampeczp5ste42ak4vk34dzi "A broken anchor resolves to no edge at all." (doc:paragraph) · leaf · covers 1
+    neaohuewitlugngpu227avwmgqe "Terminal section." (doc:paragraph) · leaf · covers 1
+    nl2qexgqygnb7ywzuazeqzpbq5q "Refers to chapter two — a sibling link." (doc:paragraph) · leaf · covers 1
+    nmobjmqvciascd3i72z464dfyqm "Points back up to the whole document and sideways to the appendix, twice: again." (doc:paragraph) · leaf · covers 1
+    nnv4p3aezh6u5guh2w2siakv35q "See the appendix and details from the top." (doc:paragraph) · leaf · covers 1
+    ntqddsildbit5k34a2pjgveygku "Links into a niece section: deep details." (doc:paragraph) · leaf · covers 1
+  induced edges (0):
+  frontier   expandable 0 · collapsible 4

@@ -1,0 +1,14 @@
+cut fixtures/.cut-inputs/commonmark-edges.meridian.json — level 0/3 · zoom 0.125
+  chain      markdown · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   13/13 leaves — covers ✓
+  nodes (7):
+    n2nsiuurn6ectsqsla7nwtvualy "Setext Title" (doc:section) · level · covers 2
+    ndcagayqydbbbuwaaq6exkik5ru "Quotes & Rules" (doc:section) · level · covers 3
+    nelrg2ewmf3dqhj6gh2x4jsk65e "Unicode: café, 東京, עברית, é" (doc:section) · level · covers 1
+    ng2g7lujr3cqy4qn5fyaadawxwq "Lists" (doc:section) · level · covers 2
+    nirm6xbxxv5witvlatrf3eeavou "Duplicate" (doc:section) · level · covers 1
+    nktpnkgmf7z2egvdqobjin5yjoy "Fences & Code" (doc:section) · level · covers 3
+    nsibnhricnvgi37y6ti63nvegv4 "Duplicate" (doc:section) · level · covers 1
+  induced edges (1):
+    ndcagayqydbbbuwaaq6exkik5ru "Quotes & Rules" → n2nsiuurn6ectsqsla7nwtvualy "Setext Title" [doc:links-to] · weight 1 · ×1 (eh62u75iddt64zlgo3ohj7tvm5e)
+  frontier   expandable 7 · collapsible 0

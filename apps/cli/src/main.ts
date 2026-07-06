@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * meridian — headless driver for the Universal Semantic Graph (Phases 0–2).
- * Everything here is presentation over graph-core/graph-store's pure
- * functions plus plugin-host orchestration; no semantic computation and no
- * domain knowledge lives in the CLI (composition root, §20).
+ * meridian — headless driver for the Universal Semantic Graph (Phases 0–3).
+ * Everything here is presentation over graph-core/graph-store/abstraction's
+ * pure functions plus plugin-host orchestration; no semantic computation and
+ * no domain knowledge lives in the CLI (composition root, §20).
  */
 import { watch as fsWatch } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -21,6 +21,7 @@ import {
   type SourceRef,
   type SpaceStats,
 } from '@meridian/graph-core';
+import { cmdCut } from './cut.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
 import {
   createStore,
@@ -39,7 +40,7 @@ import {
 /** Producer stamped into documents this CLI writes (`mutate --out`). */
 const PRODUCER = { name: '@meridian/cli', version: '0.1.0' };
 
-const HELP = `meridian — headless driver for the Universal Semantic Graph (Phases 0–2)
+const HELP = `meridian — headless driver for the Universal Semantic Graph (Phases 0–3)
 
 Usage:
   meridian validate <file> [--json]          decode + validate a GraphDocument
@@ -59,6 +60,14 @@ Usage:
                                              with --apply, replay scripts and
                                              exit — without, follow the file
                                              and apply semantic diffs live
+  meridian cut <file> (--level <N> | --zoom <z>) [--focus <id>] [--json]
+                                             resolve the visible cut of a
+                                             GraphDocument at a base level
+                                             (--level N, 0 = coarsest) or zoom
+                                             scalar (--zoom z ∈ [0,1], 1 =
+                                             finest): the covering node set plus
+                                             induced (aggregated) edges. --focus
+                                             is recorded in the cut trace
   meridian ingest <source> [--adapter <domain>] [--out <file>] [--json]
                                              run a domain adapter over a source
                                              file: sniff arbitration (or forced
@@ -547,7 +556,7 @@ async function cmdWatch(
 
 // ---------------------------------------------------------------------- main
 
-const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--adapter']);
+const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--adapter', '--level', '--zoom', '--focus']);
 
 interface Cli {
   readonly positional: string[];
@@ -633,6 +642,34 @@ async function main(): Promise<void> {
         await cmdWatch(file, await readDocument(file), {
           json: cli.json,
           ...(cli.values.has('--apply') ? { apply: cli.values.get('--apply')! } : {}),
+        }),
+      );
+      break;
+    }
+    case 'cut': {
+      allowFlags(cli, command, ['--level', '--zoom', '--focus']);
+      const hasLevel = cli.values.has('--level');
+      const hasZoom = cli.values.has('--zoom');
+      if (hasLevel === hasZoom) usageError('cut: give exactly one of --level <N> or --zoom <z>');
+      let level: number | undefined;
+      let zoom: number | undefined;
+      if (hasLevel) {
+        const raw = cli.values.get('--level')!;
+        const n = Number(raw);
+        if (!Number.isInteger(n) || n < 0) usageError(`cut: --level must be a non-negative integer, got "${raw}"`);
+        level = n;
+      } else {
+        const raw = cli.values.get('--zoom')!;
+        const z = Number(raw);
+        if (!Number.isFinite(z) || z < 0 || z > 1) usageError(`cut: --zoom must be a number in [0,1], got "${raw}"`);
+        zoom = z;
+      }
+      process.exit(
+        await cmdCut(file, {
+          json: cli.json,
+          ...(level !== undefined ? { level } : {}),
+          ...(zoom !== undefined ? { zoom } : {}),
+          ...(cli.values.has('--focus') ? { focus: cli.values.get('--focus')! } : {}),
         }),
       );
       break;

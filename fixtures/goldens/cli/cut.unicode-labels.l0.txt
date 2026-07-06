@@ -1,0 +1,11 @@
+cut fixtures/valid/unicode-labels.meridian.json — level 0/0 · zoom 0.5
+  chain      demo · 1 level (level-0)
+  coverage   4/4 leaves — covers ✓
+  nodes (4):
+    n-cjk "図書館カタログ" (demo:thing) · leaf · covers 1
+    n-decomposed "café" (demo:thing) · leaf · covers 1
+    n-emoji "🚀 Launch ✨ (with ZWJ: 👩‍🔬)" (demo:thing) · leaf · covers 1
+    n-rtl "مكتبة الوسائط" (demo:thing) · leaf · covers 1
+  induced edges (1):
+    n-cjk "図書館カタログ" → n-emoji "🚀 Launch ✨ (with ZWJ: 👩‍🔬)" [core:references] · weight 1 · ×1 (e-u1)
+  frontier   expandable 0 · collapsible 0

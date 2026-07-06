@@ -1,0 +1,11 @@
+cut fixtures/valid/deep-nest.meridian.json — level 2/4 · zoom 0.5
+  chain      demo · 5 levels (level-0 → level-1 → level-2 → level-3 → level-4)
+  coverage   6/6 leaves — covers ✓
+  nodes (4):
+    n-config "config" (demo:value) · leaf · covers 1
+    n-parse "parse args" (demo:step) · level · covers 3
+    n-run "run" (demo:step) · leaf · covers 1
+    n-util "utilities" (demo:module) · leaf · covers 1
+  induced edges (1):
+    n-parse "parse args" → n-run "run" [core:precedes] · weight 1 · ×1 (e-parse-run)
+  frontier   expandable 1 · collapsible 3

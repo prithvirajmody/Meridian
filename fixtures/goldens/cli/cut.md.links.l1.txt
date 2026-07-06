@@ -1,0 +1,15 @@
+cut fixtures/.cut-inputs/links.meridian.json — level 1/3 · zoom 0.375
+  chain      markdown · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   6/6 leaves — covers ✓
+  nodes (4):
+    nbgs3istm5vt23xb6irkc6rfu2a "Appendix" (doc:section) · level · covers 1
+    nlgjgqdz6hqdhwvkapntc3t34fi "Chapter Two" (doc:section) · level · covers 2
+    nnv4p3aezh6u5guh2w2siakv35q "See the appendix and details from the top." (doc:paragraph) · leaf · covers 1
+    nqkl5gk7v5anlaitfnepx4l26lu "Chapter One" (doc:section) · level · covers 2
+  induced edges (5):
+    nlgjgqdz6hqdhwvkapntc3t34fi "Chapter Two" → nqkl5gk7v5anlaitfnepx4l26lu "Chapter One" [doc:links-to] · weight 1 · ×1 (ee7jnunwx5hjjhsv3cyhbrrpyze)
+    nnv4p3aezh6u5guh2w2siakv35q "See the appendix and details from the top." → nbgs3istm5vt23xb6irkc6rfu2a "Appendix" [doc:links-to] · weight 1 · ×1 (ectqmebbxa5kgiijzfekg7lmpw4)
+    nnv4p3aezh6u5guh2w2siakv35q "See the appendix and details from the top." → nqkl5gk7v5anlaitfnepx4l26lu "Chapter One" [doc:links-to] · weight 1 · ×1 (ejspy7on6dbiurpd6opuxd6bu6m)
+    nqkl5gk7v5anlaitfnepx4l26lu "Chapter One" → nbgs3istm5vt23xb6irkc6rfu2a "Appendix" [doc:links-to] · weight 2 · ×1 (evjwse77woi7x6goa2n2icncilm)
+    nqkl5gk7v5anlaitfnepx4l26lu "Chapter One" → nlgjgqdz6hqdhwvkapntc3t34fi "Chapter Two" [doc:links-to] · weight 1 · ×1 (elf5yx54zbzoiaaktunp6uskugi)
+  frontier   expandable 3 · collapsible 4

@@ -1,0 +1,10 @@
+{
+  "baseVersion": { "counter": 0, "site": "local" },
+  "origin": { "actor": "m1-demo" },
+  "ops": [
+    { "t": "graph:add", "graph": "g-errata", "meta": { "label": "Errata", "domain": "markdown", "provenance": { "origin": "source", "uri": "demo://m1/errata" } } },
+    { "t": "node:add", "graph": "g-errata", "node": { "id": "n-errata-p1", "kind": "doc:paragraph", "label": "Chapter One's anchor list was corrected.", "provenance": { "origin": "source", "uri": "demo://m1/errata" } } },
+    { "t": "node:add", "graph": "gzsmcby4mlkjz5jhnrlxm5nwcla", "node": { "id": "n-errata", "kind": "doc:section", "label": "Errata", "detail": { "graph": "g-errata" }, "provenance": { "origin": "source", "uri": "demo://m1/errata" } } },
+    { "t": "edge:add", "graph": "gzsmcby4mlkjz5jhnrlxm5nwcla", "edge": { "id": "e-errata-ch1", "src": "n-errata", "dst": "nqkl5gk7v5anlaitfnepx4l26lu", "kind": "doc:links-to", "provenance": { "origin": "derived" } } }
+  ]
+}

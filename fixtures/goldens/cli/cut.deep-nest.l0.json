@@ -1,0 +1,100 @@
+{
+  "file": "fixtures/valid/deep-nest.meridian.json",
+  "ok": true,
+  "level": 0,
+  "maxLevel": 4,
+  "zoom": 0.1,
+  "chain": {
+    "domain": "demo",
+    "depth": 5,
+    "levels": [
+      {
+        "index": 0,
+        "name": "level-0"
+      },
+      {
+        "index": 1,
+        "name": "level-1"
+      },
+      {
+        "index": 2,
+        "name": "level-2"
+      },
+      {
+        "index": 3,
+        "name": "level-3"
+      },
+      {
+        "index": 4,
+        "name": "level-4"
+      }
+    ]
+  },
+  "coverage": {
+    "leaves": 6,
+    "coveredLeaves": 6,
+    "covers": true
+  },
+  "cut": [
+    {
+      "id": "n-app",
+      "label": "Application",
+      "kind": "demo:module",
+      "graph": "g-project",
+      "reason": "level",
+      "coveredLeaves": 5
+    },
+    {
+      "id": "n-lib",
+      "label": "Library",
+      "kind": "demo:module",
+      "graph": "g-project",
+      "reason": "level",
+      "coveredLeaves": 1
+    }
+  ],
+  "inducedEdges": [
+    {
+      "src": "n-app",
+      "srcLabel": "Application",
+      "dst": "n-lib",
+      "dstLabel": "Library",
+      "kind": "core:references",
+      "weight": 1,
+      "multiplicity": 1,
+      "samples": [
+        "e-app-lib"
+      ]
+    }
+  ],
+  "cappedEdges": {
+    "edges": [
+      {
+        "src": "n-app",
+        "srcLabel": "Application",
+        "dst": "n-lib",
+        "dstLabel": "Library",
+        "kind": "core:references",
+        "weight": 1,
+        "multiplicity": 1,
+        "samples": [
+          "e-app-lib"
+        ]
+      }
+    ],
+    "residuals": []
+  },
+  "frontier": {
+    "expandable": [
+      "n-app",
+      "n-lib"
+    ],
+    "collapsible": []
+  },
+  "provenance": {
+    "zoom": 0.1,
+    "nominalLevel": 0,
+    "level": 0,
+    "ignoredOverrides": []
+  }
+}

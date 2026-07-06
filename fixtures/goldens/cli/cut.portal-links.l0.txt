@@ -1,0 +1,9 @@
+cut fixtures/valid/portal-links.meridian.json — level 0/1 · zoom 0.25
+  chain      demo · 2 levels (level-0 → level-1)
+  coverage   2/2 leaves — covers ✓
+  nodes (2):
+    n-mod-a "module A" (demo:module) · level · covers 1
+    n-mod-b "module B" (demo:module) · level · covers 1
+  induced edges (1):
+    n-mod-a "module A" → n-mod-b "module B" [core:references] · weight 1 · ×1 (e-a-calls-b)
+  frontier   expandable 2 · collapsible 0

@@ -1,0 +1,19 @@
+cut fixtures/.cut-inputs/commonmark-edges.meridian.json — level 1/3 · zoom 0.375
+  chain      markdown · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   13/13 leaves — covers ✓
+  nodes (13):
+    n376zcobhjzsntnvkq73w3xfvxe "unordered one unordered two nested a nested b deeper" (doc:list) · leaf · covers 1
+    n6qm7ewnj6jwsjhyfqblf6wtwny "Paragraph with combining characters: café vs café, emoji 🗺️, and RTL עִבְרִית." (doc:paragraph) · leaf · covers 1
+    n6t2thzlc7wohozple3fqw7lb3a "const x: number = 1;" (doc:code) · leaf · covers 1
+    ndzqoiaafezfxky52kunjvl5zuu "indented code block" (doc:code) · leaf · covers 1
+    nec6476ofi5pxx3vvwng7dtvwzm "first" (doc:paragraph) · leaf · covers 1
+    ng7toyvjgdn3wr6p5j6voezq7ei "···" (doc:break) · leaf · covers 1
+    ngjrhytat4s652atfp3fitzx3oy "A blockquote with a reference link. Nested quote." (doc:quote) · leaf · covers 1
+    nl2cgutuuyu3cqrzc6kdoymp2ni "Setext Section" (doc:section) · level · covers 1
+    nm7isblvlkjl5gbt5zcvizl4eva "<div class="raw"> an HTML block </div>" (doc:html) · leaf · covers 1
+    nsnt7trodg7f4xl5rtorfiae6gu "Preamble paragraph with an external link and an autolink https://example.net." (doc:paragraph) · leaf · covers 1
+    ntk33if4lrnyk5enh4o3mvvreku "second — its anchor gets a suffix." (doc:paragraph) · leaf · covers 1
+    nzpcuejfohaulukjbakl2btubfa "ordered one ordered two" (doc:list) · leaf · covers 1
+    nzyf5pi4xcucyswr7snim56yuzi "no language fence" (doc:code) · leaf · covers 1
+  induced edges (0):
+  frontier   expandable 1 · collapsible 13

@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
+    "@meridian/abstraction": "workspace:*",
     "@meridian/adapter-markdown": "workspace:*",
     "@meridian/graph-core": "workspace:*",
     "@meridian/graph-store": "workspace:*",

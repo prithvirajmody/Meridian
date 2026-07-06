@@ -43,10 +43,21 @@ changed contract.
   - `watch-1.json` / `watch-2-stale.json` / `watch-3-teardown.json` — the
     `watch --apply` stream (teardown exercises detail-release +
     `graph:remove`).
+  - `m1-errata.json` — the M1 demo mutation (Phase 3, `docs/demos/m1.md`):
+    adds an "Errata" section + detail graph + `doc:links-to` edge to the
+    ingested `links.md` document (stable IDs make the checked-in script
+    valid against any re-ingest of the same file).
 - `deltas/` — completed (invertible) deltas for `meridian invert`:
   - `small-undoable.delta.json` — hand-written, prev payloads included.
 - `goldens/cli/` — byte-exact expected CLI output per fixture/command,
-  asserted by `apps/cli/test/golden.test.ts`.
+  asserted by `apps/cli/test/golden.test.ts` and (Phase 3, the `cut.*`
+  files) `apps/cli/test/cut-golden.test.ts`: `meridian cut` across the
+  markdown corpus **at every level**, the `valid/` documents at every
+  level, and `--json` / `--focus` / `--zoom` forms.
+- `.cut-inputs/` (gitignored) — the cut goldens' input documents, produced
+  by the real `meridian ingest` over `corpora/markdown/` by the golden test
+  itself on every run. Ingest is byte-deterministic (I6/U4), so these need
+  no pinning; only the cut *outputs* are goldens.
 
 Notes: goldens are generated under the CI Node major (24); the
 `validate.malformed` golden embeds V8's JSON error text, which can vary

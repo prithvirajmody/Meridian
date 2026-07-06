@@ -1,0 +1,10 @@
+cut fixtures/.cut-inputs/basic.meridian.json — level 1/3 · zoom 0.375
+  chain      markdown · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   5/5 leaves — covers ✓
+  nodes (4):
+    nhjj7u6ymniw22rbnpf3syda23i "An introductory paragraph before any section." (doc:paragraph) · leaf · covers 1
+    ni5rzztjteiwrk5vxklinl6f4dy "Going Further" (doc:section) · level · covers 1
+    niio3cw3dvyslmt3sp3ztga5tia "First Steps" (doc:section) · level · covers 2
+    nqeywdavwcu4pci73jedqu5hgli "Wrapping Up" (doc:section) · level · covers 1
+  induced edges (0):
+  frontier   expandable 3 · collapsible 4

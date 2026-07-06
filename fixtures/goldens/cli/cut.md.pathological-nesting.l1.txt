@@ -1,0 +1,9 @@
+cut fixtures/.cut-inputs/pathological-nesting.meridian.json — level 1/6 · zoom 0.2143
+  chain      markdown · 7 levels (level-0 → level-1 → level-2 → level-3 → level-4 → level-5 → level-6)
+  coverage   3/3 leaves — covers ✓
+  nodes (3):
+    ncfd5fr3k6ibgbczagk7qpzwc3m "Orphan Depth Six" (doc:section) · level · covers 1
+    nph2imety4bzqsrziefrszdd2rm "L2" (doc:section) · level · covers 1
+    nz7ldlj6hdqrevn7udvosqvp6qq "Wide" (doc:section) · level · covers 1
+  induced edges (0):
+  frontier   expandable 3 · collapsible 3

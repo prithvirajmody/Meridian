@@ -1,0 +1,11 @@
+cut fixtures/.cut-inputs/basic.meridian.json — level 2/3 · zoom 0.625
+  chain      markdown · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   5/5 leaves — covers ✓
+  nodes (5):
+    ngrfhglkv7wbvna6vtde75s5yua "Final thoughts." (doc:paragraph) · leaf · covers 1
+    nhjj7u6ymniw22rbnpf3syda23i "An introductory paragraph before any section." (doc:paragraph) · leaf · covers 1
+    njh2y37zgxwsn7rdumukzsdcosq "The first section has a paragraph." (doc:paragraph) · leaf · covers 1
+    nsl6ecd22owpdzdckn5eulkcuaa "And a second paragraph with emphasis and inline code." (doc:paragraph) · leaf · covers 1
+    nuxvtqgrzapgaxylfrss6ktcjcy "Details" (doc:section) · level · covers 1
+  induced edges (0):
+  frontier   expandable 1 · collapsible 4

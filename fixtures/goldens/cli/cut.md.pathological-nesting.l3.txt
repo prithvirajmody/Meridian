@@ -1,0 +1,9 @@
+cut fixtures/.cut-inputs/pathological-nesting.meridian.json — level 3/6 · zoom 0.5
+  chain      markdown · 7 levels (level-0 → level-1 → level-2 → level-3 → level-4 → level-5 → level-6)
+  coverage   3/3 leaves — covers ✓
+  nodes (3):
+    n46kahte32ywvnhuorsvecj52sq "1 1.1 1.1.1 1.1.1.1 1.1.1.1.1 1.1.1.1.1.1 1.1.1.1.1.1.1 1.1.1.1.1.1.1.1 1.1.1.1…" (doc:list) · leaf · covers 1
+    nm4zpmvft3zvhxpvwklks4ro5dm "L4" (doc:section) · level · covers 1
+    nvg6siqiwde2f7qvr7u32x7jdi4 "Directly under a depth-1 tree — ragged hierarchy." (doc:paragraph) · leaf · covers 1
+  induced edges (0):
+  frontier   expandable 1 · collapsible 3

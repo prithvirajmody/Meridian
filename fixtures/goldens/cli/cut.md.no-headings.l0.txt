@@ -1,0 +1,9 @@
+cut fixtures/.cut-inputs/no-headings.meridian.json — level 0/0 · zoom 0.5
+  chain      markdown · 1 level (level-0)
+  coverage   3/3 leaves — covers ✓
+  nodes (3):
+    naysciodeimkwwvrt2lx3zsrhcy "No headings anywhere, only paragraphs." (doc:paragraph) · leaf · covers 1
+    nqsezdd6rimiftami33bwlqxlqa "and one list with two items" (doc:list) · leaf · covers 1
+    ntaq4vqlkelgjyyvzifwbaylvhu "Just a flat file of prose." (doc:paragraph) · leaf · covers 1
+  induced edges (0):
+  frontier   expandable 0 · collapsible 0

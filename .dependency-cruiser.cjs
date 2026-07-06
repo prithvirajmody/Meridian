@@ -138,12 +138,12 @@ module.exports = {
       name: 'cli-sees-only-core-packages',
       severity: 'error',
       comment:
-        'apps depend downward; cli is the composition root: graph-core, graph-store, plugin-api, plugin-host, and built-in adapters (Phase 2).',
+        'apps depend downward; cli is the composition root: graph-core, graph-store, abstraction, plugin-api, plugin-host, and built-in adapters (Phase 2/3).',
       from: { path: '^apps/cli/src' },
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|plugin-api|plugin-host|adapters/markdown)',
+          '^packages/(graph-core|graph-store|abstraction|plugin-api|plugin-host|adapters/markdown)',
       },
     },
     {

@@ -1,5 +1,19 @@
 # @meridian/cli
 
+## Unreleased — Phase 3E
+
+- **Phase 3:** `cut <file> (--level <N> | --zoom <z>) [--focus <id>]
+  [--json]` — resolves the visible cut through the real pipeline (document →
+  `GraphSpace` → default level chain → `resolveLod`): covering node set with
+  per-node trace reasons, induced (aggregated) edges with witness samples
+  and the labeled fan-out cap, frontier, and coverage proof. `--level` maps
+  to the band center of a canonical evenly-spaced `ZoomPolicy`, so both
+  flags route through the same resolver path. Deterministic output (I6);
+  exit contract unchanged (0 ok · 1 invalid input · 2 usage). New goldens:
+  `cut.*` across the markdown corpus at every level
+  (`test/cut-golden.test.ts`); provider proposal → real store → cut
+  integration (`test/proposal-cut.test.ts`).
+
 ## 0.1.0 — 2026-07-05 (Phases 0–2)
 
 - **Phase 0:** `validate`, `stats`, `inspect`.
