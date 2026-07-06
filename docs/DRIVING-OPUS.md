@@ -112,6 +112,35 @@ Paste these when the behavior appears (or preemptively in the phase kickoff):
 - **Verbose wrap-ups:** "Final summary: outcome first, then only the detail
   that changes what I do next."
 
+### Field notes from the Phase 3 supervised run (2026-07-06)
+
+Five subphases (3A–3E), five first-try passes, zero rework. What made the
+difference, worth keeping in every kickoff:
+
+- **Demand real numbers in the exit criteria.** "Full suite green — report
+  the actual output tail" and "run the benchmark and report measured ms"
+  produced honest, auditable reports every time. The supervisor still
+  re-runs the gates independently before committing; turbo's cache makes
+  the re-run cheap and the hash-keyed cache hit is itself evidence the
+  tested tree is the committed tree.
+- **Name the anti-scope.** "Do not build 3D material (no ZoomPolicy, no
+  LodResolver, no salience)" worked better than the generic "don't start
+  the next subphase" — name the tempting items.
+- **Expect principled deviations, ask for them up front.** The best output
+  of each session was its deviations section (ADR gaps, the structural-twin
+  pattern below, total-function readings of underspecified cases). Asking
+  for "deviations and why, flag ADR fold-backs" in the report format is
+  what surfaced them instead of burying them in code.
+- **The structural-twin pattern.** When the dependency law forbids sharing
+  a type by import (e.g. `abstraction` cannot import `plugin-api`, yet
+  providers must implement the plugin contract), declare a structural twin
+  and pin it with a compile-time assignability test against the real
+  contract. Used for `LevelChainSpec` (3B) and the provider types (3D);
+  Phases 4+ will need it for every new capability.
+- **Builder never commits.** "Do NOT commit — the supervisor reviews and
+  commits" kept every review honest and made the session-limit crash in 3E
+  recoverable from a clean last-good commit.
+
 ## 4. What stays human
 
 - Approving ADRs and any constitution amendment (ARCHITECTURE.md's

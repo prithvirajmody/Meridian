@@ -36,12 +36,36 @@ Every subphase is one session. The rules, in order:
    If a session is going long, the correct cut point is "current exit
    criteria green, commit, new session" — never "skip the tests."
 
-Kickoff prompt template (adapted from DRIVING-OPUS.md §2):
+Kickoff prompt template (adapted from DRIVING-OPUS.md §2; refined after the
+Phase 3 supervised run, where this shape went 5-for-5 with zero rework):
 
 > We are in Phase N of docs/ROADMAP.md, subphase NX of docs/SUBPHASES.md.
-> Implement exactly that subphase's deliverables, honoring ADR-\<range\> and
-> ARCHITECTURE.md. Write the listed tests as you go, not after. Do not start
-> the next subphase. When done, run the full suite and report actual results.
+> Read CLAUDE.md, docs/SUBPHASES.md §NX, the roadmap sections it names, and
+> the phase's ADRs — **the current text; ADRs may have been amended by
+> earlier subphases**. Prior subphases are committed: read the existing
+> package src/ first and build on it — do not duplicate its machinery. For
+> a new package, copy the build/test/tsconfig conventions of \<model
+> package\>. Implement exactly this subphase's deliverables. Do NOT build
+> \<named items from the next subphase\>. Write the listed tests as you
+> go, not after. Exit criteria you must demonstrate with real output:
+> \<the subphase's exit list, plus\> full monorepo suite green from the
+> root — report the actual output tail. Final report: outcome first with
+> real numbers, then files created/modified, then any deviation from the
+> ADRs/spec and why — flag anything that should be folded back into an ADR.
+
+Two more rules learned from the Phase 3 run:
+
+6. **ADRs drift during build — fold amendments back.** Twice in Phase 3 the
+   builder found a genuine gap in a merged ADR (an undefined endpoint case;
+   an off-by-one in the hysteresis subscripts). The builder's job is to
+   implement the defensible reading and *flag it*; the supervisor's job is
+   to amend the ADR text in the same commit. The ADR stays authoritative —
+   semantics must never live only in code comments.
+7. **Session dies mid-subphase → resume, don't restart.** Resume the same
+   session/agent with "pick up where you left off", a list of what the
+   working tree already holds, and the remaining deliverables. The Phase 3E
+   session was cut mid-run and finished cleanly this way; the tree (not the
+   conversation) is the ground truth it re-syncs against.
 
 Parallel tracks: after 3E (M1), the visual track (Phases 4→5→6) and the
 domain track (Phase 7) are independent — you can alternate sessions between
