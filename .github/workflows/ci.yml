@@ -37,5 +37,21 @@ jobs:
       - name: Test (unit, property, failure, golden)
         run: pnpm test
 
+      - name: Install software-rendered Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser UI, interaction, FPS, and heap gates
+        run: pnpm test:e2e
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-5-playwright
+          path: |
+            apps/studio/playwright-report/
+            apps/studio/test-results/
+          if-no-files-found: ignore
+
       - name: Benchmarks (perf budgets are tests)
         run: pnpm bench

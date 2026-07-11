@@ -240,7 +240,7 @@ edge lines, quadtree viewport culling, geometric `CameraController`
 - **Exit:** a fixture renders in a bare HTML harness page; culling
   provably active.
 
-### 5D — Labels & picking
+### 5D — Labels & picking  ✅ DONE (`6762ca5`)
 Zoom-tiered BitmapText/SDF labels (ADR-0020); picking per ADR-0021
 (quadtree hit-test favored); hover/selection event streams.
 - **Tests:** tier transitions at scripted zoom levels; pick accuracy at
@@ -248,7 +248,7 @@ Zoom-tiered BitmapText/SDF labels (ADR-0020); picking per ADR-0021
 - **Exit:** 10k-node fixture with labels still hits the frame budget in a
   local FPS probe (formal CI gate lands in 5F).
 
-### 5E — Meridian Studio shell
+### 5E — Meridian Studio shell  ✅ DONE (`5cadf10`)
 `apps/studio`: Vite + React + zustand chrome — file open, adapter pick via
 sniff, canvas island receiving the view-model (ADR-0022 boundary), side
 panel with selected node's attrs + provenance, FPS/heap HUD behind a debug
@@ -257,7 +257,7 @@ flag. Full pipeline wired: ingest → cut → layout → render.
   (depcruise); renderer imports no graph-store (only view-model output).
 - **Exit:** `pnpm dev` opens any corpus file end-to-end by hand.
 
-### 5F — Playwright infra & phase gate
+### 5F — Playwright infra & phase gate  ✅ DONE (gate commit; human row + `phase-5` tag pending — checklists/phase-05.md)
 Playwright: screenshot baselines per corpus at 3 zoom scales
 (software-rendering CI profile, tolerance-banded diffs, deterministic
 camera scripts), interaction scripts (hover label, click select, panel

@@ -88,6 +88,7 @@ export class StudioSceneBridge {
   private syncingFromStore = false;
   private publishCameraFrame: number | null = null;
   private dragPoint: Point | null = null;
+  private loseContextExtension: WEBGL_lose_context | null = null;
 
   constructor(
     readonly store: StudioStore,
@@ -308,13 +309,17 @@ export class StudioSceneBridge {
     const gl = this.canvas?.getContext('webgl2');
     const extension = gl?.getExtension('WEBGL_lose_context');
     if (extension === null || extension === undefined) return false;
+    // getExtension() returns null on a lost context, so restoreContext()
+    // can only work through the handle taken before the loss.
+    this.loseContextExtension = extension;
     extension.loseContext();
     return true;
   }
 
   restoreContext(): boolean {
-    const gl = this.canvas?.getContext('webgl2');
-    const extension = gl?.getExtension('WEBGL_lose_context');
+    const extension =
+      this.loseContextExtension ??
+      this.canvas?.getContext('webgl2')?.getExtension('WEBGL_lose_context');
     if (extension === null || extension === undefined) return false;
     extension.restoreContext();
     return true;
