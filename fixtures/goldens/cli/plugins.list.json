@@ -43,6 +43,88 @@
           "description": "whether a list is ordered"
         }
       }
+    },
+    {
+      "name": "@meridian/adapter-code",
+      "version": "0.1.0",
+      "apiVersion": "^0.1.0",
+      "capabilities": [
+        {
+          "kind": "domain-parser",
+          "id": "code"
+        }
+      ],
+      "kinds": [
+        "code:project",
+        "code:package",
+        "code:module",
+        "code:class",
+        "code:function",
+        "code:method",
+        "code:namespace"
+      ],
+      "attrSchemas": {
+        "code:language": {
+          "type": "string",
+          "description": "source language of a module (e.g. typescript)"
+        },
+        "code:signature": {
+          "type": "string",
+          "description": "a function/method's normalized parameter list as written"
+        },
+        "code:params": {
+          "type": "number",
+          "description": "parameter arity of a function/method"
+        },
+        "code:returns": {
+          "type": "string",
+          "description": "normalized return-type annotation as written"
+        },
+        "code:async": {
+          "type": "boolean",
+          "description": "the function/method is async"
+        },
+        "code:static": {
+          "type": "boolean",
+          "description": "the member is static"
+        },
+        "code:generator": {
+          "type": "boolean",
+          "description": "the function/method is a generator"
+        },
+        "code:abstract": {
+          "type": "boolean",
+          "description": "the class/method is abstract"
+        },
+        "code:accessibility": {
+          "type": "string",
+          "description": "member accessibility: public|private|protected"
+        },
+        "code:exported": {
+          "type": "boolean",
+          "description": "the declaration is exported from its module"
+        },
+        "code:default-export": {
+          "type": "boolean",
+          "description": "the declaration is its module's default export"
+        },
+        "code:duplicate": {
+          "type": "boolean",
+          "description": "an illegal same-scope, same-signature duplicate (ADR-0028 case 4)"
+        },
+        "code:excluded": {
+          "type": "string",
+          "description": "module excluded by policy: oversize|generated (ADR-0027)"
+        },
+        "code:parse-error": {
+          "type": "boolean",
+          "description": "the module had syntax errors; the graph is partial"
+        },
+        "code:error-count": {
+          "type": "number",
+          "description": "number of recovered syntax errors in the module"
+        }
+      }
     }
   ]
 }

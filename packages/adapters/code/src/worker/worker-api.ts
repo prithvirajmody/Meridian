@@ -17,6 +17,8 @@
  * also run worker-side, so whole trees never need to cross).
  */
 import type { CodeLanguage } from '../languages.js';
+import { mapTypeScriptModule } from '../map/typescript.js';
+import type { RawModule } from '../map/raw.js';
 import { parseSource, type ParseOutcome } from '../parse.js';
 import { createParserRuntime, type ParserRuntime, type ParserRuntimeOptions } from '../shim.js';
 
@@ -50,11 +52,32 @@ export interface ParseResponse extends ParseOutcome {
   readonly parseTimeMs: number;
 }
 
+/** A map request: like {@link ParseRequest} plus the coordinate/label the
+ * skeleton needs (7C). The **mapping walk runs here, where the tree lives**
+ * (ADR-0017); only the graph-shaped {@link RawModule} crosses the boundary. */
+export interface MapRequest {
+  readonly requestId: number;
+  readonly language: CodeLanguage;
+  /** Repository-relative POSIX path — the ADR-0028 `source` coordinate. */
+  readonly source: string;
+  /** Display label (basename). */
+  readonly label: string;
+  readonly text: string;
+}
+
+export interface MapResponse {
+  readonly requestId: number;
+  readonly module: RawModule;
+  readonly mapTimeMs: number;
+}
+
 /** The Comlink-exposed worker surface. */
 export interface ParseWorkerApi {
   /** Pre-load a grammar (idempotent) so first-parse latency excludes it. */
   warm(language: CodeLanguage): Promise<void>;
   parse(req: ParseRequest): Promise<ParseResponse>;
+  /** Parse **and** map one file to its {@link RawModule} skeleton (7C). */
+  map(req: MapRequest): Promise<MapResponse>;
 }
 
 /** Portable `AbortError` (`DOMException` where available). */
@@ -115,6 +138,33 @@ export function createParseWorker(opts: {
           // surfaces as a standard AbortError instead of a stale result.
           if (cancelled.delete(req.requestId)) throw abortError();
           return { ...outcome, requestId: req.requestId, parseTimeMs };
+        } finally {
+          parser.delete();
+        }
+      } finally {
+        cancelled.delete(req.requestId);
+      }
+    },
+
+    async map(req: MapRequest): Promise<MapResponse> {
+      if (req.language !== 'typescript') {
+        // Python mapping is 7D; fail honestly rather than silently emit nothing.
+        throw new Error(`adapter-code: mapping for "${req.language}" is not implemented in 7C (TypeScript only)`);
+      }
+      try {
+        if (cancelled.delete(req.requestId)) throw abortError();
+        const parser = await (await getRuntime()).parser(req.language);
+        const started = performance.now();
+        try {
+          const { tree } = parseSource(parser, req.language, req.text);
+          try {
+            const module = mapTypeScriptModule(tree, { source: req.source, label: req.label });
+            const mapTimeMs = performance.now() - started;
+            if (cancelled.delete(req.requestId)) throw abortError();
+            return { module, requestId: req.requestId, mapTimeMs };
+          } finally {
+            tree.delete();
+          }
         } finally {
           parser.delete();
         }

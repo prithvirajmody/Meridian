@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Source-code domain adapter. Phase 7B: the tree-sitter grammar-loading shim (isomorphic, worker-hosted per ADR-0017's pattern) with vendored TypeScript + Python WASM grammars — parsing only, nothing graph-shaped yet.",
+  "description": "Source-code domain adapter (tree-sitter, isomorphic, worker-hosted per ADR-0017). 7B: grammar-loading shim + vendored TS/Python WASM grammars. 7C: TypeScript mapping at eager levels (project→package→module→class/function/method signatures), stable IDs per ADR-0002/0028.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,10 +20,13 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
+    "@meridian/plugin-api": "workspace:*",
     "comlink": "^4.4.2",
     "web-tree-sitter": "0.26.10"
   },
   "devDependencies": {
+    "@meridian/conformance-kit": "workspace:*",
+    "@meridian/graph-core": "workspace:*",
     "@types/node": "^24.0.0",
     "playwright-core": "^1.61.1",
     "typescript": "^5.8.0",

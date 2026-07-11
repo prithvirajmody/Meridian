@@ -31,6 +31,16 @@ ADR-0002 `(domain, source, path[])`, consumed via `ctx.ids.nodeId/graphId/edgeId
   **overloadHash** is appended as a final segment `#<hash>` **only when a name is
   not unique in its scope** (see hard cases).
 
+*Amended 7C — directory nodes.* Project and package nodes (directories, not
+declarations) take `source =` the directory's coordinate: the project uses the
+ingest-root basename with `path = [projectName]` (so its detail-graph id cannot
+collide with the root graph id); a package uses its repo-relative POSIX
+directory path with `path = []`. Known residual: a descendant file path equal
+to the project basename could collide pathologically; accepted for v1.
+Namespaces are first-class scope segments (this record's own `['ns','Type',
+'member']` example), so the eager kind set includes `code:namespace` — fold
+into ROADMAP §7's kind list at the phase gate.
+
 **Flagship invariant — whitespace-only edit ⇒ empty delta.** Every node/edge ID
 derives from `(filePath, qualifiedName[, overloadHash])`; **none of these depends
 on body text, formatting, comments, or byte offsets.** Reformatting a file changes
@@ -149,13 +159,15 @@ the alias table exists — reserved, not built.
 
 ## Open questions for review
 
-1. **overloadHash inputs.** Arity + param types as-written + modifiers
-   (recommended); include the return type? Python has no true overloads except
-   `@overload` stubs — confirm the per-language rule (Python rarely triggers the
-   `#hash` segment).
+1. **overloadHash inputs.** ~~Open~~ **Resolved 7C:** param arity + param types
+   as-written (colon-stripped, whitespace-normalized) + `async`/`static`/
+   generator/`abstract` markers + **return type** (so return-type-only TS
+   overloads get distinct IDs); param *names* excluded. Python's `@overload`
+   rule to be confirmed against this in 7D.
 2. **Span drift.** Confirm that provenance spans are "current after any
    substantive edit or full ingest," not after a pure-whitespace edit — this is a
    real tension with "provenance is exact" and should be folded back as a note on
-   ADR-0002 / §7.4 if accepted.
-3. **`default`-export identity.** Segment `default` (recommended) vs the inferred
-   hoisted binding name. Confirm.
+   ADR-0002 / §7.4 if accepted. (Still open; lands with the 7G differ.)
+3. **`default`-export identity.** ~~Open~~ **Resolved 7C:** segment `default`
+   only for a truly anonymous `export default`; a *named* default export keeps
+   its binding name (it is a real local binding).

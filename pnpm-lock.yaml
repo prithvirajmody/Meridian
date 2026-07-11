@@ -32,6 +32,9 @@ importers:
       '@meridian/abstraction':
         specifier: workspace:*
         version: link:../../packages/abstraction
+      '@meridian/adapter-code':
+        specifier: workspace:*
+        version: link:../../packages/adapters/code
       '@meridian/adapter-markdown':
         specifier: workspace:*
         version: link:../../packages/adapters/markdown
@@ -164,6 +167,9 @@ importers:
 
   packages/adapters/code:
     dependencies:
+      '@meridian/plugin-api':
+        specifier: workspace:*
+        version: link:../../plugin-api
       comlink:
         specifier: ^4.4.2
         version: 4.4.2
@@ -171,6 +177,12 @@ importers:
         specifier: 0.26.10
         version: 0.26.10
     devDependencies:
+      '@meridian/conformance-kit':
+        specifier: workspace:*
+        version: link:../../conformance-kit
+      '@meridian/graph-core':
+        specifier: workspace:*
+        version: link:../../graph-core
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.2

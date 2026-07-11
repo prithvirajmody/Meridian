@@ -24,7 +24,13 @@ LOD machinery and with re-parse invalidation.
 `code:package`, `code:module`, and `code:class`/`code:function`/`code:method`
 **signatures** — the declaration node with name, kind, signature attrs, and
 provenance span, but **not** its body. Eager edges: `code:contains` (the
-detail-graph structure), `code:imports`, and `code:calls` (ADR-0026). Producing
+detail-graph structure), `code:imports`, and `code:calls` (ADR-0026).
+*Amended 7C:* `code:contains` is **realized as detail-graph containment** —
+a parent's `detail` ref holds the graph containing its children — not as
+emitted `SemanticEdge` objects; the model forbids cross-graph edges, and
+detail refs are exactly what P3 walks (the markdown adapter's precedent).
+The adapter thus emits zero edge objects at 7C's eager levels; the kind name
+stays reserved for any future genuine same-graph containment edge. Producing
 `code:calls` requires *reading* bodies to find call-sites, but the body scan is a
 transient parse-tree walk whose output is edges + counters on the function node —
 **no `code:block`/`code:stmt`/`code:expr` nodes are persisted.** The < 30 s cold

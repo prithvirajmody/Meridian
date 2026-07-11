@@ -1,5 +1,9 @@
-plugins (1):
+plugins (2):
   @meridian/adapter-markdown 0.1.0 — plugin-api ^0.1.0
     capabilities  domain-parser:markdown
     kinds         doc:break, doc:code, doc:html, doc:links-to, doc:list, doc:paragraph, doc:quote, doc:section
     attrs         doc:index, doc:items, doc:lang, doc:level, doc:ordered
+  @meridian/adapter-code 0.1.0 — plugin-api ^0.1.0
+    capabilities  domain-parser:code
+    kinds         code:class, code:function, code:method, code:module, code:namespace, code:package, code:project
+    attrs         code:abstract, code:accessibility, code:async, code:default-export, code:duplicate, code:error-count, code:excluded, code:exported, code:generator, code:language, code:params, code:parse-error, code:returns, code:signature, code:static

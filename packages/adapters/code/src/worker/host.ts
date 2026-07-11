@@ -27,6 +27,8 @@ import {
   abortError,
   type CancelMessage,
   type CancelledMessage,
+  type MapRequest,
+  type MapResponse,
   type ParseResponse,
   type ParseWorkerApi,
 } from './worker-api.js';
@@ -75,9 +77,14 @@ export interface ParseHostOptions {
   readonly signal?: AbortSignal;
 }
 
+/** Any worker response is keyed by its request id (parse or map). */
+interface BaseResponse {
+  readonly requestId: number;
+}
+
 interface InFlight {
   readonly requestId: number;
-  settle(outcome: ParseResponse): void;
+  settle(outcome: BaseResponse): void;
   fail(error: unknown): void;
   settled: boolean;
   abortListener?: () => void;
@@ -119,21 +126,41 @@ export class ParseWorkerHost {
    * `signal` fires first, or with a located error if the worker crashes.
    */
   async parse(language: CodeLanguage, text: string, opts: ParseHostOptions = {}): Promise<ParseOutcome> {
+    return this.dispatch<ParseResponse>(
+      (requestId) => this.proxy!.parse({ requestId, language, text }),
+      opts,
+    );
+  }
+
+  /**
+   * Parse **and** map `text` to its {@link RawModule} skeleton in the worker
+   * (7C). Same cancellation/crash semantics as {@link parse}.
+   */
+  async map(req: Omit<MapRequest, 'requestId'>, opts: ParseHostOptions = {}): Promise<MapResponse> {
+    return this.dispatch<MapResponse>((requestId) => this.proxy!.map({ requestId, ...req }), opts);
+  }
+
+  /** Shared in-flight bookkeeping for `parse`/`map`: one request id, optional
+   * signal-driven cancel, drop-late-on-settled, honest crash rejection. */
+  private dispatch<R extends BaseResponse>(
+    call: (requestId: number) => Promise<R>,
+    opts: ParseHostOptions,
+  ): Promise<R> {
     if (this.disposed) throw new Error('ParseWorkerHost: disposed');
     if (opts.signal?.aborted) throw abortError();
     this.s.dispatched++;
     this.ensureWorker();
 
     const requestId = ++this.requestSeq;
-    let settle!: (r: ParseResponse) => void;
+    let settle!: (r: R) => void;
     let fail!: (e: unknown) => void;
-    const promise = new Promise<ParseResponse>((res, rej) => {
+    const promise = new Promise<R>((res, rej) => {
       settle = res;
       fail = rej;
     });
     const inflight: InFlight = {
       requestId,
-      settle,
+      settle: settle as (r: BaseResponse) => void,
       fail,
       settled: false,
       ...(opts.signal !== undefined ? { signal: opts.signal } : {}),
@@ -146,7 +173,7 @@ export class ParseWorkerHost {
       opts.signal.addEventListener('abort', onAbort, { once: true });
     }
 
-    this.proxy!.parse({ requestId, language, text }).then(
+    call(requestId).then(
       (response) => {
         if (inflight.settled) return; // cancelled or crash-handled: drop late result
         this.s.completed++;
@@ -232,7 +259,7 @@ export class ParseWorkerHost {
     this.fail(inflight, abortError());
   }
 
-  private settle(inflight: InFlight, response: ParseResponse): void {
+  private settle(inflight: InFlight, response: BaseResponse): void {
     if (inflight.settled) return;
     inflight.settled = true;
     this.cleanup(inflight);

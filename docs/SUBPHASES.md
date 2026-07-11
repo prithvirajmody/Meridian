@@ -29,7 +29,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
 | 5 | ✅ `5A`–`5C` · ⬜ `5D`–`5F` | current (visual track) |
 | 6 | ⬜ not started | — |
-| 7 | ✅ `7A`–`7B` · ⬜ `7C`–`7H` | current (domain track) |
+| 7 | ✅ `7A`–`7C` · ⬜ `7D`–`7H` | current (domain track) |
 | 8–12 | ⬜ not started | — |
 
 ---
@@ -341,7 +341,7 @@ yields partial trees.
   flagged.
 - **Exit:** parsing works everywhere the app runs; nothing graph-shaped yet.
 
-### 7C — TypeScript mapping: eager levels
+### 7C — TypeScript mapping: eager levels  ✅ DONE
 `adapters/code`: mapping rules for project → package → module →
 class/function (signatures) for TypeScript; stable IDs per ADR-0002/0028
 from `(path, qualifiedName, overloadHash)`; provenance spans; conformance

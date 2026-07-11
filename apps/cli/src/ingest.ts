@@ -5,8 +5,19 @@
  * and isolation, and holds the IR gate — decode with the host's registered
  * vocabulary (U8) — between parser output and anything downstream.
  */
-import { readFile, writeFile } from 'node:fs/promises';
+import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { join, relative, sep } from 'node:path';
 import { markdownPlugin } from '@meridian/adapter-markdown';
+import {
+  CODE_PROJECT_MEDIA_TYPE,
+  createCodePlugin,
+  createWorkerMapper,
+  encodeProjectBundle,
+  ParseWorkerHost,
+  type BundleFile,
+  type CodeMapper,
+} from '@meridian/adapter-code';
+import { codeWorkerFactory } from './code-worker.js';
 import {
   decode,
   deriveEdgeId,
@@ -25,9 +36,6 @@ import {
 import { createStore, decodeDeltaInput } from '@meridian/graph-store';
 import { PLUGIN_API_VERSION, type IdFacade, type SourceDescriptor } from '@meridian/plugin-api';
 import { createPluginHost, type PluginHost } from '@meridian/plugin-host';
-
-/** Built-in (Tier 0) plugins, statically imported per ADR-0009. */
-const BUILTIN_PLUGINS = [markdownPlugin];
 
 const MEDIA_TYPES: Readonly<Record<string, string>> = {
   md: 'text/markdown',
@@ -59,9 +67,21 @@ const idFacade: IdFacade = {
     }) as string,
 };
 
-export function buildHost(): PluginHost {
+/** A host wired with the Tier-0 plugins, plus a handle to release the code
+ * adapter's parse worker (ADR-0009: statically imported built-ins). */
+export interface BuiltHost {
+  readonly host: PluginHost;
+  dispose(): Promise<void>;
+}
+
+export function buildHost(): BuiltHost {
   const host = createPluginHost({ ids: idFacade });
-  for (const plugin of BUILTIN_PLUGINS) {
+  // The code adapter parses in a worker (grammars only in workers, ADR-0017);
+  // the worker is lazy, so `plugins list` never spawns one.
+  const parseHost = new ParseWorkerHost({ factory: codeWorkerFactory() });
+  const mapper: CodeMapper = createWorkerMapper(parseHost);
+  const plugins = [markdownPlugin, createCodePlugin({ mapper })];
+  for (const plugin of plugins) {
     const r = host.register(plugin);
     if (!r.ok) {
       // A built-in that cannot register is a build defect, not a user error.
@@ -69,10 +89,44 @@ export function buildHost(): PluginHost {
       process.exit(2);
     }
   }
-  return host;
+  return { host, dispose: () => mapper.dispose() };
+}
+
+const TS_EXTENSIONS = /\.(tsx|mts|cts|ts)$/i;
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.turbo']);
+
+/** Walk a directory into a code-project bundle descriptor (composition root
+ * resolves I/O; the adapter only sees text — ADR-0009). */
+async function readCodeProject(dir: string): Promise<SourceDescriptor> {
+  const files: BundleFile[] = [];
+  const walk = async (current: string): Promise<void> => {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') && entry.isDirectory()) continue;
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (!SKIP_DIRS.has(entry.name)) await walk(full);
+      } else if (entry.isFile() && TS_EXTENSIONS.test(entry.name)) {
+        const text = await readFile(full, 'utf8');
+        files.push({ path: relative(dir, full).split(sep).join('/'), text });
+      }
+    }
+  };
+  await walk(dir);
+  const root = dir.split(sep).filter((s) => s.length > 0).pop() ?? dir;
+  return {
+    uri: dir,
+    mediaType: CODE_PROJECT_MEDIA_TYPE,
+    text: encodeProjectBundle({ root, files }),
+  };
 }
 
 async function readSource(path: string): Promise<SourceDescriptor> {
+  try {
+    if ((await stat(path)).isDirectory()) return await readCodeProject(path);
+  } catch (e) {
+    process.stderr.write(`cannot read ${path}: ${(e as Error).message}\n`);
+    process.exit(2);
+  }
   let raw: Buffer;
   try {
     raw = await readFile(path);
@@ -99,7 +153,20 @@ export async function cmdIngest(
   sourcePath: string,
   opts: { json: boolean; adapter?: string; out?: string },
 ): Promise<number> {
-  const host = buildHost();
+  const built = buildHost();
+  const { host } = built;
+  try {
+    return await runIngest(host, sourcePath, opts);
+  } finally {
+    await built.dispose();
+  }
+}
+
+async function runIngest(
+  host: PluginHost,
+  sourcePath: string,
+  opts: { json: boolean; adapter?: string; out?: string },
+): Promise<number> {
   const src = await readSource(sourcePath);
   const outcome = await host.ingest(src, {
     ...(opts.adapter !== undefined ? { parser: opts.adapter } : {}),
@@ -215,8 +282,9 @@ export async function cmdIngest(
 }
 
 export function cmdPlugins(json: boolean): number {
-  const host = buildHost();
+  const { host, dispose } = buildHost();
   const plugins = host.plugins();
+  void dispose(); // no worker was spawned (lazy); release any handle
   if (json) {
     out(JSON.stringify({ apiVersion: PLUGIN_API_VERSION, plugins: plugins.map((p) => p.manifest) }, null, 2));
     return 0;
