@@ -23,12 +23,15 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import {
+  buildContainmentIndex,
+  containmentPathOf,
   decode,
   type GraphSpace,
   type Issue,
   type NodeId,
   type SemanticNode,
 } from '@meridian/graph-core';
+import type { Cut } from '@meridian/abstraction';
 import {
   buildLevelChain,
   maxLevelOf,
@@ -40,6 +43,7 @@ import {
   BUILTIN_LAYOUT_PROVIDERS,
   exportSvg,
   LayoutWorkerHost,
+  type CompoundNesting,
   type LayoutInput,
   type LayoutResult,
   type Size,
@@ -99,6 +103,28 @@ function fmt(v: number): string {
   return Number(v.toFixed(2)).toString();
 }
 
+/**
+ * Compound nesting for the `elk-layered` provider (ADR-0015/4D): each member's
+ * container group is its own graph (`CutMember.graph`), and groups nest per the
+ * graph-containment forest (`containmentPathOf`). "Nested graphs become ELK
+ * compound nodes." Real cuts are antichains, so no *member* contains another —
+ * but their *graphs* do, and elk lays that nesting out. Group keys are graph
+ * ids; the containers are layout scaffolding, never rendered (ADR-0015).
+ */
+function buildCompound(space: GraphSpace, cut: Cut): CompoundNesting {
+  const idx = buildContainmentIndex(space);
+  const groupOf = new Map<NodeId, string>();
+  const parentOf = new Map<string, string>();
+  for (const id of cut.members) {
+    const graph = cut.trace.get(id)?.graph;
+    if (graph === undefined) continue;
+    groupOf.set(id, String(graph));
+    const path = containmentPathOf(space, graph, idx); // [root, …, graph]
+    for (let i = 1; i < path.length; i++) parentOf.set(String(path[i]), String(path[i - 1]));
+  }
+  return { groupOf, parentOf };
+}
+
 export interface LayoutOptions {
   readonly json: boolean;
   /** Output SVG path (required). */
@@ -147,7 +173,16 @@ export async function cmdLayout(file: string, opts: LayoutOptions): Promise<numb
     labels.set(id, label);
   }
 
-  const input: LayoutInput = { cut, edges: result.inducedEdges, sizes, hints: {} };
+  // elk-layered is compound-aware: nest members under their graphs (invisible
+  // containers). The flat providers (grid/tree) ignore `compound`.
+  const compound = provider.id === 'elk-layered' ? buildCompound(space, cut) : undefined;
+  const input: LayoutInput = {
+    cut,
+    edges: result.inducedEdges,
+    sizes,
+    hints: {},
+    ...(compound !== undefined ? { compound } : {}),
+  };
   let layout: LayoutResult;
   if (opts.worker) {
     // Run the provider off the main thread in the ADR-0017 worker host. The

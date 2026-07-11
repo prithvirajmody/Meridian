@@ -22,6 +22,7 @@
  */
 import type { InducedEdge } from '@meridian/abstraction';
 import { asNodeId, type NodeId } from '@meridian/graph-core';
+import { groupsFromOrdinals, resolveGroups } from '../compound.js';
 import type { Point, Rect, Size } from '../coords.js';
 import type { LayoutHints, LayoutInput, LayoutResult } from '../types.js';
 
@@ -71,8 +72,16 @@ export interface WireRequest {
   readonly edgeKinds: Uint32Array;
   /** Interned kind strings, cloned once. */
   readonly kindTable: readonly string[];
-  /** `Int32Array(N)` compound parent index or `−1` for a root. */
+  /** `Int32Array(N)` compound parent index or `−1` for a root. Reserved for
+   * member-level nesting; graph-container nesting rides {@link groupOf}. */
   readonly parents: Int32Array;
+  /** Compound nesting (ADR-0017 compound-parents row; 4D). `Int32Array(N)` = per
+   * member, its container group **ordinal** (canonical, key-independent) or
+   * `−1` for a root-level member. Empty for a flat request. */
+  readonly groupOf: Int32Array;
+  /** `Int32Array(G)` = per group ordinal, its parent group ordinal or `−1`.
+   * `G = groupParent.length`; `0` for a flat request. */
+  readonly groupParent: Int32Array;
   /** Small plain object (cloned; not hot). */
   readonly hints: LayoutHints;
   /** Whether {@link prev}/{@link prevMask} carry a warm-start layout. */
@@ -81,6 +90,16 @@ export interface WireRequest {
   readonly prev: Float64Array;
   /** `Uint8Array(N)` presence mask for {@link prev}. */
   readonly prevMask: Uint8Array;
+  /** `prev` induced edges (ADR-0017 amendment; ADR-0016 Λ). `Uint32Array(2·Ep)`
+   * = `[srcIdx,dstIdx,…]` index pairs into the prev index space — required
+   * whenever the previous result carried `edgeRoutes`, so the worker-side `Λ`
+   * equals an independent main-side recomputation. Empty when `prev` had no
+   * routes (grid/tree). */
+  readonly prevEdges: Uint32Array;
+  /** `Uint32Array(Ep)` interned kind ids (into {@link kindTable}) for the prev
+   * edges — carried per the ADR-0017 amendment; the score reads only the
+   * endpoints, so kind fidelity is informational. */
+  readonly prevEdgeKinds: Uint32Array;
 }
 
 /** The transferables (backing buffers) of a {@link WireRequest}, for Comlink's
@@ -93,8 +112,12 @@ export function requestTransfer(req: WireRequest): ArrayBufferLike[] {
     req.edgeWeights.buffer,
     req.edgeKinds.buffer,
     req.parents.buffer,
+    req.groupOf.buffer,
+    req.groupParent.buffer,
     req.prev.buffer,
     req.prevMask.buffer,
+    req.prevEdges.buffer,
+    req.prevEdgeKinds.buffer,
   ];
 }
 
@@ -144,6 +167,12 @@ export function encodeRequest(
   const edgeKinds = Uint32Array.from(kinds);
   const parents = new Int32Array(N).fill(-1);
 
+  // Compound nesting (4D): canonical group ordinals, key-independent so the
+  // worker reproduces the same ELK tree from placeholder keys.
+  const { memberGroup, groupParent } = resolveGroups(table.ids, input.compound);
+  const groupOf = Int32Array.from(memberGroup);
+  const groupParentArr = Int32Array.from(groupParent);
+
   const hasPrev = prev !== undefined;
   const prevArr = new Float64Array(hasPrev ? 4 * N : 0);
   const prevMask = new Uint8Array(hasPrev ? N : 0);
@@ -159,6 +188,31 @@ export function encodeRequest(
     }
   }
 
+  // prev induced edges (ADR-0016 Λ; ADR-0017 amendment): required whenever the
+  // previous result carried `edgeRoutes` (elk-layered), so the worker computes
+  // the same characteristic length. Discovered through `prev.edgeRoutes` keys.
+  const prevSrcDst: number[] = [];
+  const prevKinds: number[] = [];
+  if (prev?.edgeRoutes !== undefined) {
+    for (const key of prev.edgeRoutes.keys()) {
+      const parsed = parseFullEdgeKey(key);
+      if (parsed === undefined) continue;
+      const a = table.index.get(parsed.src);
+      const b = table.index.get(parsed.dst);
+      if (a === undefined || b === undefined) continue;
+      let kindId = kindIds.get(parsed.kind);
+      if (kindId === undefined) {
+        kindId = kindTable.length;
+        kindIds.set(parsed.kind, kindId);
+        kindTable.push(parsed.kind);
+      }
+      prevSrcDst.push(a, b);
+      prevKinds.push(kindId);
+    }
+  }
+  const prevEdges = Uint32Array.from(prevSrcDst);
+  const prevEdgeKinds = Uint32Array.from(prevKinds);
+
   return {
     requestId,
     providerId,
@@ -169,10 +223,27 @@ export function encodeRequest(
     edgeKinds,
     kindTable,
     parents,
+    groupOf,
+    groupParent: groupParentArr,
     hints: input.hints,
     hasPrev,
     prev: prevArr,
     prevMask,
+    prevEdges,
+    prevEdgeKinds,
+  };
+}
+
+/** Parse a full `"src→dst→kind"` edgeRoutes key into all three parts. */
+function parseFullEdgeKey(key: string): { src: NodeId; dst: NodeId; kind: string } | undefined {
+  const first = key.indexOf('→');
+  if (first < 0) return undefined;
+  const second = key.indexOf('→', first + 1);
+  if (second < 0) return undefined;
+  return {
+    src: key.slice(0, first) as NodeId,
+    dst: key.slice(first + 1, second) as NodeId,
+    kind: key.slice(second + 1),
   };
 }
 
@@ -212,11 +283,16 @@ export function decodeRequest(req: WireRequest): {
     };
   }
 
+  // Rebuild compound nesting from ordinals, keyed by placeholder group ids; the
+  // provider re-resolves it to the same canonical ordinals (compound.ts).
+  const compound = groupsFromOrdinals(members, Array.from(req.groupOf), Array.from(req.groupParent));
+
   const input: LayoutInput = {
     cut: { level: 0, members, trace: new Map(), coverage: { leaves: 0, coveredLeaves: 0, covers: true } },
     edges,
     sizes: sizeMap,
     hints: req.hints,
+    ...(compound !== undefined ? { compound } : {}),
   };
 
   let prev: LayoutResult | undefined;
@@ -231,7 +307,26 @@ export function decodeRequest(req: WireRequest): {
         height: req.prev[4 * i + 3]!,
       });
     }
-    prev = { positions, bounds: { x: 0, y: 0, width: 0, height: 0 }, stability: 1 };
+    // Reconstruct prev.edgeRoutes keys (over placeholder ids) so the scorer's
+    // Λ pass finds the same induced-edge neighbor gaps as the main thread. The
+    // polylines themselves are irrelevant to the score, so they are empty.
+    let edgeRoutes: Map<string, readonly Point[]> | undefined;
+    const Ep = req.prevEdgeKinds.length;
+    if (Ep > 0) {
+      edgeRoutes = new Map<string, readonly Point[]>();
+      for (let j = 0; j < Ep; j++) {
+        const src = placeholderId(req.prevEdges[2 * j]!, width);
+        const dst = placeholderId(req.prevEdges[2 * j + 1]!, width);
+        const kind = req.kindTable[req.prevEdgeKinds[j]!] ?? '';
+        edgeRoutes.set(`${src}→${dst}→${kind}`, []);
+      }
+    }
+    prev = {
+      positions,
+      bounds: { x: 0, y: 0, width: 0, height: 0 },
+      stability: 1,
+      ...(edgeRoutes !== undefined ? { edgeRoutes } : {}),
+    };
   }
 
   return { input, prev };

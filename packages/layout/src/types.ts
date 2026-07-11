@@ -44,6 +44,32 @@ export interface LayoutCapabilities {
   readonly deterministic: boolean;
 }
 
+/**
+ * Compound nesting for compound-aware providers (`elk-layered`, 4D): "nested
+ * graphs become ELK compound nodes" (ROADMAP §3). Each member is a **leaf**
+ * placed inside a synthetic container group (keyed by a stable string); groups
+ * nest via `parentOf`, mirroring the containment forest of the cut's graphs.
+ * The composition root (CLI) derives it from each member's containing graph
+ * (`CutMember.graph`) and the graph-containment index — real cuts are
+ * antichains, so no *member* contains another, but their **graphs** do, and
+ * that nesting is what elk lays out.
+ *
+ * Groups are **layout scaffolding, not members**: providers keep every
+ * member's box at its input `Size` (ADR-0015) and place it in absolute world
+ * space; the synthetic container boxes elk computes are not returned in
+ * `positions` (they carry no `NodeId`). Absent ⇒ a flat (non-compound) layout.
+ *
+ * *Deviation flagged in the 4D report:* this optional field extends the
+ * ADR-0015 `LayoutInput` shape (the ADR-0017 wire already reserved a
+ * compound-parents slot); non-compound providers ignore it.
+ */
+export interface CompoundNesting {
+  /** Member → its container group key. A member absent here sits at the root. */
+  readonly groupOf: ReadonlyMap<NodeId, string>;
+  /** Group key → its parent group key. A group absent here sits at the root. */
+  readonly parentOf: ReadonlyMap<string, string>;
+}
+
 /** Everything a provider needs to place a cut (ROADMAP §5). `sizes` supplies
  * one `Size` per visible member — **providers place the box; they never invent
  * sizes** (ADR-0015). `edges` is the induced (aggregated) edge set over the
@@ -53,6 +79,9 @@ export interface LayoutInput {
   readonly edges: readonly InducedEdge[];
   readonly sizes: ReadonlyMap<NodeId, Size>;
   readonly hints: LayoutHints;
+  /** Optional compound nesting for compound-aware providers (4D; ignored by
+   * the flat providers). See {@link CompoundNesting}. */
+  readonly compound?: CompoundNesting;
 }
 
 /** A provider's output (ROADMAP §5; ADR-0015). `positions` places exactly the

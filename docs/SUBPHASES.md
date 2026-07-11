@@ -25,7 +25,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 0 | ✅ committed `cde7733` | closed |
 | 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
-| 4 | ✅ `4A`–`4C` · ⬜ `4D`–`4E` | current |
+| 4 | ✅ `4A`–`4D` · ⬜ `4E` | current |
 | 5–12 | ⬜ not started | — |
 
 ---
@@ -156,7 +156,7 @@ all-CLI ingest→mutate→cut), DoD, tag `phase-3`.
 
 ---
 
-## Phase 4 — Layout engine  🔨 IN PROGRESS (4A–4C done)
+## Phase 4 — Layout engine  🔨 IN PROGRESS (4A–4D done)
 
 Split by provider risk: harness first with trivial providers, then workers,
 then the two real engines one at a time. Roadmap refs: Phase 4 §1–13.
@@ -187,7 +187,7 @@ with fallback to grid.
 - **Exit:** grid/tree run inside the worker with identical goldens; this is
   the worker infrastructure P5 picking and P7 parsing will reuse.
 
-### 4D — elk-layered (compound) provider
+### 4D — elk-layered (compound) provider  ✅ DONE
 elkjs provider with compound nodes (nested graphs), position hints for the
 ADR-0016 stability contract, stability scorer, optional orthogonal routes.
 - **Tests:** SVG goldens per corpus; stability score ≥ threshold on scripted

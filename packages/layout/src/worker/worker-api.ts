@@ -19,6 +19,7 @@
  * boundaries (d3-force, 4E; the 4C measurement provider) abandon promptly.
  */
 import * as Comlink from 'comlink';
+import { elkLayeredProvider } from '../elk-layered.js';
 import { gridProvider } from '../grid.js';
 import { treeProvider } from '../tree.js';
 import type { LayoutProvider } from '../types.js';
@@ -82,6 +83,7 @@ export function createLayoutWorker(opts: {
     new Map<string, LayoutProvider>([
       [gridProvider.id, gridProvider],
       [treeProvider.id, treeProvider],
+      [elkLayeredProvider.id, elkLayeredProvider],
     ]);
   const active = new Map<number, AbortController>();
   // Cancels can outrun their compute: the control port and the RPC port are

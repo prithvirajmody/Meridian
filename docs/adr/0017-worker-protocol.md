@@ -43,7 +43,8 @@ with **no sort**, and is cached/reused across deltas. The main thread keeps the
 | edges (`InducedEdge[]`) | `Uint32Array(2E)` = `[srcIdx,dstIdx,…]` | yes |
 | edge weights | `Float64Array(E)` | yes |
 | edge kinds | `Uint32Array(E)` of interned kind-ids + a `string[]` `kindTable` (cloned once) | arr: yes |
-| compound parents | `Int32Array(N)`, parent index or `−1` for a root (for elk compound nodes) | yes |
+| compound parents | `Int32Array(N)`, parent index or `−1` for a root — **reserved** for member-level nesting; all `−1` today, because a cut is an antichain and no member contains another (folded back from 4D) | yes |
+| compound groups *(from 4D)* | `groupOf: Int32Array(N)` (member → group ordinal or `−1`) + `groupParent: Int32Array(G)` (group → parent group or `−1`) — *graph* containment, the nesting elk compound nodes actually express; ordinals are canonical and key-string-independent (`compound.ts`) | yes |
 | `hints` | small plain object `{ direction, spacing, seed }` (cloned; not hot) | — |
 | `prev` positions | `Float64Array(4N)` `[x,y,w,h,…]` + `Uint8Array(N)` presence mask, in the **same index space** (for hints/warm-start, ADR-0016) | yes |
 | `prev` induced edges *(from 4D; absent in 4C)* | `Uint32Array(2·E_prev)` index pairs into the prev index space + `Uint32Array(E_prev)` interned kind-ids — required whenever the previous result carried `edgeRoutes`, so the worker-side ADR-0016 `Λ` equals an independent main-side recomputation; grid/tree (no routes) omit it and `Λ` falls back per ADR-0016 | yes |

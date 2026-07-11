@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="44" viewBox="40 40 1050 44">
+  <g class="edges" fill="none" stroke="#888" stroke-width="1">
+  </g>
+  <g class="nodes" fill="#e8eef7" stroke="#33517a" stroke-width="1">
+    <rect data-id="ngrfhglkv7wbvna6vtde75s5yua" x="852" y="48" width="121" height="28" />
+    <text x="912.5" y="62" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Final thoughts.</text>
+    <rect data-id="nhjj7u6ymniw22rbnpf3syda23i" x="580" y="48" width="240" height="28" />
+    <text x="700" y="62" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">An introductory paragraph before any section.</text>
+    <rect data-id="njh2y37zgxwsn7rdumukzsdcosq" x="48" y="48" width="240" height="28" />
+    <text x="168" y="62" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">The first section has a paragraph.</text>
+    <rect data-id="nsl6ecd22owpdzdckn5eulkcuaa" x="308" y="48" width="240" height="28" />
+    <text x="428" y="62" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">And a second paragraph with emphasis and inline code.</text>
+    <rect data-id="nuxvtqgrzapgaxylfrss6ktcjcy" x="1017" y="48" width="65" height="28" />
+    <text x="1049.5" y="62" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Details</text>
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="699" height="44" viewBox="16 16 699 44">
+  <g class="edges" fill="none" stroke="#888" stroke-width="1">
+  </g>
+  <g class="nodes" fill="#e8eef7" stroke="#33517a" stroke-width="1">
+    <rect data-id="naysciodeimkwwvrt2lx3zsrhcy" x="242" y="24" width="240" height="28" />
+    <text x="362" y="38" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">No headings anywhere, only paragraphs.</text>
+    <rect data-id="nqsezdd6rimiftami33bwlqxlqa" x="502" y="24" width="205" height="28" />
+    <text x="604.5" y="38" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">and one list with two items</text>
+    <rect data-id="ntaq4vqlkelgjyyvzifwbaylvhu" x="24" y="24" width="198" height="28" />
+    <text x="123" y="38" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Just a flat file of prose.</text>
+  </g>
+</svg>

@@ -59,7 +59,7 @@ for (const name of CORPUS) {
   const ing = run(['ingest', `fixtures/corpora/markdown/${name}.md`, '--out', docRel]);
   if (ing.code !== 0) throw new Error(`ingest ${name} failed (code ${ing.code}): ${ing.stderr}`);
   const maxLevel = probeMaxLevel(docRel);
-  for (const provider of ['grid', 'tree']) {
+  for (const provider of ['grid', 'tree', 'elk-layered']) {
     for (let level = 0; level <= maxLevel; level++) {
       cases.push({ golden: `layout.md.${name}.${provider}.l${level}.svg`, docRel, provider, level });
     }
@@ -126,9 +126,17 @@ describe('meridian layout — contract behavior (no goldens: contracts, not byte
   });
 
   it('rejects an unknown provider with exit 2', () => {
-    const r = run(['layout', doc, '--svg', resolve(outDir, 'x.svg'), '--provider', 'elk-layered']);
+    const r = run(['layout', doc, '--svg', resolve(outDir, 'x.svg'), '--provider', 'no-such-provider']);
     expect(r.code).toBe(2);
     expect(r.stderr).toContain('unknown provider');
+  });
+
+  it('accepts the elk-layered provider (4D)', () => {
+    const p = resolve(outDir, 'elk.svg');
+    const r = run(['layout', doc, '--svg', p, '--provider', 'elk-layered', '--level', '1', '--json']);
+    expect(r.stderr).toBe('');
+    expect(r.code).toBe(0);
+    expect((JSON.parse(r.stdout) as { provider: string }).provider).toBe('elk-layered');
   });
 
   it('requires --svg (usage, exit 2)', () => {

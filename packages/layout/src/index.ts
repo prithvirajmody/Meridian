@@ -15,6 +15,7 @@
  */
 export type { Point, Rect, Size } from './coords.js';
 export type {
+  CompoundNesting,
   LayoutCapabilities,
   LayoutDirection,
   LayoutHints,
@@ -24,9 +25,12 @@ export type {
 } from './types.js';
 export { boundsOf, centerOf, DEFAULT_SPACING, EMPTY_BOUNDS, packComponents } from './geometry.js';
 export type { LaidOutComponent } from './geometry.js';
+export { groupsFromOrdinals, resolveGroups } from './compound.js';
+export type { ResolvedGroups } from './compound.js';
 export { connectedComponents } from './components.js';
 export { gridProvider } from './grid.js';
 export { treeProvider } from './tree.js';
+export { elkLayeredProvider } from './elk-layered.js';
 export { STABILITY_RAMP, stabilityScore } from './stability.js';
 export type { StabilityScore } from './stability.js';
 export { exportSvg } from './svg.js';
@@ -75,13 +79,16 @@ export {
 } from './worker/cache.js';
 export type { LayoutCacheKey } from './worker/cache.js';
 
+import { elkLayeredProvider } from './elk-layered.js';
 import { gridProvider } from './grid.js';
 import { treeProvider } from './tree.js';
 import type { LayoutProvider } from './types.js';
 
-/** The deterministic providers that ship in 4B, by id. elk-layered (4D) and
- * d3-force (4E) register later. */
+/** The layout providers registered by id: the deterministic `grid`/`tree`
+ * fallbacks (4B) plus the real `elk-layered` engine (4D). d3-force (4E)
+ * registers later. */
 export const BUILTIN_LAYOUT_PROVIDERS: ReadonlyMap<string, LayoutProvider> = new Map([
   [gridProvider.id, gridProvider],
   [treeProvider.id, treeProvider],
+  [elkLayeredProvider.id, elkLayeredProvider],
 ]);

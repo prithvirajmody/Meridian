@@ -10,15 +10,17 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  elkLayeredProvider,
   gridProvider,
   LayoutWorkerHost,
   treeProvider,
+  type CompoundNesting,
   type LayoutInput,
   type LayoutProvider,
   type LayoutResult,
   type LayoutWorkerHost as Host,
 } from '../src/index.js';
-import { cutOf, edge, sizes, uniformSizes } from './helpers.js';
+import { cutOf, edge, n, sizes, uniformSizes } from './helpers.js';
 import { makeNodeFactory } from './node-factory.js';
 
 function assertLayoutEqual(worker: LayoutResult, main: LayoutResult, members: readonly string[]): void {
@@ -134,5 +136,117 @@ describe('grid/tree in the worker == main thread (byte-identical geometry)', () 
       await dispose();
     },
     20_000,
+  );
+});
+
+/**
+ * elk-layered parity (ROADMAP §12 exit; ADR-0017): the real engine, run inside
+ * the worker on order-preserving placeholder ids and placeholder group keys,
+ * must produce byte-identical geometry to the main thread — including
+ * `edgeRoutes` (orthogonal polylines) and the compound nesting. And, critically
+ * for 4D, the **stability score with `prev` edges on the wire**: because elk
+ * emits `edgeRoutes`, the ADR-0017 prev-induced-edges row goes live, so the
+ * worker-side ADR-0016 `Λ` must equal an independent main-side recomputation.
+ */
+function assertElkEqual(worker: LayoutResult, main: LayoutResult, members: readonly string[]): void {
+  expect(worker.stability).toBe(main.stability);
+  expect(worker.bounds).toEqual(main.bounds);
+  expect(worker.positions.size).toBe(main.positions.size);
+  for (const id of members) {
+    expect(worker.positions.get(id as never)).toEqual(main.positions.get(id as never));
+  }
+  // edgeRoutes: same keys, same polylines (the induced identities are the real
+  // NodeIds on both sides — the worker re-keys placeholder routes on return).
+  const wk = worker.edgeRoutes;
+  const mk = main.edgeRoutes;
+  expect(wk === undefined).toBe(mk === undefined);
+  if (wk !== undefined && mk !== undefined) {
+    expect([...wk.keys()].sort()).toEqual([...mk.keys()].sort());
+    for (const [k, poly] of mk) expect(wk.get(k)).toEqual(poly);
+  }
+}
+
+describe('elk-layered in the worker == main thread (byte-identical, incl. routes)', () => {
+  const compound: CompoundNesting = {
+    groupOf: new Map([
+      [n('a'), 'G0'],
+      [n('b'), 'G0'],
+      [n('c'), 'G1'],
+      [n('d'), 'G1'],
+    ]),
+    parentOf: new Map(),
+  };
+  const elkCases: { name: string; input: () => LayoutInput }[] = [
+    {
+      name: 'flat DAG with orthogonal routes',
+      input: () => ({
+        cut: cutOf('a', 'b', 'c', 'd'),
+        edges: [edge('a', 'b'), edge('a', 'c'), edge('b', 'd'), edge('c', 'd')],
+        sizes: uniformSizes(['a', 'b', 'c', 'd'], { width: 60, height: 24 }),
+        hints: { direction: 'down', spacing: 20 },
+      }),
+    },
+    {
+      name: 'compound nesting (groups become elk compound nodes)',
+      input: () => ({
+        cut: cutOf('a', 'b', 'c', 'd'),
+        edges: [edge('a', 'b'), edge('c', 'd'), edge('a', 'c')],
+        sizes: uniformSizes(['a', 'b', 'c', 'd'], { width: 50, height: 22 }),
+        hints: { spacing: 18 },
+        compound,
+      }),
+    },
+  ];
+
+  for (const c of elkCases) {
+    it(
+      c.name,
+      async () => {
+        const { factory } = makeNodeFactory();
+        const host = new LayoutWorkerHost({ factory });
+        hosts.push(host);
+        const input = c.input();
+        const workerResult = await host.compute(elkLayeredProvider.id, input);
+        expect(workerResult.source).toBe('worker');
+        expect(workerResult.degraded).toBe(false);
+        const main = await elkLayeredProvider.compute(input);
+        assertElkEqual(workerResult.layout, main, input.cut.members.map(String));
+        await dispose();
+      },
+      30_000,
+    );
+  }
+
+  it(
+    'stability with prev edges on the wire matches an independent main recompute',
+    async () => {
+      const { factory } = makeNodeFactory();
+      const host = new LayoutWorkerHost({ factory });
+      hosts.push(host);
+
+      const base: LayoutInput = {
+        cut: cutOf('a', 'b', 'c', 'd', 'e', 'f'),
+        edges: [edge('a', 'b'), edge('a', 'c'), edge('b', 'd'), edge('c', 'e'), edge('d', 'f'), edge('e', 'f')],
+        sizes: uniformSizes(['a', 'b', 'c', 'd', 'e', 'f'], { width: 50, height: 24 }),
+        hints: { direction: 'down', spacing: 20 },
+      };
+      // prev is a *real elk result carrying edgeRoutes* — so the ADR-0017
+      // prev-induced-edges wire row is exercised (grid/tree would omit it).
+      const prev = await elkLayeredProvider.compute(base);
+      expect(prev.edgeRoutes).toBeDefined();
+
+      const next: LayoutInput = {
+        ...base,
+        cut: cutOf('a', 'b', 'c', 'd', 'e', 'f', 'g'),
+        edges: [...base.edges, edge('f', 'g')],
+        sizes: uniformSizes(['a', 'b', 'c', 'd', 'e', 'f', 'g'], { width: 50, height: 24 }),
+      };
+      const main = await elkLayeredProvider.compute(next, prev);
+      const worker = await host.compute(elkLayeredProvider.id, next, { prev });
+      expect(worker.layout.stability).toBe(main.stability);
+      assertElkEqual(worker.layout, main, next.cut.members.map(String));
+      await dispose();
+    },
+    30_000,
   );
 });

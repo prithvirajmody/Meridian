@@ -73,10 +73,10 @@ Usage:
                   [--level <N> | --zoom <z>] [--worker] [--json]
                                              lay out the visible cut of a
                                              GraphDocument (default --level 0,
-                                             the coarsest) with a deterministic
-                                             provider (grid | tree; default
-                                             grid) and write a normalized SVG
-                                             snapshot. --worker runs the
+                                             the coarsest) with a layout
+                                             provider (grid | tree | elk-layered;
+                                             default grid) and write a normalized
+                                             SVG snapshot. --worker runs the
                                              provider off-thread in the
                                              ADR-0017 Comlink worker host
                                              (byte-identical output)

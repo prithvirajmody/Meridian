@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1523" height="44" viewBox="28 52 1523 44">
+  <g class="edges" fill="none" stroke="#888" stroke-width="1">
+  </g>
+  <g class="nodes" fill="#e8eef7" stroke="#33517a" stroke-width="1">
+    <rect data-id="naglampeczp5ste42ak4vk34dzi" x="308" y="60" width="240" height="28" />
+    <text x="428" y="74" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">A broken anchor resolves to no edge at all.</text>
+    <rect data-id="neaohuewitlugngpu227avwmgqe" x="852" y="60" width="135" height="28" />
+    <text x="919.5" y="74" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Terminal section.</text>
+    <rect data-id="nl2qexgqygnb7ywzuazeqzpbq5q" x="1031" y="60" width="240" height="28" />
+    <text x="1151" y="74" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Refers to chapter two — a sibling link.</text>
+    <rect data-id="nmobjmqvciascd3i72z464dfyqm" x="1303" y="60" width="240" height="28" />
+    <text x="1423" y="74" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Points back up to the whole document and sideways to the appendix, twice: again.</text>
+    <rect data-id="nnv4p3aezh6u5guh2w2siakv35q" x="36" y="60" width="240" height="28" />
+    <text x="156" y="74" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">See the appendix and details from the top.</text>
+    <rect data-id="ntqddsildbit5k34a2pjgveygku" x="568" y="60" width="240" height="28" />
+    <text x="688" y="74" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Links into a niece section: deep details.</text>
+  </g>
+</svg>

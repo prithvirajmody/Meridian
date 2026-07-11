@@ -100,7 +100,13 @@ providers.
 **Provider mechanisms (informative, implemented in 4D/4E).**
 - **elk-layered:** feed each persistent node's `prev` position as an ELK
   interactive position hint (`org.eclipse.elk.position` + interactive strategy) so
-  ELK perturbs minimally around prior placement.
+  ELK perturbs minimally around prior placement. *(Amended in 4D, measured:)* pure
+  hints leave the diagram free to translate/reflow wholesale (a diamond+leaf delta
+  scored 0.72; fully-`INTERACTIVE` crossing minimization flipped branches). The
+  shipped mechanism is `layering.strategy=INTERACTIVE` +
+  `crossingMinimization.semiInteractive=true`, **plus a pure centroid-alignment
+  translation to `prev`** (minimizing summed displacement of persistent nodes).
+  The score itself stays the pure formula above, recomputed independently by CI.
 - **d3-force:** initialize the simulation from `prev` positions (not random) and
   run with reduced `alpha`, so persistent nodes settle near prior spots; the seeded
   PRNG (ADR-0018) keeps it deterministic.

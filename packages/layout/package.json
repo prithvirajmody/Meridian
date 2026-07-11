@@ -21,7 +21,8 @@
   "dependencies": {
     "@meridian/abstraction": "workspace:*",
     "@meridian/graph-core": "workspace:*",
-    "comlink": "^4.4.2"
+    "comlink": "^4.4.2",
+    "elkjs": "^0.11.1"
   },
   "devDependencies": {
     "@meridian/graph-store": "workspace:*",

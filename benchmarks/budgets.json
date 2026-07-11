@@ -8,5 +8,8 @@
   "store-100-version-chain-min-node-share": 0.9,
   "ingest-5mb-markdown-ms": 2000,
   "abstraction-cut-cold-ms": 150,
-  "abstraction-cut-warm-ms": 30
+  "abstraction-cut-warm-ms": 30,
+  "layout-elk-2k-compound-ms": 1500,
+  "layout-elk-incremental-10-node-delta-ms": 100,
+  "layout-stability-small-delta-min": 0.9
 }

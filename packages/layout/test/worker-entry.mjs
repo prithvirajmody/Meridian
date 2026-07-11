@@ -19,7 +19,7 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import * as Comlink from 'comlink';
 import nodeEndpoint from 'comlink/dist/esm/node-adapter.mjs';
-import { abortError, createLayoutWorker, gridProvider, treeProvider } from '../dist/index.js';
+import { abortError, createLayoutWorker, elkLayeredProvider, gridProvider, treeProvider } from '../dist/index.js';
 
 const controlPort = workerData.controlPort;
 controlPort.start?.();
@@ -71,6 +71,7 @@ const crashProvider = {
 const providers = new Map([
   [gridProvider.id, gridProvider],
   [treeProvider.id, treeProvider],
+  [elkLayeredProvider.id, elkLayeredProvider],
   [slowProvider.id, slowProvider],
   [throwProvider.id, throwProvider],
   [crashProvider.id, crashProvider],

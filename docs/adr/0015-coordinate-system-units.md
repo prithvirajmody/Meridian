@@ -55,6 +55,14 @@ interface Rect  { readonly x: number; readonly y: number;                 // min
 `cut.members` — one placed box per visible node, its `Size` taken from
 `LayoutInput.sizes` (providers place the box; they do not invent sizes).
 
+**`LayoutInput.compound` (folded back from 4D).** `LayoutInput` gains an optional
+`compound?: CompoundNesting` — the graph-containment grouping that compound-aware
+providers (elk-layered) turn into nested container nodes. Flat providers ignore
+it. Synthetic container boxes get layout-computed sizes but are **not** returned
+in `positions` (only members are, at their input `Size`) — containers are
+layout-internal scaffolding, so "providers place the box; they do not invent
+sizes" continues to hold for every emitted position.
+
 **`bounds` semantics.** `bounds` is the smallest axis-aligned `Rect` that
 **encloses every node position `Rect` and every `edgeRoutes` point** — the tight
 world-space AABB of everything the layout emitted, so the renderer can frame the
