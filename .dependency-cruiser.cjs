@@ -233,6 +233,33 @@ module.exports = {
       },
     },
     {
+      name: 'studio-is-the-presentation-composition-root',
+      severity: 'error',
+      comment:
+        'ADR-0022: Studio composes the Phase-5 pipeline downward; it may use only the declared semantic, plugin, layout, view-model, renderer, and markdown-adapter packages.',
+      from: { path: '^apps/studio/src' },
+      to: {
+        path: '^packages/',
+        pathNot:
+          '^packages/(graph-core|graph-store|abstraction|layout|view-model|renderer|plugin-api|plugin-host|adapters/markdown)',
+      },
+    },
+    {
+      name: 'studio-react-never-imports-pixi-or-renderer-internals',
+      severity: 'error',
+      comment:
+        'ADR-0022 canvas island: React components consume values and the public renderer seam only; Pixi and renderer internals stay behind the plain bridge.',
+      from: { path: '^apps/studio/src/.*\\.tsx$' },
+      to: { path: '^node_modules/(\\.pnpm/)?pixi\\.js|^packages/renderer/src/(pixi|picking|labels)' },
+    },
+    {
+      name: 'nothing-depends-on-studio',
+      severity: 'error',
+      comment: 'Studio is an application composition root; no package or sibling app depends upward on it (§20).',
+      from: { pathNot: '^apps/studio/' },
+      to: { path: '^apps/studio/' },
+    },
+    {
       name: 'src-never-imports-tests',
       severity: 'error',
       from: { path: '/src/' },

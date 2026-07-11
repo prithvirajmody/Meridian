@@ -1,0 +1,41 @@
+{
+  "name": "@meridian/studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "demo:record": "vite build && node tools/record-demo.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/abstraction": "workspace:*",
+    "@meridian/adapter-markdown": "workspace:*",
+    "@meridian/graph-core": "workspace:*",
+    "@meridian/graph-store": "workspace:*",
+    "@meridian/layout": "workspace:*",
+    "@meridian/plugin-api": "workspace:*",
+    "@meridian/plugin-host": "workspace:*",
+    "@meridian/renderer": "workspace:*",
+    "@meridian/view-model": "workspace:*",
+    "comlink": "^4.4.2",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "5.1.4",
+    "typescript": "^5.8.0",
+    "vite": "^7.3.0",
+    "vitest": "^3.2.0"
+  }
+}
