@@ -84,6 +84,27 @@ describe('meridian layout — SVG golden files', () => {
   });
 });
 
+/**
+ * Subphase 4C exit criterion: `grid`/`tree` run **inside the ADR-0017 Comlink
+ * worker** must produce byte-identical output to the main-thread path — the
+ * *same committed goldens*. `--worker` routes the CLI's layout through
+ * `LayoutWorkerHost` + a `worker_threads` worker; every corpus×provider×level
+ * case is re-checked against the golden it already owns. Never regenerated in
+ * this suite (no UPDATE branch): the goldens are authored by the main-thread
+ * path above; here the worker must match them exactly.
+ */
+describe('meridian layout --worker — byte-identical to committed goldens (4C)', () => {
+  it.each(cases)('$golden (in worker)', ({ golden, docRel, provider, level }) => {
+    const goldenPath = resolve(goldensDir, golden);
+    if (!existsSync(goldenPath)) return; // covered by the main-thread suite's guard
+    const svgPath = resolve(outDir, `worker.${golden}`);
+    const r = run(['layout', docRel, '--svg', svgPath, '--provider', provider, '--level', String(level), '--worker']);
+    expect(r.stderr).toBe('');
+    expect(r.code).toBe(0);
+    expect(readFileSync(svgPath, 'utf8')).toBe(readFileSync(goldenPath, 'utf8'));
+  });
+});
+
 describe('meridian layout — contract behavior (no goldens: contracts, not bytes)', () => {
   const doc = `${inputsRel}/links.meridian.json`;
 

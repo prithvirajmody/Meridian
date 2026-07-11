@@ -46,6 +46,7 @@ with **no sort**, and is cached/reused across deltas. The main thread keeps the
 | compound parents | `Int32Array(N)`, parent index or `−1` for a root (for elk compound nodes) | yes |
 | `hints` | small plain object `{ direction, spacing, seed }` (cloned; not hot) | — |
 | `prev` positions | `Float64Array(4N)` `[x,y,w,h,…]` + `Uint8Array(N)` presence mask, in the **same index space** (for hints/warm-start, ADR-0016) | yes |
+| `prev` induced edges *(from 4D; absent in 4C)* | `Uint32Array(2·E_prev)` index pairs into the prev index space + `Uint32Array(E_prev)` interned kind-ids — required whenever the previous result carried `edgeRoutes`, so the worker-side ADR-0016 `Λ` equals an independent main-side recomputation; grid/tree (no routes) omit it and `Λ` falls back per ADR-0016 | yes |
 
 **Response encoding (worker → `LayoutResult`).**
 
@@ -76,7 +77,11 @@ constant-time transfers.
   carries `{ type: 'cancel', requestId }`. It is separate on purpose — Comlink
   serializes calls on one proxy, so a cancel sent over the RPC port would queue
   *behind* the in-flight `compute` and could never preempt it. The control port is
-  read by the worker between work units.
+  read by the worker between work units. The two channels have **no cross-channel
+  ordering guarantee**, so a cancel can arrive *before* its `compute` registers in
+  the worker (folded back from 4C, where this raced under cancellation storms):
+  the worker keeps a bounded set of pre-cancelled `requestId`s and honors such a
+  cancel the moment the matching `compute` starts.
 
 **AbortSignal mapping.** `LayoutProvider.compute(input, prev?, signal?)` takes a
 main-thread `AbortSignal`. The host, per request:
@@ -90,6 +95,12 @@ main-thread `AbortSignal`. The host, per request:
 4. On cancel the worker posts `{ type:'cancelled', requestId }`; the host **rejects
    that request's promise with `new DOMException('Aborted','AbortError')`**, so the
    awaiting caller sees standard AbortSignal semantics on the main side.
+
+**Runtime-neutral spawning (folded back from 4C).** The host never constructs a
+worker itself; it takes an injected `WorkerFactory`, keeping `layout/src` free of
+both DOM and `node:*` imports (core-law). The Node factory (`worker_threads`)
+ships with the CLI in 4C; the browser `new Worker(...)` factory lands with the
+Studio shell (subphase 5B) — the host is already browser-ready through the seam.
 
 **"New request aborts stale one."** The host holds at most one in-flight request per
 layout slot. When a new request arrives while one is in flight, the host **aborts

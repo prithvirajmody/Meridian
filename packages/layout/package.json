@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@meridian/abstraction": "workspace:*",
-    "@meridian/graph-core": "workspace:*"
+    "@meridian/graph-core": "workspace:*",
+    "comlink": "^4.4.2"
   },
   "devDependencies": {
     "@meridian/graph-store": "workspace:*",

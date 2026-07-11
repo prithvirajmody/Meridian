@@ -50,6 +50,9 @@ importers:
       '@meridian/plugin-host':
         specifier: workspace:*
         version: link:../../packages/plugin-host
+      comlink:
+        specifier: ^4.4.2
+        version: 4.4.2
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -185,6 +188,9 @@ importers:
       '@meridian/graph-core':
         specifier: workspace:*
         version: link:../graph-core
+      comlink:
+        specifier: ^4.4.2
+        version: 4.4.2
     devDependencies:
       '@meridian/graph-store':
         specifier: workspace:*
@@ -820,6 +826,9 @@ packages:
 
   color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
+
+  comlink@4.4.2:
+    resolution: {integrity: sha512-OxGdvBmJuNKSCMO4NTl1L47VRp6xn2wG4F/2hYzB6tiCb709otOxtEYCSvK80PtjODfXXZu8ds+Nw5kVCjqd2g==}
 
   commander@13.1.0:
     resolution: {integrity: sha512-/rFeCpNJQbhSZjGVwO9RFV3xPqbnERS8MmIQzCtD/zl6gpJuV/bMLuN92oG3F7d8oDEHHRrujSXNUr8fpjntKw==}
@@ -1924,6 +1933,8 @@ snapshots:
       color-name: 1.1.4
 
   color-name@1.1.4: {}
+
+  comlink@4.4.2: {}
 
   commander@13.1.0: {}
 

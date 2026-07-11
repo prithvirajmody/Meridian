@@ -32,6 +32,49 @@ export type { StabilityScore } from './stability.js';
 export { exportSvg } from './svg.js';
 export type { SvgOptions } from './svg.js';
 
+// --- Worker infrastructure (4C; ADR-0017) ----------------------------------
+export {
+  buildIndexTable,
+  decodeRequest,
+  decodeResponse,
+  decodeResponseLazy,
+  encodeRequest,
+  encodeResponse,
+  placeholderId,
+  requestTransfer,
+  responseTransfer,
+} from './worker/protocol.js';
+export type { IndexTable, WireRequest, WireResponse } from './worker/protocol.js';
+export { abortError, createLayoutWorker } from './worker/worker-api.js';
+export type {
+  CancelledMessage,
+  CancelMessage,
+  LayoutWorkerApi,
+  WorkerControlChannel,
+} from './worker/worker-api.js';
+export { DEFAULT_CRASH_BUDGET, LayoutWorkerHost } from './worker/host.js';
+export type {
+  CrashBudget,
+  CrashInfo,
+  HostControlChannel,
+  LayoutComputeOptions,
+  LayoutHostResult,
+  LayoutHostStats,
+  LayoutSource,
+  LayoutWorkerHostOptions,
+  WorkerFactory,
+  WorkerHandle,
+} from './worker/host.js';
+export {
+  cacheKeyString,
+  DEFAULT_CACHE_CAPACITY,
+  fnv1a,
+  hashCut,
+  hashHints,
+  LayoutCache,
+} from './worker/cache.js';
+export type { LayoutCacheKey } from './worker/cache.js';
+
 import { gridProvider } from './grid.js';
 import { treeProvider } from './tree.js';
 import type { LayoutProvider } from './types.js';

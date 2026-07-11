@@ -19,7 +19,8 @@
     "@meridian/graph-store": "workspace:*",
     "@meridian/layout": "workspace:*",
     "@meridian/plugin-api": "workspace:*",
-    "@meridian/plugin-host": "workspace:*"
+    "@meridian/plugin-host": "workspace:*",
+    "comlink": "^4.4.2"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

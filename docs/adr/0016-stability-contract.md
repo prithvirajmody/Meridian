@@ -32,6 +32,16 @@ the bounds diagonal (which grows with node count, making ε absurd on big graphs
 is "the typical gap between neighbors," so displacement can be read as "how many
 neighbor-gaps did this node move."
 
+*Transport note (folded back from subphase 4C).* The scorer discovers `prev`'s
+induced edges through `prev.edgeRoutes` keys (`"src→dst→kind"`). Straight-line
+providers (grid/tree) emit no `edgeRoutes`, so for them `Λ` always takes the
+`spacing`/`1` fallback — on the main thread and in the worker alike, which is why
+worker and main-thread scores are byte-identical in 4C. The ADR-0017 request wire
+does **not** carry `prev.edgeRoutes`; before the first route-emitting provider
+ships (elk-layered, subphase 4D), the request format gains `prev` induced-edge
+identities (ADR-0017 request table) so the worker-side score stays equal to an
+independent main-side recomputation. The Λ semantic above is unchanged.
+
 **Per-node normalized displacement.** For `n ∈ P`,
 `d̂(n) = ‖center_current(n) − center_prev(n)‖₂ / Λ` (Euclidean, on `Rect` centers
 per ADR-0015).

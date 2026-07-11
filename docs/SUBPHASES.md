@@ -25,7 +25,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 0 | ✅ committed `cde7733` | closed |
 | 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
-| 4 | ✅ `4A`–`4B` · ⬜ `4C`–`4E` | current |
+| 4 | ✅ `4A`–`4C` · ⬜ `4D`–`4E` | current |
 | 5–12 | ⬜ not started | — |
 
 ---
@@ -156,7 +156,7 @@ all-CLI ingest→mutate→cut), DoD, tag `phase-3`.
 
 ---
 
-## Phase 4 — Layout engine  🔨 IN PROGRESS (4A–4B done)
+## Phase 4 — Layout engine  🔨 IN PROGRESS (4A–4C done)
 
 Split by provider risk: harness first with trivial providers, then workers,
 then the two real engines one at a time. Roadmap refs: Phase 4 §1–13.
@@ -176,7 +176,7 @@ types, SVG snapshot exporter, CLI `meridian layout --svg out.svg`,
 - **Exit:** golden-SVG pipeline works end-to-end on real P3 cuts — the
   review harness exists before any hard engine does.
 
-### 4C — Worker host, cancellation, cache
+### 4C — Worker host, cancellation, cache  ✅ DONE
 Comlink worker host (transferable typed arrays per ADR-0017); cancellation
 (new request aborts stale one — measured, not assumed); `LayoutCache` keyed
 `(storeVersion, cutHash, providerId, hintsHash)`; provider-crash recovery

@@ -73,10 +73,11 @@ module.exports = {
       name: 'layout-only-abstraction-and-core',
       severity: 'error',
       comment:
-        'layout imports @meridian/abstraction (Cut/InducedEdge) and graph-core (id brands) types only (ADR-0015 ruling; ROADMAP Phase 4 §12) — no DOM, no domain, no AI, not even plugin-api. NOTE: the layout→abstraction edge is a TIME-BOXED WAYPOINT — subphase 5B moves the geometry + I/O types into @meridian/view-model and repoints layout there, at which point this `abstraction` permission is REMOVED (ADR-0015).',
+        'layout imports @meridian/abstraction (Cut/InducedEdge) and graph-core (id brands) types, plus comlink as the one runtime dep of the ADR-0017 worker host (4C) — no DOM, no domain, no AI, not even plugin-api. NOTE: the layout→abstraction edge is a TIME-BOXED WAYPOINT — subphase 5B moves the geometry + I/O types into @meridian/view-model and repoints layout there, at which point this `abstraction` permission is REMOVED (ADR-0015). comlink stays (the worker host is isomorphic; node:worker_threads never appears in layout/src — only in the CLI/test worker factory shims).',
       from: { path: '^packages/layout/src' },
       to: {
-        pathNot: '^packages/layout/src|^packages/graph-core|^packages/abstraction',
+        pathNot:
+          '^packages/layout/src|^packages/graph-core|^packages/abstraction|^node_modules/(\\.pnpm/)?comlink',
         dependencyTypesNot: ['type-only'],
       },
     },

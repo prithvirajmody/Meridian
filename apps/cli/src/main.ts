@@ -70,13 +70,16 @@ Usage:
                                              induced (aggregated) edges. --focus
                                              is recorded in the cut trace
   meridian layout <file> --svg <out.svg> [--provider <id>]
-                  [--level <N> | --zoom <z>] [--json]
+                  [--level <N> | --zoom <z>] [--worker] [--json]
                                              lay out the visible cut of a
                                              GraphDocument (default --level 0,
                                              the coarsest) with a deterministic
                                              provider (grid | tree; default
                                              grid) and write a normalized SVG
-                                             snapshot
+                                             snapshot. --worker runs the
+                                             provider off-thread in the
+                                             ADR-0017 Comlink worker host
+                                             (byte-identical output)
   meridian ingest <source> [--adapter <domain>] [--out <file>] [--json]
                                              run a domain adapter over a source
                                              file: sniff arbitration (or forced
@@ -566,21 +569,26 @@ async function cmdWatch(
 // ---------------------------------------------------------------------- main
 
 const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider']);
+const BOOL_FLAGS = new Set(['--worker']);
 
 interface Cli {
   readonly positional: string[];
   readonly json: boolean;
   readonly values: Map<string, string>;
+  readonly flags: ReadonlySet<string>;
 }
 
 function parseCli(args: string[]): Cli {
   const positional: string[] = [];
   const values = new Map<string, string>();
+  const flags = new Set<string>();
   let json = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
     if (arg === '--json') {
       json = true;
+    } else if (BOOL_FLAGS.has(arg)) {
+      flags.add(arg);
     } else if (VALUE_FLAGS.has(arg)) {
       const value = args[i + 1];
       if (value === undefined || value.startsWith('--')) usageError(`${arg}: missing value`);
@@ -592,11 +600,14 @@ function parseCli(args: string[]): Cli {
       positional.push(arg);
     }
   }
-  return { positional, json, values };
+  return { positional, json, values, flags };
 }
 
 function allowFlags(cli: Cli, command: string, allowed: string[]): void {
   for (const flag of cli.values.keys()) {
+    if (!allowed.includes(flag)) usageError(`${command}: unexpected flag ${flag}`);
+  }
+  for (const flag of cli.flags) {
     if (!allowed.includes(flag)) usageError(`${command}: unexpected flag ${flag}`);
   }
 }
@@ -684,7 +695,7 @@ async function main(): Promise<void> {
       break;
     }
     case 'layout': {
-      allowFlags(cli, command, ['--svg', '--provider', '--level', '--zoom']);
+      allowFlags(cli, command, ['--svg', '--provider', '--level', '--zoom', '--worker']);
       const svg = cli.values.get('--svg');
       if (svg === undefined) usageError('layout: missing --svg <out.svg>');
       if (cli.values.has('--level') && cli.values.has('--zoom')) {
@@ -708,6 +719,7 @@ async function main(): Promise<void> {
           json: cli.json,
           svg,
           provider: cli.values.get('--provider') ?? 'grid',
+          worker: cli.flags.has('--worker'),
           ...(level !== undefined ? { level } : {}),
           ...(zoom !== undefined ? { zoom } : {}),
         }),

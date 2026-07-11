@@ -39,9 +39,12 @@ import {
 import {
   BUILTIN_LAYOUT_PROVIDERS,
   exportSvg,
+  LayoutWorkerHost,
   type LayoutInput,
+  type LayoutResult,
   type Size,
 } from '@meridian/layout';
+import { nodeWorkerFactory } from './layout-worker.js';
 
 function out(line: string): void {
   process.stdout.write(line + '\n');
@@ -106,6 +109,9 @@ export interface LayoutOptions {
   readonly level?: number;
   /** A raw zoom scalar in `[0,1]` (alternative to `--level`). */
   readonly zoom?: number;
+  /** Run the provider inside the ADR-0017 Comlink worker host (4C) instead of
+   * on the main thread. Output is byte-identical — the goldens prove it. */
+  readonly worker?: boolean;
 }
 
 export async function cmdLayout(file: string, opts: LayoutOptions): Promise<number> {
@@ -142,7 +148,21 @@ export async function cmdLayout(file: string, opts: LayoutOptions): Promise<numb
   }
 
   const input: LayoutInput = { cut, edges: result.inducedEdges, sizes, hints: {} };
-  const layout = await provider.compute(input);
+  let layout: LayoutResult;
+  if (opts.worker) {
+    // Run the provider off the main thread in the ADR-0017 worker host. The
+    // geometry is byte-identical to the main-thread path (the goldens prove
+    // it); on a provider crash the host falls back to grid (degraded).
+    const host = new LayoutWorkerHost({ factory: nodeWorkerFactory() });
+    try {
+      const hosted = await host.compute(provider.id, input);
+      layout = hosted.layout;
+    } finally {
+      await host.dispose();
+    }
+  } else {
+    layout = await provider.compute(input);
+  }
   const svg = exportSvg(layout, result.inducedEdges, { labels });
 
   try {
