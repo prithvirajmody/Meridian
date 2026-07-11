@@ -8,9 +8,15 @@
  * provider is the pure function of record; this module selects the request,
  * supplies presentation sizes, and writes files.
  *
- * Provider selection is an **explicit `--provider` flag with a plain default
- * of `grid`** — the ADR-0018 `chooseProvider` heuristic is subphase 4E and
- * deliberately absent here.
+ * Provider selection (ADR-0018): an explicit `--provider` flag wins; when it is
+ * **absent**, the CLI defers to the pure `chooseProvider` heuristic — layered
+ * for DAG-ish cuts, force for cluster-ish, tree for forests, grid for soup /
+ * single nodes — computed from the resolved `(cut, inducedEdges)`. This
+ * reconciles the 4B "default = grid" contract with ADR-0018: the *engine picks
+ * per view shape* whenever the caller does not name a provider (the level-0 cut
+ * of every corpus doc is a single title node, so the heuristic still returns
+ * `grid` there — rule 1). The JSON/text output reports the provider actually
+ * used and whether it was defaulted.
  *
  * Node sizes: layout providers place boxes, they never invent sizes
  * (ADR-0015), so the composition root must supply them. The CLI derives a
@@ -41,6 +47,7 @@ import {
 } from '@meridian/abstraction';
 import {
   BUILTIN_LAYOUT_PROVIDERS,
+  chooseProvider,
   exportSvg,
   LayoutWorkerHost,
   type CompoundNesting,
@@ -129,8 +136,9 @@ export interface LayoutOptions {
   readonly json: boolean;
   /** Output SVG path (required). */
   readonly svg: string;
-  /** Provider id; validated against the built-in registry. Default `grid`. */
-  readonly provider: string;
+  /** Provider id; validated against the built-in registry. When omitted, the
+   * ADR-0018 `chooseProvider` heuristic picks per view shape. */
+  readonly provider?: string;
   /** A base containment level (≥ 0); default 0 (coarsest). */
   readonly level?: number;
   /** A raw zoom scalar in `[0,1]` (alternative to `--level`). */
@@ -141,8 +149,9 @@ export interface LayoutOptions {
 }
 
 export async function cmdLayout(file: string, opts: LayoutOptions): Promise<number> {
-  const provider = BUILTIN_LAYOUT_PROVIDERS.get(opts.provider);
-  if (provider === undefined) {
+  // An explicit --provider is validated up front (before any work); the default
+  // is chosen from the resolved cut below (ADR-0018).
+  if (opts.provider !== undefined && !BUILTIN_LAYOUT_PROVIDERS.has(opts.provider)) {
     const known = [...BUILTIN_LAYOUT_PROVIDERS.keys()].join(', ');
     process.stderr.write(`layout: unknown provider "${opts.provider}" (available: ${known})\n`);
     return 2;
@@ -164,6 +173,12 @@ export async function cmdLayout(file: string, opts: LayoutOptions): Promise<numb
   const policy = canonicalPolicy(chain);
   const result = resolveLod(space, chain, policy, { zoom, overrides: new Map() });
   const cut = result.cut;
+
+  // Provider selection (ADR-0018): explicit flag wins; otherwise the pure
+  // heuristic picks per view shape from the resolved (cut, inducedEdges).
+  const defaulted = opts.provider === undefined;
+  const providerId = defaulted ? chooseProvider(cut, result.inducedEdges) : opts.provider!;
+  const provider = BUILTIN_LAYOUT_PROVIDERS.get(providerId)!;
 
   const sizes = new Map<NodeId, Size>();
   const labels = new Map<NodeId, string>();
@@ -215,6 +230,7 @@ export async function cmdLayout(file: string, opts: LayoutOptions): Promise<numb
           file,
           ok: true,
           provider: provider.id,
+          providerDefaulted: defaulted,
           level: cut.level,
           maxLevel: maxLevelOf(chain),
           zoom,
@@ -229,7 +245,9 @@ export async function cmdLayout(file: string, opts: LayoutOptions): Promise<numb
       ),
     );
   } else {
-    out(`layout ${file} — provider ${provider.id} · level ${cut.level}/${maxLevelOf(chain)}`);
+    out(
+      `layout ${file} — provider ${provider.id}${defaulted ? ' (default, ADR-0018)' : ''} · level ${cut.level}/${maxLevelOf(chain)}`,
+    );
     out(`  nodes      ${cut.members.length}`);
     out(`  edges      ${result.inducedEdges.length} induced`);
     out(`  bounds     ${fmt(b.width)} × ${fmt(b.height)} at (${fmt(b.x)}, ${fmt(b.y)})`);

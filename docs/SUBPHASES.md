@@ -14,9 +14,10 @@ Phases 1–2 are built in the working tree (ADR-0005…0011, `graph-store`,
 and demos for both) but **uncommitted** — see subphase 2Z below.
 
 **Build progress (updated 2026-07-11).** Committed & tagged through
-**Phase 3** (`phase-3`); Phase **4A** (ADRs 0015–0018) committed at `f2b5f77`;
-Phase **4B** (`packages/layout/`, grid/tree providers, SVG exporter,
-`meridian layout`, corpus goldens) verified green and committed.
+**Phase 4** (`phase-4`): 4A `f2b5f77`, 4B `9c845b2`, 4C `5d2897a`,
+4D `58298db`, 4E gate. The two human-judgment rows of the Phase 4 table
+(SVG quality review; pathology eyeball) are marked UNVERIFIED — HUMAN in
+`docs/checklists/phase-04.md`, pending user review alongside M1.
 Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 ⬜ not started.
 
@@ -25,7 +26,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 0 | ✅ committed `cde7733` | closed |
 | 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
-| 4 | ✅ `4A`–`4D` · ⬜ `4E` | current |
+| 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
 | 5–12 | ⬜ not started | — |
 
 ---
@@ -156,7 +157,7 @@ all-CLI ingest→mutate→cut), DoD, tag `phase-3`.
 
 ---
 
-## Phase 4 — Layout engine  🔨 IN PROGRESS (4A–4D done)
+## Phase 4 — Layout engine  ✅ DONE (tag `phase-4`; human SVG review pending)
 
 Split by provider risk: harness first with trivial providers, then workers,
 then the two real engines one at a time. Roadmap refs: Phase 4 §1–13.
@@ -195,7 +196,7 @@ ADR-0016 stability contract, stability scorer, optional orthogonal routes.
   incremental re-layout after 10-node delta <100ms.
 - **Exit:** elk goldens locked; stability is a scored, CI-gated number.
 
-### 4E — d3-force provider, heuristic, phase gate
+### 4E — d3-force provider, heuristic, phase gate  ✅ DONE
 Seeded deterministic force provider with warm-start from previous result;
 ADR-0018 default-provider heuristic (layered for DAG-ish, force for
 cluster-ish); then the full verification table, human SVG review against the

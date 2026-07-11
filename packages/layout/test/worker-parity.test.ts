@@ -10,6 +10,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  d3ForceProvider,
   elkLayeredProvider,
   gridProvider,
   LayoutWorkerHost,
@@ -74,6 +75,18 @@ const cases: { name: string; provider: LayoutProvider; input: () => LayoutInput 
     name: 'grid — single node',
     provider: gridProvider,
     input: () => ({ cut: cutOf('solo'), edges: [], sizes: sizes({ solo: { width: 30, height: 30 } }), hints: {} }),
+  },
+  {
+    // d3-force computes purely on member indices/sizes/edges/seed, so the
+    // worker (placeholder ids) reproduces the main thread's geometry exactly.
+    name: 'd3-force — seeded, cluster-ish shape',
+    provider: d3ForceProvider,
+    input: () => ({
+      cut: cutOf('a', 'b', 'c', 'd', 'e'),
+      edges: [edge('a', 'b'), edge('b', 'c'), edge('c', 'a'), edge('c', 'd'), edge('d', 'e')],
+      sizes: uniformSizes(['a', 'b', 'c', 'd', 'e'], { width: 44, height: 22 }),
+      hints: { spacing: 20, seed: 7 },
+    }),
   },
 ];
 

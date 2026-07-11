@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="604.64" height="491.96" viewBox="-259.48 -230.55 604.64 491.96">
+  <g class="edges" fill="none" stroke="#888" stroke-width="1">
+    <line data-edge="ndcagayqydbbbuwaaq6exkik5ru→n2nsiuurn6ectsqsla7nwtvualy→doc:links-to" x1="63.02" y1="53.47" x2="-201.48" y2="8.71" />
+  </g>
+  <g class="nodes" fill="#e8eef7" stroke="#33517a" stroke-width="1">
+    <rect data-id="n2nsiuurn6ectsqsla7nwtvualy" x="-251.48" y="-5.29" width="100" height="28" />
+    <text x="-201.48" y="8.71" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Setext Title</text>
+    <rect data-id="ndcagayqydbbbuwaaq6exkik5ru" x="6.02" y="39.47" width="114" height="28" />
+    <text x="63.02" y="53.47" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Quotes &amp; Rules</text>
+    <rect data-id="nelrg2ewmf3dqhj6gh2x4jsk65e" x="-223.35" y="-222.55" width="205" height="28" />
+    <text x="-120.85" y="-208.55" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Unicode: café, 東京, עברית, é</text>
+    <rect data-id="ng2g7lujr3cqy4qn5fyaadawxwq" x="99.8" y="-217.74" width="60" height="28" />
+    <text x="129.8" y="-203.74" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Lists</text>
+    <rect data-id="nirm6xbxxv5witvlatrf3eeavou" x="145.25" y="211.3" width="79" height="28" />
+    <text x="184.75" y="225.3" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Duplicate</text>
+    <rect data-id="nktpnkgmf7z2egvdqobjin5yjoy" x="-197.81" y="225.41" width="107" height="28" />
+    <text x="-144.31" y="239.41" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Fences &amp; Code</text>
+    <rect data-id="nsibnhricnvgi37y6ti63nvegv4" x="258.16" y="-19.94" width="79" height="28" />
+    <text x="297.66" y="-5.94" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Duplicate</text>
+  </g>
+</svg>

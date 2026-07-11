@@ -22,11 +22,13 @@
     "@meridian/abstraction": "workspace:*",
     "@meridian/graph-core": "workspace:*",
     "comlink": "^4.4.2",
+    "d3-force": "^3.0.0",
     "elkjs": "^0.11.1"
   },
   "devDependencies": {
     "@meridian/graph-store": "workspace:*",
     "@meridian/plugin-api": "workspace:*",
+    "@types/d3-force": "^3.0.10",
     "@types/node": "^24.0.0",
     "typescript": "^5.8.0",
     "vitest": "^3.2.0"

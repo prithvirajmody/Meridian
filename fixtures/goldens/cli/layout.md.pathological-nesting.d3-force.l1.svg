@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="309.31" height="250.84" viewBox="-150.05 -157.1 309.31 250.84">
+  <g class="edges" fill="none" stroke="#888" stroke-width="1">
+  </g>
+  <g class="nodes" fill="#e8eef7" stroke="#33517a" stroke-width="1">
+    <rect data-id="ncfd5fr3k6ibgbczagk7qpzwc3m" x="-142.05" y="57.74" width="128" height="28" />
+    <text x="-78.05" y="71.74" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Orphan Depth Six</text>
+    <rect data-id="nph2imety4bzqsrziefrszdd2rm" x="91.25" y="45.51" width="60" height="28" />
+    <text x="121.25" y="59.51" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">L2</text>
+    <rect data-id="nz7ldlj6hdqrevn7udvosqvp6qq" x="-80.8" y="-149.1" width="60" height="28" />
+    <text x="-50.8" y="-135.1" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Wide</text>
+  </g>
+</svg>

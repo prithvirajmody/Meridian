@@ -73,11 +73,11 @@ module.exports = {
       name: 'layout-only-abstraction-and-core',
       severity: 'error',
       comment:
-        'layout imports @meridian/abstraction (Cut/InducedEdge) and graph-core (id brands) types, plus two runtime deps: comlink (the ADR-0017 worker host, 4C) and elkjs (the elk-layered engine, 4D) — both isomorphic pure JS. No DOM, no domain, no AI, not even plugin-api. NOTE: the layout→abstraction edge is a TIME-BOXED WAYPOINT — subphase 5B moves the geometry + I/O types into @meridian/view-model and repoints layout there, at which point this `abstraction` permission is REMOVED (ADR-0015). comlink/elkjs stay (both isomorphic; node:worker_threads never appears in layout/src — only in the CLI/test worker factory shims; elkjs uses the bundled build, no Web Worker).',
+        'layout imports @meridian/abstraction (Cut/InducedEdge) and graph-core (id brands) types, plus three runtime engine deps: comlink (the ADR-0017 worker host, 4C), elkjs (the elk-layered engine, 4D), and d3-force (the seeded force engine, 4E) — all isomorphic pure JS. No DOM, no domain, no AI, not even plugin-api. NOTE: the layout→abstraction edge is a TIME-BOXED WAYPOINT — subphase 5B moves the geometry + I/O types into @meridian/view-model and repoints layout there, at which point this `abstraction` permission is REMOVED (ADR-0015). comlink/elkjs/d3-force stay (all isomorphic; node:worker_threads never appears in layout/src — only in the CLI/test worker factory shims; elkjs uses the bundled build and d3-force ticks synchronously, no Web Worker).',
       from: { path: '^packages/layout/src' },
       to: {
         pathNot:
-          '^packages/layout/src|^packages/graph-core|^packages/abstraction|^node_modules/(\\.pnpm/)?comlink|^node_modules/(\\.pnpm/)?elkjs',
+          '^packages/layout/src|^packages/graph-core|^packages/abstraction|^node_modules/(\\.pnpm/)?comlink|^node_modules/(\\.pnpm/)?elkjs|^node_modules/(\\.pnpm/)?d3-force',
         dependencyTypesNot: ['type-only'],
       },
     },

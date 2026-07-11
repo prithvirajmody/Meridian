@@ -109,7 +109,12 @@ providers.
   The score itself stays the pure formula above, recomputed independently by CI.
 - **d3-force:** initialize the simulation from `prev` positions (not random) and
   run with reduced `alpha`, so persistent nodes settle near prior spots; the seeded
-  PRNG (ADR-0018) keeps it deterministic.
+  PRNG (ADR-0018) keeps it deterministic. *(Amended in 4E, measured:)* pure
+  warm-start + reduced alpha alone reflowed the graph (ring-delta scored 0.32,
+  8-node-delta 0.88 — below the floor). The shipped mechanism **holds persistent
+  nodes fixed (`fx`/`fy`) through the warm relaxation, plus centroid alignment to
+  `prev`** — the force analogue of elk's 4D amendment above. The score stays the
+  pure formula, recomputed independently by CI.
 
 **Purity.** `stabilityScore(prev, current, hints) → { stability, persisted,
 added, removed }` is a pure function (§3.2, I6): CI computes it independently and

@@ -31,6 +31,9 @@ export { connectedComponents } from './components.js';
 export { gridProvider } from './grid.js';
 export { treeProvider } from './tree.js';
 export { elkLayeredProvider } from './elk-layered.js';
+export { DEFAULT_SEED, d3ForceProvider, LARGE_N, LARGE_THETA, MAX_TICKS_LARGE } from './d3-force.js';
+export { BETA, chooseProvider, DELTA, GAMMA, V_MAX } from './choose-provider.js';
+export type { ProviderChoice } from './choose-provider.js';
 export { STABILITY_RAMP, stabilityScore } from './stability.js';
 export type { StabilityScore } from './stability.js';
 export { exportSvg } from './svg.js';
@@ -79,16 +82,18 @@ export {
 } from './worker/cache.js';
 export type { LayoutCacheKey } from './worker/cache.js';
 
+import { d3ForceProvider } from './d3-force.js';
 import { elkLayeredProvider } from './elk-layered.js';
 import { gridProvider } from './grid.js';
 import { treeProvider } from './tree.js';
 import type { LayoutProvider } from './types.js';
 
 /** The layout providers registered by id: the deterministic `grid`/`tree`
- * fallbacks (4B) plus the real `elk-layered` engine (4D). d3-force (4E)
- * registers later. */
+ * fallbacks (4B), the real `elk-layered` engine (4D), and the seeded
+ * `d3-force` engine (4E). */
 export const BUILTIN_LAYOUT_PROVIDERS: ReadonlyMap<string, LayoutProvider> = new Map([
   [gridProvider.id, gridProvider],
   [treeProvider.id, treeProvider],
   [elkLayeredProvider.id, elkLayeredProvider],
+  [d3ForceProvider.id, d3ForceProvider],
 ]);

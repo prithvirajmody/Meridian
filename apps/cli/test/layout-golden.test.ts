@@ -15,7 +15,7 @@
  * the cut goldens do — so these goldens exercise real Phase 3 cuts end-to-end:
  * ingest → cut → layout → SVG.
  */
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -32,6 +32,25 @@ const UPDATE = process.env.UPDATE_GOLDENS === '1';
 function run(args: string[]) {
   const r = spawnSync(process.execPath, [cli, ...args], { cwd: repoRoot, encoding: 'utf8' });
   return { stdout: r.stdout ?? '', stderr: r.stderr ?? '', code: r.status };
+}
+
+/**
+ * Async, **non-blocking** CLI runner for the per-case golden checks. Each case
+ * spawns one Node process; with `d3-force` (4E) the suite crossed ~170 spawns,
+ * and blocking the vitest worker thread with `spawnSync` for that long starved
+ * the reporter's `onTaskUpdate` RPC (spurious teardown timeout). Awaiting an
+ * async `spawn` keeps the worker's event loop responsive between cases while
+ * still running them sequentially (one subprocess at a time).
+ */
+function runAsync(args: string[]): Promise<{ stdout: string; stderr: string; code: number | null }> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [cli, ...args], { cwd: repoRoot });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (d) => (stdout += d));
+    child.stderr.on('data', (d) => (stderr += d));
+    child.on('close', (code) => resolve({ stdout, stderr, code }));
+  });
 }
 
 /** The finest level for a document, read from the sibling command. */
@@ -59,7 +78,7 @@ for (const name of CORPUS) {
   const ing = run(['ingest', `fixtures/corpora/markdown/${name}.md`, '--out', docRel]);
   if (ing.code !== 0) throw new Error(`ingest ${name} failed (code ${ing.code}): ${ing.stderr}`);
   const maxLevel = probeMaxLevel(docRel);
-  for (const provider of ['grid', 'tree', 'elk-layered']) {
+  for (const provider of ['grid', 'tree', 'elk-layered', 'd3-force']) {
     for (let level = 0; level <= maxLevel; level++) {
       cases.push({ golden: `layout.md.${name}.${provider}.l${level}.svg`, docRel, provider, level });
     }
@@ -67,9 +86,9 @@ for (const name of CORPUS) {
 }
 
 describe('meridian layout — SVG golden files', () => {
-  it.each(cases)('$golden', ({ golden, docRel, provider, level }) => {
+  it.each(cases)('$golden', async ({ golden, docRel, provider, level }) => {
     const svgPath = resolve(outDir, golden);
-    const r = run(['layout', docRel, '--svg', svgPath, '--provider', provider, '--level', String(level)]);
+    const r = await runAsync(['layout', docRel, '--svg', svgPath, '--provider', provider, '--level', String(level)]);
     expect(r.stderr).toBe('');
     expect(r.code).toBe(0);
     const svg = readFileSync(svgPath, 'utf8');
@@ -94,11 +113,11 @@ describe('meridian layout — SVG golden files', () => {
  * path above; here the worker must match them exactly.
  */
 describe('meridian layout --worker — byte-identical to committed goldens (4C)', () => {
-  it.each(cases)('$golden (in worker)', ({ golden, docRel, provider, level }) => {
+  it.each(cases)('$golden (in worker)', async ({ golden, docRel, provider, level }) => {
     const goldenPath = resolve(goldensDir, golden);
     if (!existsSync(goldenPath)) return; // covered by the main-thread suite's guard
     const svgPath = resolve(outDir, `worker.${golden}`);
-    const r = run(['layout', docRel, '--svg', svgPath, '--provider', provider, '--level', String(level), '--worker']);
+    const r = await runAsync(['layout', docRel, '--svg', svgPath, '--provider', provider, '--level', String(level), '--worker']);
     expect(r.stderr).toBe('');
     expect(r.code).toBe(0);
     expect(readFileSync(svgPath, 'utf8')).toBe(readFileSync(goldenPath, 'utf8'));
@@ -116,13 +135,17 @@ describe('meridian layout — contract behavior (no goldens: contracts, not byte
     expect(readFileSync(p1, 'utf8')).toBe(readFileSync(p2, 'utf8'));
   });
 
-  it('defaults to the grid provider and level 0', () => {
+  it('defaults to level 0 and the ADR-0018 heuristic (single-node cut → grid)', () => {
+    // No --provider: the CLI defers to chooseProvider (ADR-0018). The level-0
+    // cut of every corpus doc is a single title node (V ≤ 1 → rule 1 → grid),
+    // so the default here is grid — and the output flags it as defaulted.
     const p = resolve(outDir, 'default.svg');
     const r = run(['layout', doc, '--svg', p, '--json']);
     expect(r.code).toBe(0);
-    const j = JSON.parse(r.stdout) as { provider: string; level: number };
-    expect(j.provider).toBe('grid');
+    const j = JSON.parse(r.stdout) as { provider: string; providerDefaulted: boolean; level: number };
     expect(j.level).toBe(0);
+    expect(j.providerDefaulted).toBe(true);
+    expect(j.provider).toBe('grid');
   });
 
   it('rejects an unknown provider with exit 2', () => {
@@ -137,6 +160,16 @@ describe('meridian layout — contract behavior (no goldens: contracts, not byte
     expect(r.stderr).toBe('');
     expect(r.code).toBe(0);
     expect((JSON.parse(r.stdout) as { provider: string }).provider).toBe('elk-layered');
+  });
+
+  it('accepts the d3-force provider (4E) and reports it as not defaulted', () => {
+    const p = resolve(outDir, 'force.svg');
+    const r = run(['layout', doc, '--svg', p, '--provider', 'd3-force', '--level', '1', '--json']);
+    expect(r.stderr).toBe('');
+    expect(r.code).toBe(0);
+    const j = JSON.parse(r.stdout) as { provider: string; providerDefaulted: boolean };
+    expect(j.provider).toBe('d3-force');
+    expect(j.providerDefaulted).toBe(false);
   });
 
   it('requires --svg (usage, exit 2)', () => {

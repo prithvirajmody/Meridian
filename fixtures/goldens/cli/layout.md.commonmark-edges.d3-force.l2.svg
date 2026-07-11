@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1194.43" height="903.26" viewBox="-696.57 -372.93 1194.43 903.26">
+  <g class="edges" fill="none" stroke="#888" stroke-width="1">
+  </g>
+  <g class="nodes" fill="#e8eef7" stroke="#33517a" stroke-width="1">
+    <rect data-id="n376zcobhjzsntnvkq73w3xfvxe" x="-168.53" y="-9.45" width="240" height="28" />
+    <text x="-48.53" y="4.55" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">unordered one unordered two nested a nested b deeper</text>
+    <rect data-id="n6qm7ewnj6jwsjhyfqblf6wtwny" x="83.97" y="73.01" width="240" height="28" />
+    <text x="203.97" y="87.01" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Paragraph with combining characters: café vs café, emoji 🗺️, and RTL עִבְרִית.</text>
+    <rect data-id="n6t2thzlc7wohozple3fqw7lb3a" x="-144.97" y="-349.99" width="156" height="28" />
+    <text x="-66.97" y="-335.99" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">const x: number = 1;</text>
+    <rect data-id="nd5tlsoy3mvzsnmv4csyz2g4st4" x="152.23" y="-236.76" width="114" height="28" />
+    <text x="209.23" y="-222.76" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Skipped Levels</text>
+    <rect data-id="ndzqoiaafezfxky52kunjvl5zuu" x="249.61" y="288.69" width="149" height="28" />
+    <text x="324.11" y="302.69" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">indented code block</text>
+    <rect data-id="nec6476ofi5pxx3vvwng7dtvwzm" x="-52.55" y="311.47" width="60" height="28" />
+    <text x="-22.55" y="325.47" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">first</text>
+    <rect data-id="ng7toyvjgdn3wr6p5j6voezq7ei" x="429.85" y="18.02" width="60" height="28" />
+    <text x="459.85" y="32.02" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">···</text>
+    <rect data-id="ngjrhytat4s652atfp3fitzx3oy" x="-433.71" y="5.91" width="240" height="28" />
+    <text x="-313.71" y="19.91" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">A blockquote with a reference link. Nested quote.</text>
+    <rect data-id="nm7isblvlkjl5gbt5zcvizl4eva" x="-491.84" y="266.7" width="240" height="28" />
+    <text x="-371.84" y="280.7" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">&lt;div class=&quot;raw&quot;&gt; an HTML block &lt;/div&gt;</text>
+    <rect data-id="nsnt7trodg7f4xl5rtorfiae6gu" x="-470.61" y="-317.9" width="240" height="28" />
+    <text x="-350.61" y="-303.9" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">Preamble paragraph with an external link and an autolink https://example.net.</text>
+    <rect data-id="ntk33if4lrnyk5enh4o3mvvreku" x="-688.57" y="-68.94" width="240" height="28" />
+    <text x="-568.57" y="-54.94" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">second — its anchor gets a suffix.</text>
+    <rect data-id="nzpcuejfohaulukjbakl2btubfa" x="-228.13" y="494.32" width="177" height="28" />
+    <text x="-139.63" y="508.32" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">ordered one ordered two</text>
+    <rect data-id="nzyf5pi4xcucyswr7snim56yuzi" x="322.4" y="-364.93" width="135" height="28" />
+    <text x="389.9" y="-350.93" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#1a2a44" stroke="none">no language fence</text>
+  </g>
+</svg>

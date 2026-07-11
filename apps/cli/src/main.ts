@@ -74,12 +74,13 @@ Usage:
                                              lay out the visible cut of a
                                              GraphDocument (default --level 0,
                                              the coarsest) with a layout
-                                             provider (grid | tree | elk-layered;
-                                             default grid) and write a normalized
-                                             SVG snapshot. --worker runs the
-                                             provider off-thread in the
-                                             ADR-0017 Comlink worker host
-                                             (byte-identical output)
+                                             provider (grid | tree | elk-layered
+                                             | d3-force) and write a normalized
+                                             SVG snapshot. Without --provider the
+                                             ADR-0018 heuristic picks per view
+                                             shape. --worker runs the provider
+                                             off-thread in the ADR-0017 Comlink
+                                             worker host (byte-identical output)
   meridian ingest <source> [--adapter <domain>] [--out <file>] [--json]
                                              run a domain adapter over a source
                                              file: sniff arbitration (or forced
@@ -718,7 +719,7 @@ async function main(): Promise<void> {
         await cmdLayout(file, {
           json: cli.json,
           svg,
-          provider: cli.values.get('--provider') ?? 'grid',
+          ...(cli.values.has('--provider') ? { provider: cli.values.get('--provider')! } : {}),
           worker: cli.flags.has('--worker'),
           ...(level !== undefined ? { level } : {}),
           ...(zoom !== undefined ? { zoom } : {}),

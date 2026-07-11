@@ -73,6 +73,15 @@ its *selection* is deterministic here, its *output* seeded in ADR-0016/§9b).
 `5000`, the node-budget scale from ADR-0014), the classifier **skips `C`** and
 decides on `backRatio` + `avgDeg` alone (rules 4/5/6 with the `C ≥ γ` disjunct
 dropped). This keeps the main-thread classifier inside ADR-0017's 4ms budget.
+*(Noted in 4E:)* dropping the `C ≥ γ` disjunct is **provably lossless** — a cut
+that reaches rule 5 and fails `avgDeg > δ` falls through to rule 6, which also
+returns `d3-force` — so the guard changes cost, never the answer.
+
+**CLI default (folded back from 4E).** `meridian layout` with no `--provider`
+now calls `chooseProvider` (this ADR) rather than the 4B placeholder default of
+`grid`; `--json` output reports `providerDefaulted: true`. Observable behavior
+on level-0 corpus cuts is unchanged (single-node cuts → grid by rule 1); an
+explicit `--provider` still bypasses the heuristic entirely.
 
 ## Alternatives considered
 
