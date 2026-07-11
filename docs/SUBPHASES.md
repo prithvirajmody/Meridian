@@ -27,7 +27,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
-| 5 | ✅ `5A`–`5B` · 🔨 `5C` · ⬜ `5D`–`5F` | current (visual track) |
+| 5 | ✅ `5A`–`5C` · ⬜ `5D`–`5F` | current (visual track) |
 | 6 | ⬜ not started | — |
 | 7 | ✅ `7A`–`7B` · ⬜ `7C`–`7H` | current (domain track) |
 | 8–12 | ⬜ not started | — |
@@ -231,7 +231,7 @@ ADR-0020) live here or adjacent — everything unit-testable without a GPU.
   function; NaN-position clamping (hostile layout input → clamped + warned).
 - **Exit:** RenderModel fully specified and tested with zero browser deps.
 
-### 5C — Scene core: quads, edges, culling, camera  🔨 IN PROGRESS
+### 5C — Scene core: quads, edges, culling, camera  ✅ DONE (`895bf61`)
 `@meridian/renderer`: `SceneAdapter` over pixi v8 — instanced node quads,
 edge lines, quadtree viewport culling, geometric `CameraController`
 (pan/zoomAt), renderer stats counter (draw calls, culled count).
