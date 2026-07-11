@@ -95,6 +95,28 @@ importers:
         specifier: ^3.2.0
         version: 3.2.6(@types/debug@4.1.13)(@types/node@24.13.2)
 
+  packages/adapters/code:
+    dependencies:
+      comlink:
+        specifier: ^4.4.2
+        version: 4.4.2
+      web-tree-sitter:
+        specifier: 0.26.10
+        version: 0.26.10
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      playwright-core:
+        specifier: ^1.61.1
+        version: 1.61.1
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@24.13.2)
+
   packages/adapters/markdown:
     dependencies:
       '@meridian/plugin-api':
@@ -1238,6 +1260,11 @@ packages:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
 
+  playwright-core@1.61.1:
+    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   postcss@8.5.16:
     resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
     engines: {node: ^10 || ^12 || >=14}
@@ -1487,6 +1514,9 @@ packages:
     resolution: {integrity: sha512-uG9qtQYoHqAsnT711nG5iZc/8M5inSmkGCOp7pFaytKG2aTfIca7p//CjiVzAE4P7hzaYuCozMjNNaLgmhbK5g==}
     engines: {node: ^18||>=20}
     hasBin: true
+
+  web-tree-sitter@0.26.10:
+    resolution: {integrity: sha512-vengBGYS7FpAerkR3o04oBL4L8MkVmjawK50AFBu7v0HZBkmF9ZavPGKoXLSSmRhp7T/YgsJ7joAS3yAxHPEqQ==}
 
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
@@ -2364,6 +2394,8 @@ snapshots:
 
   picomatch@4.0.5: {}
 
+  playwright-core@1.61.1: {}
+
   postcss@8.5.16:
     dependencies:
       nanoid: 3.3.15
@@ -2613,6 +2645,8 @@ snapshots:
       - yaml
 
   watskeburt@4.2.3: {}
+
+  web-tree-sitter@0.26.10: {}
 
   which@2.0.2:
     dependencies:
