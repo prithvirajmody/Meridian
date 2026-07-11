@@ -27,7 +27,8 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
-| 5–12 | ⬜ not started | — |
+| 5 | ✅ `5A` · ⬜ `5B`–`5F` | current |
+| 6–12 | ⬜ not started | — |
 
 ---
 
@@ -214,7 +215,7 @@ The biggest phase in the plan — six sessions. The seam order matters:
 pure view-model first, then scene, then labels/picking, then the app, then
 the Playwright gate. Roadmap refs: Phase 5 §1–13.
 
-### 5A — ADR beat
+### 5A — ADR beat  ✅ DONE
 Draft ADR-0019 (pixi behind SceneAdapter + allowed-API list), ADR-0020
 (label strategy/tiers), ADR-0021 (picking), ADR-0022 (React/canvas
 boundary). Stop for approval.

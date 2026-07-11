@@ -77,6 +77,10 @@ so the decision history stays legible.
 | [0016](0016-stability-contract.md) | Stability contract: normalized displacement, a scored [0,1] number, gated at 0.90 | Proposed | §5.4, §5.5, ADR-A3 | 4 |
 | [0017](0017-worker-protocol.md) | Worker protocol: Comlink host, transferable typed arrays, cancel-preempting AbortSignal, grid crash-fallback | Proposed | §1.4, §14, ADR-0009 | 4 |
 | [0018](0018-default-provider-heuristic.md) | Default provider heuristic: a pure classifier over (cut, inducedEdges) | Proposed | §5.1, §5.2, ADR-A3 | 4 |
+| [0019](0019-pixi-scene-adapter.md) | Pixi v8 behind `SceneAdapter`, with a closed allowed-API surface | Accepted | §1.3, §9.1, §9.3, ADR-A8 | 5 |
+| [0020](0020-label-strategy-tiers.md) | Labels: screen-space MSDF `BitmapText`, geometric tiers, bounded Unicode fallback | Accepted | §1.3, §9.3, §10.3, ADR-A8 | 5 |
+| [0021](0021-spatial-index-picking.md) | Picking: worker-built world-space quadtree, synchronous CPU hit-test | Accepted | §1.3, §9.3, §10.3, ADR-A8 | 5 |
+| [0022](0022-react-canvas-boundary.md) | React/canvas boundary: zustand value bridge, no draw calls from React | Accepted | §1.3, §9.1, §10.3, ADR-A8 | 5 |
 
 Later phases extend this registry (ADR-0009+ at Phase 2, and so on). The
 constitution's `ADR-A5…A12` are pre-recorded there and become numbered ADRs in
