@@ -203,10 +203,16 @@ function declAttrs(decl: RawDecl, duplicate: boolean): Attrs {
     if (sig.generator) attrs['code:generator'] = true;
     if (sig.abstract) attrs['code:abstract'] = true;
     if (sig.accessibility !== undefined) attrs['code:accessibility'] = sig.accessibility;
+    if (sig.classmethod === true) attrs['code:classmethod'] = true;
+    if (sig.property === true) attrs['code:property'] = true;
   }
   if (decl.abstract === true) attrs['code:abstract'] = true;
   if (decl.exported) attrs['code:exported'] = true;
   if (decl.defaultExport) attrs['code:default-export'] = true;
+  if (decl.overload === true) attrs['code:overload'] = true;
+  if (decl.decorators !== undefined && decl.decorators.length > 0) {
+    attrs['code:decorators'] = decl.decorators.join(', ');
+  }
   if (duplicate) attrs['code:duplicate'] = true;
   return attrs as Attrs;
 }

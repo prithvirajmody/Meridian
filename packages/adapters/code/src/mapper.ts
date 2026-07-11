@@ -15,7 +15,7 @@
  * *what* (ADR-0027).
  */
 import type { CodeLanguage } from './languages.js';
-import { mapTypeScriptModule } from './map/typescript.js';
+import { mapModuleTree } from './map/map-module.js';
 import type { RawModule } from './map/raw.js';
 import { parseSource } from './parse.js';
 import { createParserRuntime, type ParserRuntime, type ParserRuntimeOptions } from './shim.js';
@@ -48,14 +48,11 @@ export function createInProcessMapper(runtimeOptions: ParserRuntimeOptions): Cod
   };
   return {
     async mapModule(req) {
-      if (req.language !== 'typescript') {
-        throw new Error(`adapter-code: mapping for "${req.language}" is not implemented in 7C (TypeScript only)`);
-      }
       const parser = await (await getRuntime()).parser(req.language);
       try {
         const { tree } = parseSource(parser, req.language, req.text);
         try {
-          return mapTypeScriptModule(tree, { source: req.source, label: req.label });
+          return mapModuleTree(tree, req.language, { source: req.source, label: req.label });
         } finally {
           tree.delete();
         }

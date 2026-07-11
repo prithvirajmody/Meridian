@@ -37,6 +37,10 @@ ingest-root basename with `path = [projectName]` (so its detail-graph id cannot
 collide with the root graph id); a package uses its repo-relative POSIX
 directory path with `path = []`. Known residual: a descendant file path equal
 to the project basename could collide pathologically; accepted for v1.
+*Amended 7D:* every directory maps to a `code:package` under this rule
+regardless of `__init__.py` (a Python package is not structurally
+distinguished from a plain directory in v1); `__init__.py` is an ordinary
+`code:module` named `__init__.py`, its declarations its own children.
 Namespaces are first-class scope segments (this record's own `['ns','Type',
 'member']` example), so the eager kind set includes `code:namespace` — fold
 into ROADMAP §7's kind list at the phase gate.
@@ -97,8 +101,9 @@ is reserved, unused).
    (remove+add) — correct: its qualified identity did change.
 4. **Duplicate names in one scope, not overloads.** Block-scoped duplicates sit at
    different scope paths (differing enclosing-block segments) and don't collide.
-   A genuine same-scope, same-signature duplicate (illegal but tree-sitter parses
-   error-tolerantly) gets a positional discriminator `~<declIndex>` (source-order
+   A genuine same-scope, same-signature duplicate (illegal in TS; *legal
+   redefinition* in Python, where the later binding wins at runtime — 7D) gets a
+   positional discriminator `~<declIndex>` (source-order
    ordinal among same-name same-scope declarations) as the last segment, and the
    node is flagged `code:duplicate: true` (honest). Keeps IDs unique (U1),
    deterministic, no throw.
@@ -162,8 +167,12 @@ the alias table exists — reserved, not built.
 1. **overloadHash inputs.** ~~Open~~ **Resolved 7C:** param arity + param types
    as-written (colon-stripped, whitespace-normalized) + `async`/`static`/
    generator/`abstract` markers + **return type** (so return-type-only TS
-   overloads get distinct IDs); param *names* excluded. Python's `@overload`
-   rule to be confirmed against this in 7D.
+   overloads get distinct IDs); param *names* excluded. **Python rule (7D):**
+   same inputs adapted to Python — param arity + annotations as-written +
+   `async`/`static`/`abstract` + return annotation; param names and decorators
+   excluded; no `generator` marker (a Python generator is a body-level `yield`,
+   invisible at the eager signature). `@overload` stubs take the same
+   `#signatureHash` discriminator and are flagged `code:overload`.
 2. **Span drift.** Confirm that provenance spans are "current after any
    substantive edit or full ingest," not after a pure-whitespace edit — this is a
    real tension with "provenance is exact" and should be folded back as a note on

@@ -17,7 +17,7 @@
  * also run worker-side, so whole trees never need to cross).
  */
 import type { CodeLanguage } from '../languages.js';
-import { mapTypeScriptModule } from '../map/typescript.js';
+import { mapModuleTree } from '../map/map-module.js';
 import type { RawModule } from '../map/raw.js';
 import { parseSource, type ParseOutcome } from '../parse.js';
 import { createParserRuntime, type ParserRuntime, type ParserRuntimeOptions } from '../shim.js';
@@ -147,10 +147,6 @@ export function createParseWorker(opts: {
     },
 
     async map(req: MapRequest): Promise<MapResponse> {
-      if (req.language !== 'typescript') {
-        // Python mapping is 7D; fail honestly rather than silently emit nothing.
-        throw new Error(`adapter-code: mapping for "${req.language}" is not implemented in 7C (TypeScript only)`);
-      }
       try {
         if (cancelled.delete(req.requestId)) throw abortError();
         const parser = await (await getRuntime()).parser(req.language);
@@ -158,7 +154,7 @@ export function createParseWorker(opts: {
         try {
           const { tree } = parseSource(parser, req.language, req.text);
           try {
-            const module = mapTypeScriptModule(tree, { source: req.source, label: req.label });
+            const module = mapModuleTree(tree, req.language, { source: req.source, label: req.label });
             const mapTimeMs = performance.now() - started;
             if (cancelled.delete(req.requestId)) throw abortError();
             return { module, requestId: req.requestId, mapTimeMs };

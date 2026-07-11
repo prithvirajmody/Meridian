@@ -14,9 +14,10 @@ import {
 import type { PluginContext } from '@meridian/plugin-api';
 import {
   createInProcessMapper,
-  mapTypeScriptModule,
+  mapModuleTree,
   parseSource,
   createParserRuntime,
+  type CodeLanguage,
   type CodeMapper,
   type ParserRuntime,
   type RawModule,
@@ -25,20 +26,30 @@ import { nodeGrammarSource } from './node-grammar-source.js';
 
 let runtime: Promise<ParserRuntime> | undefined;
 
-/** Parse + map one TypeScript source on the main thread (tests only). */
-export async function mapTs(source: string, text: string): Promise<RawModule> {
+/** Parse + map one source of `language` on the main thread (tests only). */
+async function mapOne(language: CodeLanguage, source: string, text: string): Promise<RawModule> {
   runtime ??= createParserRuntime({ readGrammar: nodeGrammarSource });
-  const parser = await (await runtime).parser('typescript');
+  const parser = await (await runtime).parser(language);
   try {
-    const { tree } = parseSource(parser, 'typescript', text);
+    const { tree } = parseSource(parser, language, text);
     try {
-      return mapTypeScriptModule(tree, { source, label: source });
+      return mapModuleTree(tree, language, { source, label: source });
     } finally {
       tree.delete();
     }
   } finally {
     parser.delete();
   }
+}
+
+/** Parse + map one TypeScript source on the main thread (tests only). */
+export function mapTs(source: string, text: string): Promise<RawModule> {
+  return mapOne('typescript', source, text);
+}
+
+/** Parse + map one Python source on the main thread (tests only). */
+export function mapPy(source: string, text: string): Promise<RawModule> {
+  return mapOne('python', source, text);
 }
 
 export function inProcessMapper(): CodeMapper {

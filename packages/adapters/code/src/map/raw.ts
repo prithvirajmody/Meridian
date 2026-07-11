@@ -35,8 +35,13 @@ export interface RawSignature {
   readonly generator: boolean;
   readonly static: boolean;
   readonly abstract: boolean;
-  /** 'public' | 'private' | 'protected' for class members that declare it. */
+  /** 'public' | 'private' | 'protected' for class members that declare it (TS). */
   readonly accessibility?: 'public' | 'private' | 'protected';
+  /** Python `@classmethod` (7D). Descriptive, **not** an overload-hash input. */
+  readonly classmethod?: boolean;
+  /** Python `@property`/`@x.setter`/`@x.getter`/`@x.deleter` (7D). Descriptive,
+   * **not** an overload-hash input. */
+  readonly property?: boolean;
 }
 
 /** One eager declaration node, before ID derivation and discriminator assignment. */
@@ -53,6 +58,12 @@ export interface RawDecl {
   readonly defaultExport: boolean;
   /** True for an `abstract class` (class-level; method-level lives on the signature). */
   readonly abstract?: boolean;
+  /** Decorator expressions as written (normalized, source order); Python only (7D).
+   * Descriptive provenance — **not** an ID/overload-hash input. */
+  readonly decorators?: readonly string[];
+  /** True when a Python declaration carries `@overload` (typing.overload) (7D):
+   * an honest flag on a signature stub, distinct IDs still come from `sigHash`. */
+  readonly overload?: boolean;
   /** Present for `function`/`method`; absent for `class`/`namespace`. */
   readonly signature?: RawSignature;
   /** Reorder-stable discriminator hash of the signature shape (ADR-0028 case 2);

@@ -92,7 +92,7 @@ export function buildHost(): BuiltHost {
   return { host, dispose: () => mapper.dispose() };
 }
 
-const TS_EXTENSIONS = /\.(tsx|mts|cts|ts)$/i;
+const CODE_EXTENSIONS = /\.(tsx|mts|cts|ts|pyi|py)$/i;
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.turbo']);
 
 /** Walk a directory into a code-project bundle descriptor (composition root
@@ -105,7 +105,7 @@ async function readCodeProject(dir: string): Promise<SourceDescriptor> {
       const full = join(current, entry.name);
       if (entry.isDirectory()) {
         if (!SKIP_DIRS.has(entry.name)) await walk(full);
-      } else if (entry.isFile() && TS_EXTENSIONS.test(entry.name)) {
+      } else if (entry.isFile() && CODE_EXTENSIONS.test(entry.name)) {
         const text = await readFile(full, 'utf8');
         files.push({ path: relative(dir, full).split(sep).join('/'), text });
       }

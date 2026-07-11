@@ -7,7 +7,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { ParseWorkerHost } from '../src/index.js';
 import { makeNodeFactory } from './node-factory.js';
-import { mapTs } from './support.js';
+import { mapPy, mapTs } from './support.js';
 
 const { factory } = makeNodeFactory();
 const host = new ParseWorkerHost({ factory });
@@ -53,9 +53,26 @@ describe('worker-hosted mapping', () => {
     expect(module.decls.some((d) => d.name === 'ok')).toBe(true);
   });
 
-  it('mapping an unimplemented language fails honestly (Python is 7D)', async () => {
-    await expect(
-      host.map({ language: 'python', source: 'x.py', label: 'x.py', text: 'def f(): pass\n' }),
-    ).rejects.toThrow(/not implemented in 7C/);
+  it('maps Python in the worker, byte-identical to the in-process walk (7D parity)', async () => {
+    const PY = [
+      'class Circle:',
+      '    def __init__(self, r: float):',
+      '        self.r = r',
+      '    @staticmethod',
+      '    def unit() -> "Circle": return Circle(1)',
+      'from typing import overload',
+      '@overload',
+      'def parse(x: int) -> str: ...',
+      '@overload',
+      'def parse(x: str) -> int: ...',
+      'def parse(x): return x',
+      'scale = lambda c, k: Circle(c.r * k)',
+    ].join('\n');
+    const { module } = await host.map({ language: 'python', source: 'shapes.py', label: 'shapes.py', text: PY });
+    expect(module.language).toBe('python');
+    expect(module.decls.some((d) => d.kind === 'class' && d.name === 'Circle')).toBe(true);
+    expect(module.decls.filter((d) => d.name === 'parse')).toHaveLength(3);
+    const inproc = await mapPy('shapes.py', PY);
+    expect(module).toEqual(inproc);
   });
 });

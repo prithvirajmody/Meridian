@@ -1,5 +1,6 @@
 /**
- * `@meridian/adapter-code` as a Meridian plugin (7C, TypeScript). Deterministic,
+ * `@meridian/adapter-code` as a Meridian plugin (7C TypeScript, 7D Python).
+ * Deterministic,
  * AI-free, isomorphic in `src` (no `node:*`, no DOM). Unlike the markdown
  * adapter, parsing needs a grammar runtime, so the plugin is *constructed* with
  * an injected {@link CodeMapper} — the CLI injects a worker-backed mapper
@@ -31,6 +32,9 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_FILE_LOC = 50_000;
 
 const TS_EXTENSIONS = /\.(tsx|mts|cts|ts)$/i;
+const PY_EXTENSIONS = /\.(pyi|py)$/i;
+/** Any code extension this adapter routes (7D: TypeScript + Python). */
+const CODE_EXTENSIONS = /\.(tsx|mts|cts|ts|pyi|py)$/i;
 
 export const manifest: PluginManifest = {
   name: '@meridian/adapter-code',
@@ -56,7 +60,11 @@ export const manifest: PluginManifest = {
     'code:generator': { type: 'boolean', description: 'the function/method is a generator' },
     'code:abstract': { type: 'boolean', description: 'the class/method is abstract' },
     'code:accessibility': { type: 'string', description: 'member accessibility: public|private|protected' },
-    'code:exported': { type: 'boolean', description: 'the declaration is exported from its module' },
+    'code:classmethod': { type: 'boolean', description: 'a Python @classmethod' },
+    'code:property': { type: 'boolean', description: 'a Python @property (or @x.setter/getter/deleter)' },
+    'code:overload': { type: 'boolean', description: 'a Python @overload signature stub (ADR-0028 case 2)' },
+    'code:decorators': { type: 'string', description: 'a Python declaration’s decorator names as written (comma-joined)' },
+    'code:exported': { type: 'boolean', description: 'the declaration is exported from its module (TypeScript)' },
     'code:default-export': { type: 'boolean', description: "the declaration is its module's default export" },
     'code:duplicate': { type: 'boolean', description: 'an illegal same-scope, same-signature duplicate (ADR-0028 case 4)' },
     'code:excluded': { type: 'string', description: 'module excluded by policy: oversize|generated (ADR-0027)' },
@@ -67,6 +75,7 @@ export const manifest: PluginManifest = {
 
 function languageFor(path: string): CodeLanguage | undefined {
   if (TS_EXTENSIONS.test(path)) return 'typescript';
+  if (PY_EXTENSIONS.test(path)) return 'python';
   return undefined;
 }
 
@@ -98,7 +107,7 @@ function resolveInput(src: SourceDescriptor): { root: string; files: readonly Bu
     throw new Error(`"${src.uri}" is not valid text (NUL byte)`);
   }
   const base = normalizePosixPath(src.uri).split('/').pop() ?? src.uri;
-  const root = base.replace(TS_EXTENSIONS, '') || base;
+  const root = base.replace(CODE_EXTENSIONS, '') || base;
   return { root, files: [{ path: base, text: src.text }] };
 }
 
@@ -132,7 +141,7 @@ export function createCodePlugin(deps: { readonly mapper: CodeMapper }): Meridia
               const language = languageFor(file.path);
               if (language === undefined || !isCodeLanguage(language)) {
                 done += 1;
-                continue; // non-TS files are not this subphase's concern (Python is 7D)
+                continue; // not a routed code file (TypeScript or Python); skip
               }
               const source = normalizePosixPath(file.path);
               const label = source.split('/').pop() ?? source;

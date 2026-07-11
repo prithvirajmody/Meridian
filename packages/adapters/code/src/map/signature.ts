@@ -41,7 +41,7 @@ export function nameOf(node: SyntaxNode): string | undefined {
 }
 
 /** True when an unnamed token of the given text is a direct child (a modifier). */
-function hasTokenChild(node: SyntaxNode, text: string): boolean {
+export function hasTokenChild(node: SyntaxNode, text: string): boolean {
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
     if (child !== null && !child.isNamed && child.text === text) return true;

@@ -29,7 +29,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
 | 5 | ✅ `5A`–`5C` · ⬜ `5D`–`5F` | current (visual track) |
 | 6 | ⬜ not started | — |
-| 7 | ✅ `7A`–`7C` · ⬜ `7D`–`7H` | current (domain track) |
+| 7 | ✅ `7A`–`7D` · ⬜ `7E`–`7H` | current (domain track) |
 | 8–12 | ⬜ not started | — |
 
 ---
@@ -352,7 +352,7 @@ suite passes.
 - **Exit:** `meridian ingest ./ts-fixture --adapter code` produces a valid,
   deterministic graph at eager levels.
 
-### 7D — Python mapping: eager levels
+### 7D — Python mapping: eager levels  ✅ DONE
 Same shape as 7C for Python (module/class/function granularity per the
 level-chain spec).
 - **Exit:** both languages green on conformance; shared mapping machinery

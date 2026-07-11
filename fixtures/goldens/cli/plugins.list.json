@@ -100,9 +100,25 @@
           "type": "string",
           "description": "member accessibility: public|private|protected"
         },
+        "code:classmethod": {
+          "type": "boolean",
+          "description": "a Python @classmethod"
+        },
+        "code:property": {
+          "type": "boolean",
+          "description": "a Python @property (or @x.setter/getter/deleter)"
+        },
+        "code:overload": {
+          "type": "boolean",
+          "description": "a Python @overload signature stub (ADR-0028 case 2)"
+        },
+        "code:decorators": {
+          "type": "string",
+          "description": "a Python declaration’s decorator names as written (comma-joined)"
+        },
         "code:exported": {
           "type": "boolean",
-          "description": "the declaration is exported from its module"
+          "description": "the declaration is exported from its module (TypeScript)"
         },
         "code:default-export": {
           "type": "boolean",
