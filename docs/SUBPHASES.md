@@ -27,8 +27,10 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
-| 5 | ✅ `5A` · ⬜ `5B`–`5F` | current |
-| 6–12 | ⬜ not started | — |
+| 5 | ✅ `5A` · ⬜ `5B`–`5F` | current (visual track) |
+| 6 | ⬜ not started | — |
+| 7 | ✅ `7A` · ⬜ `7B`–`7H` | current (domain track) |
+| 8–12 | ⬜ not started | — |
 
 ---
 
@@ -324,7 +326,7 @@ construct family and each pipeline stage is separately testable. Runs
 headless; interleave with Phases 4–6 freely after 3E. Roadmap refs:
 Phase 7 §1–13.
 
-### 7A — ADR beat
+### 7A — ADR beat  ✅ DONE
 Draft ADR-0026 (resolution depth: syntactic only), ADR-0027 (laziness
 policy + thresholds), ADR-0028 (ID stability under edits). Stop for
 approval.

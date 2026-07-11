@@ -49,7 +49,17 @@ random and never sequential.
 - **Renames are remove + add in v1.** A change to `semanticPath` produces a new
   identity; the old element is removed and a new one added. An **alias table** for
   identity continuity across renames is *reserved* and deferred to roadmap
-  **ADR-0028** — not built in Phase 0.
+  **ADR-0028** — not built in Phase 0. *(Amended during 7A: ADR-0028 as drafted
+  is broader than the alias table — it fixes ID stability under edits generally
+  (the code-domain coordinate mapping, hard-case rules) and reserves the alias
+  mechanism concretely as a `core:alias-of` edge populated by a future detector
+  via tagged proposals.)*
+- **Provenance-span freshness** *(added during 7A, per ADR-0028)*: incremental
+  re-ingest delta equality **excludes provenance spans** — an element whose
+  identity and content are otherwise unchanged emits no op even when its span
+  shifted. Spans are guaranteed current after any *substantive* edit or a full
+  ingest, **not** after a pure-whitespace edit; span exactness yields to delta
+  minimality (the empty-delta invariant, ROADMAP Phase 7 §11).
 - **Uniqueness and integrity** are enforced by the store/gate: duplicate IDs are
   rejected; every reference must resolve (U1). U4 is enforced as (a) purity of
   `deriveId` and (b) identity-stability under no-op re-ingest (P2 conformance),

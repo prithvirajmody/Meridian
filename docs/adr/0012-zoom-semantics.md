@@ -86,7 +86,9 @@ visible/hidden?" always has a located answer (§5.1).
 **Frontier.** `frontier.expandable` = emitted non-leaf, non-cold nodes with a
 descendable detail graph; `frontier.collapsible` = emitted nodes whose parent has
 no other reason to stay open. Cold nodes appear in `expandable` flagged
-needs-hydration (hydration itself is P11).
+needs-hydration *(amended during 7A: hydration lands with the P7
+`DetailResolver`, ADR-0027 — an `expand` override on a cold node is the
+drill-in trigger; eviction/memory ceilings remain P11)*.
 
 **Invariants held mechanically.** Descent partitions each tree into a frontier
 antichain, so I5 (cover every leaf exactly once) holds for any override map. The
