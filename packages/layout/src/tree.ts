@@ -13,8 +13,7 @@
  * `signal` is accepted per contract but ignored. Zero-size nodes place as
  * degenerate point-rects (ADR-0015); a missing size is treated as zero.
  */
-import type { InducedEdge } from '@meridian/abstraction';
-import type { NodeId } from '@meridian/graph-core';
+import type { InducedEdge, NodeId } from '@meridian/view-model';
 import type { Rect, Size } from './coords.js';
 import { connectedComponents } from './components.js';
 import {

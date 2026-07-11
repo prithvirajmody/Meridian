@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Meridian layout engine (ROADMAP Phase 4): turns a cut + induced edges into stable world-space positions as pure functions. Phase 4B ships the LayoutProvider contract, grid/tree deterministic providers, the ADR-0016 stability scorer, and a DOM-free SVG exporter. Imports @meridian/abstraction and @meridian/graph-core types only (ADR-0015).",
+  "description": "Meridian layout engine: stable worker-hosted world-space positions behind the shared @meridian/view-model presentation contracts.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,13 +19,14 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
-    "@meridian/abstraction": "workspace:*",
-    "@meridian/graph-core": "workspace:*",
+    "@meridian/view-model": "workspace:*",
     "comlink": "^4.4.2",
     "d3-force": "^3.0.0",
     "elkjs": "^0.11.1"
   },
   "devDependencies": {
+    "@meridian/abstraction": "workspace:*",
+    "@meridian/graph-core": "workspace:*",
     "@meridian/graph-store": "workspace:*",
     "@meridian/plugin-api": "workspace:*",
     "@types/d3-force": "^3.0.10",

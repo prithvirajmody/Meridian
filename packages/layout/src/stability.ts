@@ -17,7 +17,7 @@
  * (e.g. straight-line providers with empty `edgeRoutes`, or a first-ever
  * layout), `Λ` falls back to `hints.spacing`, then to `1`.
  */
-import type { NodeId } from '@meridian/graph-core';
+import type { NodeId } from '@meridian/view-model';
 import type { Rect } from './coords.js';
 import { centerOf } from './geometry.js';
 import type { LayoutHints, LayoutResult } from './types.js';

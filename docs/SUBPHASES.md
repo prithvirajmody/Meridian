@@ -27,7 +27,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
-| 5 | ✅ `5A` · ⬜ `5B`–`5F` | current (visual track) |
+| 5 | ✅ `5A`–`5B` · ⬜ `5C`–`5F` | current (visual track) |
 | 6 | ⬜ not started | — |
 | 7 | ✅ `7A` · ⬜ `7B`–`7H` | current (domain track) |
 | 8–12 | ⬜ not started | — |
@@ -222,7 +222,7 @@ Draft ADR-0019 (pixi behind SceneAdapter + allowed-API list), ADR-0020
 (label strategy/tiers), ADR-0021 (picking), ADR-0022 (React/canvas
 boundary). Stop for approval.
 
-### 5B — view-model (pure, headless)
+### 5B — view-model (pure, headless)  ✅ DONE
 `@meridian/view-model`: `buildRenderModel(snapshot, lodResult, layoutResult,
 selection) → RenderModel` — flat typed-array-friendly arrays, no pixi, no
 DOM. Also `CameraState` math and the label-tier function (pure, per

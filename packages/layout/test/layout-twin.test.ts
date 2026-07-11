@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { LayoutProvider as PluginLayoutProvider } from '@meridian/plugin-api';
+import type { LayoutProvider as SharedLayoutProvider } from '@meridian/view-model';
 import { gridProvider, treeProvider } from '../src/index.js';
 
 describe('plugin-api layout-provider structural twin', () => {
@@ -18,5 +19,12 @@ describe('plugin-api layout-provider structural twin', () => {
     expect(t.id).toBe('tree');
     expect(g.capabilities.deterministic).toBe(true);
     expect(t.capabilities.deterministic).toBe(true);
+  });
+
+  it('implements the view-model-owned layout contract after the 5B relocation', () => {
+    const g: SharedLayoutProvider = gridProvider;
+    const t: SharedLayoutProvider = treeProvider;
+    expect(g.id).toBe('grid');
+    expect(t.id).toBe('tree');
   });
 });

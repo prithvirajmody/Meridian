@@ -20,8 +20,7 @@
  * `multiplicity`/`samples` are intentionally **not** on the wire (they do not
  * affect geometry); reconstructed edges carry `multiplicity: 1`, `samples: []`.
  */
-import type { InducedEdge } from '@meridian/abstraction';
-import { asNodeId, type NodeId } from '@meridian/graph-core';
+import type { InducedEdge, NodeId } from '@meridian/view-model';
 import { groupsFromOrdinals, resolveGroups } from '../compound.js';
 import type { Point, Rect, Size } from '../coords.js';
 import type { LayoutHints, LayoutInput, LayoutResult } from '../types.js';
@@ -51,7 +50,10 @@ export function buildIndexTable(members: readonly NodeId[]): IndexTable {
 
 /** The order-preserving placeholder id for index `i` at a fixed `width`. */
 export function placeholderId(i: number, width: number): NodeId {
-  return asNodeId(String(i).padStart(width, '0'));
+  // `i >= 0` and `width >= 1` are host-owned protocol invariants; this always
+  // produces a non-empty, separator-free opaque id without needing a runtime
+  // graph-core dependency (ADR-0022).
+  return String(i).padStart(width, '0') as NodeId;
 }
 
 // --------------------------------------------------------------- wire request

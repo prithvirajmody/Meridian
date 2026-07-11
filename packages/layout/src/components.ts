@@ -6,11 +6,10 @@
  * ascending-`NodeId` order, so the partition is a deterministic function of
  * the input (I6). Isolated members (no induced edge) are singleton components.
  *
- * Pure; imports only the abstraction/graph-core *types* and layout's own I/O
- * types — no layout logic beyond this partition step.
+ * Pure; imports only the shared view-model *types* — no layout logic beyond
+ * this partition step.
  */
-import type { InducedEdge } from '@meridian/abstraction';
-import type { NodeId } from '@meridian/graph-core';
+import type { InducedEdge, NodeId } from '@meridian/view-model';
 
 function compareIds(a: NodeId, b: NodeId): number {
   return a < b ? -1 : a > b ? 1 : 0;

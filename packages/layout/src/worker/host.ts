@@ -23,7 +23,7 @@
  * injected {@link WorkerFactory}, so the same host runs under vitest (Node) and
  * in Studio (browser). This is the substrate P5 picking and P7 parsing reuse.
  */
-import type { InducedEdge } from '@meridian/abstraction';
+import type { InducedEdge } from '@meridian/view-model';
 import * as Comlink from 'comlink';
 import { gridProvider } from '../grid.js';
 import type { LayoutInput, LayoutProvider, LayoutResult } from '../types.js';

@@ -28,9 +28,9 @@ pure functions, reviewable via SVG snapshots before any GPU code exists.
 (4C), `elk-layered` (4D), `d3-force` + the ADR-0018 `chooseProvider`
 heuristic (4E).
 
-**Dependency law (ADR-0015 ruling):** imports `@meridian/abstraction`
-(`Cut`/`InducedEdge`) and `@meridian/graph-core` (id brands) only. `coords.ts`
-and `types.ts` have zero intra-layout imports so they lift into
-`@meridian/view-model` at 5B, when the transient `layout → abstraction` edge
-is retired. The plugin-api `layout-provider` capability is a structural twin,
-pinned by the assignability test in `test/layout-twin.test.ts`.
+**Dependency law (ADR-0015/0022):** 5B moved the geometry and Layout-I/O
+definitions into `@meridian/view-model`; `coords.ts`/`types.ts` remain
+source-compatible type re-exports. Production layout code imports Meridian
+contracts only through view-model, retiring the temporary direct abstraction/
+graph-core edge. The plugin-api `layout-provider` capability is a structural
+twin, pinned by the assignability test in `test/layout-twin.test.ts`.

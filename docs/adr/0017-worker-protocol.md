@@ -101,7 +101,7 @@ main-thread `AbortSignal`. The host, per request:
 worker itself; it takes an injected `WorkerFactory`, keeping `layout/src` free of
 both DOM and `node:*` imports (core-law). The Node factory (`worker_threads`)
 ships with the CLI in 4C; the browser `new Worker(...)` factory lands with the
-Studio shell (subphase 5B) — the host is already browser-ready through the seam.
+Studio shell (subphase 5E) — the host is already browser-ready through the seam.
 
 **"New request aborts stale one."** The host holds at most one in-flight request per
 layout slot. When a new request arrives while one is in flight, the host **aborts

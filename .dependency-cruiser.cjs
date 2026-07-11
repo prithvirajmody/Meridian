@@ -70,16 +70,49 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
-      name: 'layout-only-abstraction-and-core',
+      name: 'view-model-only-semantic-types',
       severity: 'error',
       comment:
-        'layout imports @meridian/abstraction (Cut/InducedEdge) and graph-core (id brands) types, plus three runtime engine deps: comlink (the ADR-0017 worker host, 4C), elkjs (the elk-layered engine, 4D), and d3-force (the seeded force engine, 4E) — all isomorphic pure JS. No DOM, no domain, no AI, not even plugin-api. NOTE: the layout→abstraction edge is a TIME-BOXED WAYPOINT — subphase 5B moves the geometry + I/O types into @meridian/view-model and repoints layout there, at which point this `abstraction` permission is REMOVED (ADR-0015). comlink/elkjs/d3-force stay (all isomorphic; node:worker_threads never appears in layout/src — only in the CLI/test worker factory shims; elkjs uses the bundled build and d3-force ticks synchronously, no Web Worker).',
+        'view-model is the pure presentation waist: abstraction plus a direct graph-core TYPE edge approved in ADR-0022. No graph-store, layout, renderer, DOM framework, or I/O dependency.',
+      from: { path: '^packages/view-model/src' },
+      to: {
+        pathNot: '^packages/view-model/src|^packages/abstraction|^packages/graph-core',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'view-model-graph-core-type-only',
+      severity: 'error',
+      comment: 'ADR-0022 permits view-model → graph-core for types only; no runtime core call.',
+      from: { path: '^packages/view-model/src' },
+      to: { path: '^packages/graph-core', dependencyTypesNot: ['type-only'] },
+    },
+    {
+      name: 'view-model-no-node-builtins',
+      severity: 'error',
+      comment: 'view-model stays pure/isomorphic: no node:* imports.',
+      from: { path: '^packages/view-model/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
+      name: 'layout-only-view-model-and-engines',
+      severity: 'error',
+      comment:
+        'ADR-0015/0022 permanent topology: layout imports Meridian contracts through @meridian/view-model only, plus comlink/elkjs/d3-force. No DOM, domain, AI, plugin-api, abstraction, or graph-core edge.',
       from: { path: '^packages/layout/src' },
       to: {
         pathNot:
-          '^packages/layout/src|^packages/graph-core|^packages/abstraction|^node_modules/(\\.pnpm/)?comlink|^node_modules/(\\.pnpm/)?elkjs|^node_modules/(\\.pnpm/)?d3-force',
+          '^packages/layout/src|^packages/view-model|^node_modules/(\\.pnpm/)?comlink|^node_modules/(\\.pnpm/)?elkjs|^node_modules/(\\.pnpm/)?d3-force',
         dependencyTypesNot: ['type-only'],
       },
+    },
+    {
+      name: 'layout-no-direct-semantic-core',
+      severity: 'error',
+      comment:
+        '5B closed the time-boxed waypoint: layout may not import graph-core, graph-store, or abstraction even as types; use view-model re-exports.',
+      from: { path: '^packages/layout/src' },
+      to: { path: '^packages/(graph-core|graph-store|abstraction)' },
     },
     {
       name: 'layout-no-node-builtins',

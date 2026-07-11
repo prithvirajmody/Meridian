@@ -10,7 +10,7 @@
  * AABBs — so components never overlap and identical input yields byte-identical
  * placement (I6).
  */
-import type { NodeId } from '@meridian/graph-core';
+import type { NodeId } from '@meridian/view-model';
 import type { Point, Rect } from './coords.js';
 
 /** The empty-cut / empty-set bounds (ADR-0015). */

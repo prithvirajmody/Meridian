@@ -38,7 +38,7 @@
  * for `layout/src` alongside comlink and elkjs in the depcruiser config. No DOM,
  * no domain words, no AI.
  */
-import type { NodeId } from '@meridian/graph-core';
+import type { NodeId } from '@meridian/view-model';
 import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from 'd3-force';
 import type { SimulationLinkDatum, SimulationNodeDatum } from 'd3-force';
 import type { Point, Rect, Size } from './coords.js';

@@ -16,8 +16,7 @@
  * 4B providers emit straight lines (§9c). Optional `labels`/`ids` are *data*
  * passed by the caller (e.g. the CLI) — no domain words live in this code.
  */
-import type { InducedEdge } from '@meridian/abstraction';
-import type { NodeId } from '@meridian/graph-core';
+import type { InducedEdge, NodeId } from '@meridian/view-model';
 import type { Point, Rect } from './coords.js';
 import { centerOf } from './geometry.js';
 import type { LayoutResult } from './types.js';

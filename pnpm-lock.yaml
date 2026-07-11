@@ -182,12 +182,9 @@ importers:
 
   packages/layout:
     dependencies:
-      '@meridian/abstraction':
+      '@meridian/view-model':
         specifier: workspace:*
-        version: link:../abstraction
-      '@meridian/graph-core':
-        specifier: workspace:*
-        version: link:../graph-core
+        version: link:../view-model
       comlink:
         specifier: ^4.4.2
         version: 4.4.2
@@ -198,6 +195,12 @@ importers:
         specifier: ^0.11.1
         version: 0.11.1
     devDependencies:
+      '@meridian/abstraction':
+        specifier: workspace:*
+        version: link:../abstraction
+      '@meridian/graph-core':
+        specifier: workspace:*
+        version: link:../graph-core
       '@meridian/graph-store':
         specifier: workspace:*
         version: link:../graph-store
@@ -241,6 +244,25 @@ importers:
       zod:
         specifier: ^4.0.0
         version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@24.13.2)
+
+  packages/view-model:
+    dependencies:
+      '@meridian/abstraction':
+        specifier: workspace:*
+        version: link:../abstraction
+      '@meridian/graph-core':
+        specifier: workspace:*
+        version: link:../graph-core
     devDependencies:
       '@types/node':
         specifier: ^24.0.0

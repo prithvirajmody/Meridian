@@ -32,7 +32,7 @@
  * no `node:*`), allowed for `layout/src` alongside comlink in the depcruiser
  * config. No domain words, no AI.
  */
-import type { NodeId } from '@meridian/graph-core';
+import type { NodeId } from '@meridian/view-model';
 import ElkDefaultImport from 'elkjs/lib/elk.bundled.js';
 import type {
   ElkExtendedEdge,

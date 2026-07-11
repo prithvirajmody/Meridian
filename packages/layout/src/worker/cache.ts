@@ -11,7 +11,7 @@
  * testable. Eviction is a bounded LRU (insertion/most-recent-get moved to the
  * back); the default ceiling is small because each entry pins typed arrays.
  */
-import type { Cut } from '@meridian/abstraction';
+import type { Cut } from '@meridian/view-model';
 import type { LayoutHints, LayoutResult } from '../types.js';
 
 /** The four-part cache key (ADR-0017). `storeVersion` is opaque to the cache

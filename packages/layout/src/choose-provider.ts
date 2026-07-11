@@ -16,8 +16,7 @@
  * Signals and thresholds are ADR-0018's, frozen as *mechanism* (re-tuned in 4E
  * against real corpus SVGs). No DOM, no domain, no AI — core-law.
  */
-import type { Cut, InducedEdge } from '@meridian/abstraction';
-import type { NodeId } from '@meridian/graph-core';
+import type { Cut, InducedEdge, NodeId } from '@meridian/view-model';
 import { connectedComponents } from './components.js';
 
 /** The four provider ids the heuristic chooses among (ADR-0018). */

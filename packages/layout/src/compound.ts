@@ -12,7 +12,7 @@
  * keys) produce byte-identical ELK trees: the labels differ, the canonical
  * ordinals do not. Pure and deterministic (I6); no DOM, no domain, no AI.
  */
-import type { NodeId } from '@meridian/graph-core';
+import type { NodeId } from '@meridian/view-model';
 import type { CompoundNesting } from './types.js';
 
 /** Per-member leaf group ordinal (or −1 = root-level) and per-group parent

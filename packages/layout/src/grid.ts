@@ -12,7 +12,7 @@
  * 4B). Zero-size nodes place as degenerate point-rects (ADR-0015); a missing
  * size is treated defensively as zero.
  */
-import type { NodeId } from '@meridian/graph-core';
+import type { NodeId } from '@meridian/view-model';
 import type { Rect, Size } from './coords.js';
 import { connectedComponents } from './components.js';
 import { boundsOf, DEFAULT_SPACING, EMPTY_BOUNDS, packComponents, type LaidOutComponent } from './geometry.js';

@@ -7,11 +7,10 @@
  * (4C), elk-layered (4D), and d3-force + the default-provider heuristic (4E)
  * follow.
  *
- * Dependency law (ADR-0015 ruling, binding for Phase 4): layout imports **only**
- * `@meridian/abstraction` (`Cut`/`InducedEdge`) and `@meridian/graph-core` (id
- * brands). No DOM, no domain words, no AI — a core-law package. The transient
- * `layout → abstraction` edge is a documented, time-boxed waypoint that
- * subphase 5B retires by repointing layout to `view-model`.
+ * Dependency law (ADR-0015/0022): subphase 5B retired the temporary direct
+ * abstraction/core edge. Layout now imports Meridian presentation contracts
+ * only through `@meridian/view-model`, plus its reviewed pure engine deps. No
+ * DOM, domain words, AI, or renderer dependency enters this package.
  */
 export type { Point, Rect, Size } from './coords.js';
 export type {
