@@ -17,6 +17,18 @@ export type {
 export { CAPABILITY_KINDS } from './capabilities.js';
 export type { CapabilityKind } from './capabilities.js';
 export type { EdgeCoords, IdFacade, PluginContext, PluginLogger } from './context.js';
+export type {
+  LayoutCapabilities,
+  LayoutCut,
+  LayoutHints,
+  LayoutInducedEdge,
+  LayoutInput,
+  LayoutProvider,
+  LayoutResult,
+  Point,
+  Rect,
+  Size,
+} from './layout.js';
 export type { LevelChainSpec, LevelSpec } from './levels.js';
 export { NAMESPACED_KEY_PATTERN } from './manifest.js';
 export type { AttrSchema, CapabilityDeclaration, PluginManifest } from './manifest.js';

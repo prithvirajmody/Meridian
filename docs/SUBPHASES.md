@@ -13,6 +13,21 @@ Phases 1–2 are built in the working tree (ADR-0005…0011, `graph-store`,
 `plugin-api`/`plugin-host`/`conformance-kit`, `adapters/markdown`, checklists
 and demos for both) but **uncommitted** — see subphase 2Z below.
 
+**Build progress (updated 2026-07-11).** Committed & tagged through
+**Phase 3** (`phase-3`); Phase **4A** (ADRs 0015–0018) committed at `f2b5f77`;
+Phase **4B** (`packages/layout/`, grid/tree providers, SVG exporter,
+`meridian layout`, corpus goldens) verified green and committed.
+Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
+⬜ not started.
+
+| Phase | Subphases done | Frontier |
+|---|---|---|
+| 0 | ✅ committed `cde7733` | closed |
+| 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
+| 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
+| 4 | ✅ `4A`–`4B` · ⬜ `4C`–`4E` | current |
+| 5–12 | ⬜ not started | — |
+
 ---
 
 ## How to run a subphase
@@ -75,7 +90,7 @@ them or run them in separate worktrees. Phase 8 needs only Phase 7's output.
 
 ## Phase 2 close-out
 
-### 2Z — Gate and commit Phases 1–2
+### 2Z — Gate and commit Phases 1–2  ✅ DONE (tags `phase-1`, `phase-2`)
 The P1/P2 work in the tree has never been through a gate beat. Walk the
 Phase 1 and Phase 2 verification tables row by row, run every harness, check
 both DoD checklists literally, then commit and tag `phase-1` + `phase-2`.
@@ -85,17 +100,17 @@ both DoD checklists literally, then commit and tag `phase-1` + `phase-2`.
 
 ---
 
-## Phase 3 — Abstraction levels & semantic LOD (closes M1)
+## Phase 3 — Abstraction levels & semantic LOD (closes M1)  ✅ DONE (tag `phase-3`)
 
 The intellectual heart of the product, and pure headless computation — it
 splits cleanly along its three algorithms. Roadmap refs: Phase 3 §1–13.
 
-### 3A — ADR beat
+### 3A — ADR beat  ✅ DONE (`f7ee713`)
 Draft ADR-0012 (zoom semantics), ADR-0013 (induced-edge aggregation),
 ADR-0014 (node budget + salience v1). Stop for approval.
 - **Exit:** three ADR drafts in `docs/adr/`; no code written.
 
-### 3B — Level chains & cuts
+### 3B — Level chains & cuts  ✅ DONE (`5802d21`)
 `@meridian/abstraction` package skeleton; `LevelChainSpec` + `buildLevelChain`
 (per-domain named levels, contributed via adapter manifests); `Cut`
 construction with covering proof; the `AbstractionProvider` capability enum
@@ -105,7 +120,7 @@ entry goes live in `plugin-api` (types only).
 - **Exit:** I5 property suite green; markdown corpus gets a working default
   level chain with zero adapter changes.
 
-### 3C — Induced-edge aggregation
+### 3C — Induced-edge aggregation  ✅ DONE (`8c86a06`)
 `aggregateEdges(space, cut)` per ADR-0013: grouping key, weight function,
 cap-with-"+n more", `samples`; incremental cache invalidated via P1
 `ChangeSet`s.
@@ -116,7 +131,7 @@ cap-with-"+n more", `samples`; incremental cache invalidated via P1
 - **Exit:** equivalence property green; benchmark thresholds in
   `benchmarks/budgets.json` and passing.
 
-### 3D — LOD resolver & deterministic providers
+### 3D — LOD resolver & deterministic providers  ✅ DONE (`2e099c5`)
 `LodResolver.resolve(req)` as a pure function: `ZoomPolicy`
 (scalar→cut with hysteresis, ADR-0012), per-node pin/expand/collapse
 overrides, node budget with salience degradation (ADR-0014), `CutTrace`
@@ -130,7 +145,7 @@ degree/size-based collapse for flat graphs. `applyProposal(store, proposal)`
 - **Exit:** resolver deterministic (hash-verified); all failure fixtures
   handled with located errors.
 
-### 3E — CLI, goldens, M1 gate
+### 3E — CLI, goldens, M1 gate  ✅ DONE (`99d53e6`, tag `phase-3`, M1 closed)
 `meridian cut --level N | --zoom 0.42 --focus <id>`; goldens across the
 markdown corpus at every level; proposals applied through the real store;
 manual walk of a real book judging each cut. Then the full Phase 3
@@ -141,16 +156,16 @@ all-CLI ingest→mutate→cut), DoD, tag `phase-3`.
 
 ---
 
-## Phase 4 — Layout engine
+## Phase 4 — Layout engine  🔨 IN PROGRESS (4A–4B done)
 
 Split by provider risk: harness first with trivial providers, then workers,
 then the two real engines one at a time. Roadmap refs: Phase 4 §1–13.
 
-### 4A — ADR beat
+### 4A — ADR beat  ✅ DONE (`f2b5f77`)
 Draft ADR-0015 (coordinates/units), ADR-0016 (stability contract), ADR-0017
 (worker protocol), ADR-0018 (default provider heuristic). Stop for approval.
 
-### 4B — Package, trivial providers, SVG harness
+### 4B — Package, trivial providers, SVG harness  ✅ DONE
 `@meridian/layout`: `LayoutProvider` interface, `grid` and `tree`
 deterministic providers (main-thread for now), `LayoutInput/LayoutResult`
 types, SVG snapshot exporter, CLI `meridian layout --svg out.svg`,

@@ -70,6 +70,24 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
+      name: 'layout-only-abstraction-and-core',
+      severity: 'error',
+      comment:
+        'layout imports @meridian/abstraction (Cut/InducedEdge) and graph-core (id brands) types only (ADR-0015 ruling; ROADMAP Phase 4 §12) — no DOM, no domain, no AI, not even plugin-api. NOTE: the layout→abstraction edge is a TIME-BOXED WAYPOINT — subphase 5B moves the geometry + I/O types into @meridian/view-model and repoints layout there, at which point this `abstraction` permission is REMOVED (ADR-0015).',
+      from: { path: '^packages/layout/src' },
+      to: {
+        pathNot: '^packages/layout/src|^packages/graph-core|^packages/abstraction',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'layout-no-node-builtins',
+      severity: 'error',
+      comment: 'layout stays isomorphic (browser + workers + Node): no node:* imports.',
+      from: { path: '^packages/layout/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
       name: 'plugin-api-types-only',
       severity: 'error',
       comment:
@@ -138,12 +156,12 @@ module.exports = {
       name: 'cli-sees-only-core-packages',
       severity: 'error',
       comment:
-        'apps depend downward; cli is the composition root: graph-core, graph-store, abstraction, plugin-api, plugin-host, and built-in adapters (Phase 2/3).',
+        'apps depend downward; cli is the composition root: graph-core, graph-store, abstraction, layout, plugin-api, plugin-host, and built-in adapters (Phase 2/3/4).',
       from: { path: '^apps/cli/src' },
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|abstraction|plugin-api|plugin-host|adapters/markdown)',
+          '^packages/(graph-core|graph-store|abstraction|layout|plugin-api|plugin-host|adapters/markdown)',
       },
     },
     {

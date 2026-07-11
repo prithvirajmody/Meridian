@@ -17,6 +17,7 @@
     "@meridian/adapter-markdown": "workspace:*",
     "@meridian/graph-core": "workspace:*",
     "@meridian/graph-store": "workspace:*",
+    "@meridian/layout": "workspace:*",
     "@meridian/plugin-api": "workspace:*",
     "@meridian/plugin-host": "workspace:*"
   },

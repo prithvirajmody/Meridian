@@ -23,6 +23,7 @@ import {
 } from '@meridian/graph-core';
 import { cmdCut } from './cut.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
+import { cmdLayout } from './layout.js';
 import {
   createStore,
   decodeDelta,
@@ -68,6 +69,14 @@ Usage:
                                              finest): the covering node set plus
                                              induced (aggregated) edges. --focus
                                              is recorded in the cut trace
+  meridian layout <file> --svg <out.svg> [--provider <id>]
+                  [--level <N> | --zoom <z>] [--json]
+                                             lay out the visible cut of a
+                                             GraphDocument (default --level 0,
+                                             the coarsest) with a deterministic
+                                             provider (grid | tree; default
+                                             grid) and write a normalized SVG
+                                             snapshot
   meridian ingest <source> [--adapter <domain>] [--out <file>] [--json]
                                              run a domain adapter over a source
                                              file: sniff arbitration (or forced
@@ -556,7 +565,7 @@ async function cmdWatch(
 
 // ---------------------------------------------------------------------- main
 
-const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--adapter', '--level', '--zoom', '--focus']);
+const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider']);
 
 interface Cli {
   readonly positional: string[];
@@ -670,6 +679,37 @@ async function main(): Promise<void> {
           ...(level !== undefined ? { level } : {}),
           ...(zoom !== undefined ? { zoom } : {}),
           ...(cli.values.has('--focus') ? { focus: cli.values.get('--focus')! } : {}),
+        }),
+      );
+      break;
+    }
+    case 'layout': {
+      allowFlags(cli, command, ['--svg', '--provider', '--level', '--zoom']);
+      const svg = cli.values.get('--svg');
+      if (svg === undefined) usageError('layout: missing --svg <out.svg>');
+      if (cli.values.has('--level') && cli.values.has('--zoom')) {
+        usageError('layout: give at most one of --level <N> or --zoom <z>');
+      }
+      let level: number | undefined;
+      let zoom: number | undefined;
+      if (cli.values.has('--level')) {
+        const raw = cli.values.get('--level')!;
+        const n = Number(raw);
+        if (!Number.isInteger(n) || n < 0) usageError(`layout: --level must be a non-negative integer, got "${raw}"`);
+        level = n;
+      } else if (cli.values.has('--zoom')) {
+        const raw = cli.values.get('--zoom')!;
+        const z = Number(raw);
+        if (!Number.isFinite(z) || z < 0 || z > 1) usageError(`layout: --zoom must be a number in [0,1], got "${raw}"`);
+        zoom = z;
+      }
+      process.exit(
+        await cmdLayout(file, {
+          json: cli.json,
+          svg,
+          provider: cli.values.get('--provider') ?? 'grid',
+          ...(level !== undefined ? { level } : {}),
+          ...(zoom !== undefined ? { zoom } : {}),
         }),
       );
       break;
