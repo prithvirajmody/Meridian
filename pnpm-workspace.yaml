@@ -3,4 +3,7 @@ packages:
   - packages/adapters/*
   - apps/*
 allowBuilds:
+  # `msdf-bmfont-xml` pulls legacy core-js only for its generator CLI. Its
+  # postinstall is informational and not needed to regenerate Meridian's atlas.
+  core-js: false
   esbuild: true

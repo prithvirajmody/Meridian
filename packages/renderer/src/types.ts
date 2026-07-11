@@ -33,6 +33,14 @@ export interface RendererStats {
   readonly submittedNodeBatches: number;
   readonly submittedEdgeBatches: number;
   readonly liveLabels: number;
+  /** Labels drawn through the MSDF `BitmapText` fast path (ADR-0020). */
+  readonly bitmapLabelCount: number;
+  /** Labels drawn through the bounded shaped-Unicode `Text` fallback. */
+  readonly fallbackLabelCount: number;
+  /** Tier/collision/cap-eligible labels that were not drawn this frame. */
+  readonly omittedLabelCount: number;
+  /** Quadtree query time of the most recent pick, in milliseconds (ADR-0021). */
+  readonly pickQueryTimeMs: number;
   readonly contextLosses: number;
   readonly bufferUploadBytes: number;
 }
@@ -41,6 +49,7 @@ export type RendererFaultCode =
   | 'context-lost'
   | 'context-restore-failed'
   | 'mount-failed'
+  | 'font-load-failed'
   | 'spatial-index-failed'
   | 'render-failed';
 
@@ -61,6 +70,12 @@ export interface SceneOptions {
   readonly maxDevicePixelRatio?: number;
   readonly maxBatchSize?: number;
   readonly antialias?: boolean;
+  /**
+   * URL of the locally-bundled MSDF atlas descriptor (ADR-0020). Served as a
+   * static asset; never fetched from the network. Defaults to
+   * `/fonts/meridian-msdf.fnt`.
+   */
+  readonly fontUrl?: string;
 }
 
 export interface SceneAdapter {

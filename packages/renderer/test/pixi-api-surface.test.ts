@@ -66,4 +66,19 @@ describe('ADR-0019 Pixi boundary', () => {
     ).join('\n');
     expect(source).not.toMatch(/\b(Application|Ticker|Graphics|Sprite|HTMLText|Culler)\b/);
   });
+
+  it('imports the Pixi Text fallback only in the single label fallback module', async () => {
+    const files = await sourceFiles(resolve(ROOT, 'src/pixi'));
+    const offenders: string[] = [];
+    for (const file of files) {
+      const source = await readFile(file, 'utf8');
+      for (const match of source.matchAll(/import\s*{([\s\S]*?)}\s*from\s*'pixi\.js'/g)) {
+        const names = match[1]!.split(',').map((raw) => raw.trim().replace(/^type\s+/, ''));
+        if (names.includes('Text') && !file.endsWith('label-layer.ts')) {
+          offenders.push(relative(ROOT, file));
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });

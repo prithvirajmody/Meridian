@@ -7,6 +7,7 @@ import {
   type Container,
 } from 'pixi.js';
 import type { RenderModel } from '@meridian/view-model';
+import { ZERO_SIZE_MARKER_CSS_PX } from '../picking/hit-test.js';
 
 export interface VisiblePrimitiveBatch {
   readonly batchIndex: number;
@@ -232,7 +233,11 @@ export class PixiGpuBatches {
     for (const batch of this.nodeBatches) stage.addChild(batch.mesh);
   }
 
-  updateNodes(model: RenderModel, visible: readonly VisiblePrimitiveBatch[]): number {
+  updateNodes(
+    model: RenderModel,
+    visible: readonly VisiblePrimitiveBatch[],
+    cameraScale: number,
+  ): number {
     for (const batch of this.nodeBatches) {
       batch.mesh.visible = false;
       batch.geometry.instanceCount = 0;
@@ -246,10 +251,25 @@ export class PixiGpuBatches {
         const nodeIndex = group.indices[slot]!;
         const source = nodeIndex * 4;
         const target = slot * 4;
-        batch.values[target] = model.nodeRects[source]!;
-        batch.values[target + 1] = model.nodeRects[source + 1]!;
-        batch.values[target + 2] = model.nodeRects[source + 2]!;
-        batch.values[target + 3] = model.nodeRects[source + 3]!;
+        const x = model.nodeRects[source]!;
+        const y = model.nodeRects[source + 1]!;
+        const width = model.nodeRects[source + 2]!;
+        const height = model.nodeRects[source + 3]!;
+        if (width === 0 && height === 0) {
+          // Layout truth remains a point. Only the GPU upload expands it, in
+          // inverse camera units, so the displayed footprint is exactly the
+          // same 6x6 CSS-pixel marker that ADR-0021 picking tests.
+          const markerWorldSize = ZERO_SIZE_MARKER_CSS_PX / cameraScale;
+          batch.values[target] = x - markerWorldSize / 2;
+          batch.values[target + 1] = y - markerWorldSize / 2;
+          batch.values[target + 2] = markerWorldSize;
+          batch.values[target + 3] = markerWorldSize;
+        } else {
+          batch.values[target] = x;
+          batch.values[target + 1] = y;
+          batch.values[target + 2] = width;
+          batch.values[target + 3] = height;
+        }
         writeColor(
           batch.colors,
           target,

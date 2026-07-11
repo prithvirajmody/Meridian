@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RenderModel } from '@meridian/view-model';
 import type {
+  PickResult,
   RendererFault,
   RendererStats,
   SceneAdapter,
@@ -24,17 +25,27 @@ const gpuLog = vi.hoisted(() => ({
   shaderCreations: 0,
   shaderDestroys: 0,
   rendererInitOptions: undefined as Readonly<Record<string, unknown>> | undefined,
+  rendererInitResolutions: [] as number[],
   createdGeometries: [] as GeometryRecord[],
+  nodeRectUpdates: [] as number[][],
 }));
 
 vi.mock('pixi.js', () => {
   class FakeBuffer {
-    constructor(_options: { readonly label?: string }) {
+    private readonly data?: Float32Array;
+    private readonly label: string;
+
+    constructor(options: { readonly data?: Float32Array; readonly label?: string }) {
       gpuLog.bufferCreations += 1;
+      this.data = options.data;
+      this.label = options.label ?? '';
     }
 
     update(): void {
       gpuLog.bufferUpdates += 1;
+      if (this.label.startsWith('meridian-node-rects-') && this.data !== undefined) {
+        gpuLog.nodeRectUpdates.push(Array.from(this.data.slice(0, 4)));
+      }
     }
 
     destroy(): void {}
@@ -82,6 +93,7 @@ vi.mock('pixi.js', () => {
   }
 
   class FakeContainer {
+    label = '';
     children: unknown[] = [];
     readonly scale = { set: (_x: number, _y: number): void => {} };
     readonly position = { set: (_x: number, _y: number): void => {} };
@@ -97,10 +109,27 @@ vi.mock('pixi.js', () => {
     destroy(): void {}
   }
 
+  class FakeLabel {
+    text: string;
+    tint = 0xffffff;
+    visible = true;
+    readonly position = { set: (_x: number, _y: number): void => {} };
+    readonly anchor = { set: (_v: number): void => {} };
+    constructor(options: { text?: string } = {}) {
+      this.text = options.text ?? '';
+    }
+    destroy(): void {}
+  }
+
+  const Assets = {
+    load: async (): Promise<{ fontFamily: string }> => ({ fontFamily: 'DejaVuSans' }),
+  };
+
   class FakeWebGLRenderer {
     async init(options: Readonly<Record<string, unknown>>): Promise<void> {
       gpuLog.rendererInits += 1;
       gpuLog.rendererInitOptions = options;
+      gpuLog.rendererInitResolutions.push(Number(options.resolution));
     }
 
     render(): void {
@@ -115,12 +144,15 @@ vi.mock('pixi.js', () => {
   }
 
   return {
+    Assets,
+    BitmapText: FakeLabel,
     Buffer: FakeBuffer,
     BufferUsage: { VERTEX: 0x20, COPY_DST: 0x8 },
     Container: FakeContainer,
     Geometry: FakeGeometry,
     Mesh: FakeMesh,
     Shader: FakeShader,
+    Text: FakeLabel,
     WebGLRenderer: FakeWebGLRenderer,
   };
 });
@@ -139,12 +171,16 @@ interface CanvasHarness {
   canceledFrames(): number;
 }
 
-function fakeCanvas(width = 300, height = 100): CanvasHarness {
+function fakeCanvas(
+  width = 300,
+  height = 100,
+  options: { devicePixelRatio?: number; left?: number; top?: number } = {},
+): CanvasHarness {
   const frameQueue = new Map<number, FrameCallback>();
   let nextFrameHandle = 1;
   let cancellationCount = 0;
   const view = {
-    devicePixelRatio: 1,
+    devicePixelRatio: options.devicePixelRatio ?? 1,
     requestAnimationFrame(callback: FrameCallback): number {
       const handle = nextFrameHandle;
       nextFrameHandle += 1;
@@ -159,10 +195,12 @@ function fakeCanvas(width = 300, height = 100): CanvasHarness {
   class CanvasTarget extends EventTarget {
     readonly clientWidth = width;
     readonly clientHeight = height;
+    readonly width = width * view.devicePixelRatio;
+    readonly height = height * view.devicePixelRatio;
     readonly ownerDocument = { defaultView: view };
 
-    getBoundingClientRect(): { width: number; height: number } {
-      return { width, height };
+    getBoundingClientRect(): { width: number; height: number; left: number; top: number } {
+      return { width, height, left: options.left ?? 0, top: options.top ?? 0 };
     }
   }
 
@@ -258,7 +296,9 @@ function resetGpuLog(): void {
   gpuLog.shaderCreations = 0;
   gpuLog.shaderDestroys = 0;
   gpuLog.rendererInitOptions = undefined;
+  gpuLog.rendererInitResolutions = [];
   gpuLog.createdGeometries = [];
+  gpuLog.nodeRectUpdates = [];
 }
 
 function gpuWorkSnapshot(): Readonly<Record<string, number>> {
@@ -353,6 +393,45 @@ describe('PixiScene public rendering seam', () => {
       visibleEdges: 0,
     });
     expect(faults).toEqual([]);
+  });
+
+  it('draws a zero-size layout node as the same 6x6 CSS-pixel marker used for picking', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene();
+    await scene.mount(canvas);
+    flushFrames();
+
+    scene.render(modelOf('zero-size-revision', [[0, 0, 0, 0]]), {
+      center: { x: 0, y: 0 },
+      scale: 2,
+    });
+    flushFrames();
+
+    const uploaded = gpuLog.nodeRectUpdates.at(-1);
+    expect(uploaded).toEqual([-1.5, -1.5, 3, 3]);
+    expect(uploaded![2]! * 2).toBe(6);
+    expect(uploaded![3]! * 2).toBe(6);
+  });
+
+  it('uploads overlapping cross-Morton batches in the same topmost order as picking', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene({ maxBatchSize: 1 });
+    const camera = { center: { x: 70, y: 50 }, scale: 1 };
+    const overlapping = modelOf('overlap-draw-order', [
+      [40, 0, 100, 100], // index 0; Morton would submit this batch last
+      [0, 0, 100, 100],  // index 1; picking says greater index is topmost
+    ]);
+    await scene.mount(canvas);
+    flushFrames();
+
+    scene.render(overlapping, camera);
+    flushFrames();
+
+    // Node meshes are submitted in child order and instances in array order.
+    // The last upload is therefore the painted/pickable top node (index 1).
+    expect(gpuLog.nodeRectUpdates.slice(-2).map((rect) => rect[0])).toEqual([40, 0]);
+    expect(scene.pick({ x: 140, y: 50 })).toMatchObject({ kind: 'node', nodeId: 'n-1' });
+    expect(scene.stats()).toMatchObject({ submittedNodeBatches: 2, drawCalls: 2 });
   });
 });
 
@@ -493,5 +572,142 @@ describe('PixiScene lifecycle', () => {
     );
     expect(() => scene.pick({ x: 0, y: 0 })).toThrow('requires a mounted scene');
     expect(() => scene.on('stats', () => {})).toThrow('cannot subscribe to a destroyed scene');
+  });
+});
+
+describe('PixiScene picking, hover, and label stats (ADR-0020/0021)', () => {
+  const CAMERA = { center: { x: 0, y: 0 }, scale: 1 };
+  const oneNode = (revision = 'pick-rev-1'): RenderModel =>
+    modelOf(revision, [[0, 0, 10, 10]]);
+
+  function pointer(type: string, clientX: number, clientY: number): Event {
+    const event = new Event(type) as Event & { clientX: number; clientY: number; pointerId: number };
+    event.clientX = clientX;
+    event.clientY = clientY;
+    event.pointerId = 1;
+    return event;
+  }
+
+  it('returns null from pick before any index is available', async () => {
+    const { canvas } = fakeCanvas();
+    const scene = trackedScene();
+    await scene.mount(canvas);
+    expect(scene.pick({ x: 155, y: 55 })).toBeNull();
+  });
+
+  it('picks the node under a canvas-local point once rendered', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene();
+    await scene.mount(canvas);
+    flushFrames();
+    scene.render(oneNode(), CAMERA);
+    expect(scene.pick({ x: 155, y: 55 })).toMatchObject({ kind: 'node', nodeId: 'n-0' });
+    expect(scene.pick({ x: 250, y: 55 })).toBeNull();
+    expect(scene.stats().pickQueryTimeMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('reflects a model revision change and never answers from a stale index', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene();
+    await scene.mount(canvas);
+    flushFrames();
+    scene.render(oneNode(), CAMERA);
+    expect(scene.pick({ x: 155, y: 55 })).toMatchObject({ kind: 'node', nodeId: 'n-0' });
+    // The node is gone in the next revision; a stale hit here would be a bug.
+    scene.render(modelOf('pick-rev-2', []), CAMERA);
+    expect(scene.pick({ x: 155, y: 55 })).toBeNull();
+  });
+
+  it('emits an immediate select on pointer down', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene();
+    const selects: (PickResult | null)[] = [];
+    scene.on('select', (result) => selects.push(result));
+    await scene.mount(canvas);
+    flushFrames();
+    scene.render(oneNode(), CAMERA);
+    canvas.dispatchEvent(pointer('pointerdown', 155, 55));
+    canvas.dispatchEvent(pointer('pointerup', 155, 55));
+    expect(selects).toEqual([
+      { kind: 'node', nodeId: 'n-0', screen: { x: 155, y: 55 }, world: { x: 5, y: 5 } },
+    ]);
+  });
+
+  it('coalesces pointer move into one hover per frame and clears on leave', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene();
+    const hovers: (PickResult | null)[] = [];
+    scene.on('hover', (result) => hovers.push(result));
+    await scene.mount(canvas);
+    flushFrames();
+    scene.render(oneNode(), CAMERA);
+    canvas.dispatchEvent(pointer('pointermove', 154, 54));
+    canvas.dispatchEvent(pointer('pointermove', 155, 55));
+    flushFrames();
+    expect(hovers).toEqual([{ kind: 'node', nodeId: 'n-0', screen: { x: 155, y: 55 }, world: { x: 5, y: 5 } }]);
+    canvas.dispatchEvent(pointer('pointerleave', 0, 0));
+    expect(hovers.at(-1)).toBeNull();
+  });
+
+  it('clears hover immediately when the model revision is replaced', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene();
+    const hovers: (PickResult | null)[] = [];
+    scene.on('hover', (result) => hovers.push(result));
+    await scene.mount(canvas);
+    flushFrames();
+    scene.render(oneNode('hover-rev-1'), CAMERA);
+    canvas.dispatchEvent(pointer('pointermove', 155, 55));
+    flushFrames();
+    expect(hovers.at(-1)).toMatchObject({ kind: 'node', nodeId: 'n-0' });
+
+    scene.render(oneNode('hover-rev-2'), CAMERA);
+
+    expect(hovers.at(-1)).toBeNull();
+    expect(hovers).toHaveLength(2);
+  });
+
+  it('normalizes real pointer events in CSS pixels at DPR 1 and DPR 2', async () => {
+    const selections: (PickResult | null)[][] = [[], []];
+    const configurations = [
+      { devicePixelRatio: 1, backingWidth: 300 },
+      { devicePixelRatio: 2, backingWidth: 600 },
+    ] as const;
+
+    for (const [index, configuration] of configurations.entries()) {
+      const { canvas, flushFrames } = fakeCanvas(300, 100, {
+        devicePixelRatio: configuration.devicePixelRatio,
+        left: 40,
+        top: 20,
+      });
+      expect(canvas.width).toBe(configuration.backingWidth);
+      const scene = trackedScene();
+      scene.on('select', (result) => selections[index]!.push(result));
+      await scene.mount(canvas);
+      flushFrames();
+      scene.render(oneNode(`hidpi-${configuration.devicePixelRatio}`), CAMERA);
+      // The same client-space point maps to canvas-local CSS (155,55) in both
+      // cases even though the second canvas has twice as many backing pixels.
+      canvas.dispatchEvent(pointer('pointerdown', 40 + 155, 20 + 55));
+    }
+
+    expect(gpuLog.rendererInitResolutions.slice(-2)).toEqual([1, 2]);
+    expect(selections[0]).toEqual(selections[1]);
+    expect(selections[1]).toEqual([
+      { kind: 'node', nodeId: 'n-0', screen: { x: 155, y: 55 }, world: { x: 5, y: 5 } },
+    ]);
+  });
+
+  it('counts bitmap labels in stats for an ASCII model', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene();
+    await scene.mount(canvas);
+    flushFrames();
+    scene.render(oneNode(), CAMERA);
+    flushFrames();
+    const stats = scene.stats();
+    expect(stats.bitmapLabelCount).toBe(1);
+    expect(stats.fallbackLabelCount).toBe(0);
+    expect(stats.liveLabels).toBe(1);
   });
 });
