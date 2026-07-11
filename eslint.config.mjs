@@ -3,7 +3,13 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/.turbo/**', 'fixtures/**'],
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.turbo/**',
+      '.claude/worktrees/**',
+      'fixtures/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

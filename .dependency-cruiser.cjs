@@ -122,6 +122,40 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
+      name: 'renderer-only-view-model-and-pixi',
+      severity: 'error',
+      comment:
+        'ADR-0019/0022: renderer consumes only the view-model waist and its isolated Pixi engine leaf; it owns no semantic/store/framework state.',
+      from: { path: '^packages/renderer/src' },
+      to: {
+        pathNot:
+          '^packages/renderer/src|^packages/view-model|^node_modules/(\\.pnpm/)?pixi\\.js',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'renderer-pixi-leaf-only',
+      severity: 'error',
+      comment: 'Direct Pixi imports are confined to packages/renderer/src/pixi (ADR-0019).',
+      from: { path: '^packages/renderer/src', pathNot: '^packages/renderer/src/pixi/' },
+      to: { path: '^node_modules/(\\.pnpm/)?pixi\\.js' },
+    },
+    {
+      name: 'renderer-no-semantic-or-store-imports',
+      severity: 'error',
+      comment:
+        'The renderer reads RenderModel values only; graph-core, graph-store, abstraction, and layout are forbidden even as type edges.',
+      from: { path: '^packages/renderer/src' },
+      to: { path: '^packages/(graph-core|graph-store|abstraction|layout)' },
+    },
+    {
+      name: 'renderer-no-node-builtins',
+      severity: 'error',
+      comment: 'Renderer production code stays browser/worker compatible: no node:* imports.',
+      from: { path: '^packages/renderer/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
       name: 'plugin-api-types-only',
       severity: 'error',
       comment:

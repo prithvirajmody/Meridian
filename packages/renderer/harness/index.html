@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meridian renderer harness</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #0b1020; color: #dbe7ff; font: 13px/1.4 system-ui, sans-serif; }
+      #scene { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+      #scene.dragging { cursor: grabbing; }
+      #hud { position: fixed; top: 12px; left: 12px; z-index: 2; min-width: 260px; padding: 10px 12px; border: 1px solid #33415f; border-radius: 8px; background: rgb(11 16 32 / 88%); box-shadow: 0 8px 32px #0008; }
+      #stats { white-space: pre; font-family: ui-monospace, monospace; }
+      .buttons { display: flex; gap: 6px; margin-top: 8px; }
+      button { color: inherit; border: 1px solid #536589; border-radius: 5px; background: #18233c; padding: 4px 8px; cursor: pointer; }
+      button:hover { background: #243455; }
+      #fault { color: #ffb4a8; max-width: 440px; }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene" aria-label="Meridian WebGL fixture"></canvas>
+    <aside id="hud">
+      <strong>Meridian SceneAdapter · 4,096 nodes</strong>
+      <div id="stats">mounting…</div>
+      <div id="fault" role="status"></div>
+      <div class="buttons">
+        <button id="fit" type="button">Fit</button>
+        <button id="zero" type="button">Zero nodes</button>
+        <button id="fixture" type="button">Fixture</button>
+        <button id="lose" type="button">Lose context</button>
+        <button id="restore" type="button">Restore context</button>
+      </div>
+    </aside>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
