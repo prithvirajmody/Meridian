@@ -4,6 +4,10 @@ import { boot, openCorpus, percentile95, settleFrames, UI_BUDGETS } from './supp
 test('hover promotes a label and click populates attrs/provenance in <16ms p95', async ({ page }) => {
   await boot(page);
   await openCorpus(page, 'links.md');
+  // 6D boots at the controller's semantic camera, not auto-fit; frame the
+  // whole graph geometrically so the probed node is on-screen (cut unchanged).
+  await page.evaluate(() => window.__MERIDIAN_STUDIO__!.fit());
+  await settleFrames(page);
   const canvas = page.getByTestId('graph-canvas');
   const nodeId = await page.evaluate(() => window.__MERIDIAN_STUDIO__!.state().nodeIds[0]!);
   const point = await page.evaluate((id) => window.__MERIDIAN_STUDIO__!.screenPointForNode(id), nodeId);

@@ -29,6 +29,7 @@ export {
   LABEL_LINE_HEIGHT_CSS_PX,
   LABEL_MAX_LIVE,
   LABEL_NOMINAL_SIZE_CSS_PX,
+  labelFadeAlpha,
   planLabels,
 } from './plan.js';
 export type { LabelPlan, LabelPlanInput, LabelPlanOptions, PlannedLabel } from './plan.js';

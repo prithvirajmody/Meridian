@@ -121,6 +121,15 @@ added, removed }` is a pure function (§3.2, I6): CI computes it independently a
 asserts it equals the provider's reported `stability`, so `LayoutResult.stability`
 is verifiable, not trusted.
 
+*(Amended during 6B: the scorer's home moved from `@meridian/layout` to
+`@meridian/view-model` — P6 navigation consumes it for ADR-0023's degrade rule
+and may not import layout (§20); it is a pure function of `LayoutResult`, a
+view-model type, so this mirrors the ADR-0015 geometry relocation at 5B. Layout
+re-exports it unchanged (CLI layout goldens byte-identical). `characteristicLength`
+(Λ) and the per-node tolerance, now the named export `STABILITY_EPSILON = 0.5`,
+are public view-model API — navigation's degrade predicate and `ANCHOR_SNAP`
+consume them.)*
+
 ## Alternatives considered
 
 - **ε in raw world units.** Rejected: world units are arbitrary and scale with the

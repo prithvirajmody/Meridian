@@ -19,6 +19,7 @@
     "@meridian/graph-core": "workspace:*",
     "@meridian/graph-store": "workspace:*",
     "@meridian/layout": "workspace:*",
+    "@meridian/navigation": "workspace:*",
     "@meridian/plugin-api": "workspace:*",
     "@meridian/plugin-host": "workspace:*",
     "@meridian/renderer": "workspace:*",

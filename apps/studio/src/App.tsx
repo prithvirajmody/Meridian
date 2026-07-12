@@ -1,10 +1,24 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useStore } from 'zustand';
+import { keyToNavCommand } from '@meridian/navigation';
+import { BreadcrumbBar } from './components/BreadcrumbBar.js';
 import { CanvasIsland } from './components/CanvasIsland.js';
 import { DebugHud } from './components/DebugHud.js';
+import { Minimap } from './components/Minimap.js';
+import { SearchBox } from './components/SearchBox.js';
 import { SelectedPanel } from './components/SelectedPanel.js';
+import { TunablesPanel } from './components/TunablesPanel.js';
 import type { StudioRuntime } from './runtime.js';
 import { StudioStoreCommands } from './store.js';
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.isContentEditable
+  );
+}
 
 export interface AppProps {
   readonly runtime: StudioRuntime;
@@ -23,6 +37,23 @@ export function App({ runtime }: AppProps) {
   const metrics = useStore(runtime.store, (state) => state.metrics);
   const debugEnabled = useStore(runtime.store, (state) => state.debugEnabled);
 
+  // ADR-0025 keyboard verbs: Studio owns the DOM listener; the pure 6C table
+  // maps keys to verbs and the navigator dispatches them.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (isEditableTarget(event.target)) return;
+      const command = keyToNavCommand(event.key);
+      if (command === null) return;
+      const navigator = runtime.navigator();
+      if (navigator === null) return;
+      event.preventDefault();
+      const selection = runtime.store.getState().selection.nodes[0];
+      navigator.dispatchKey(command.verb, command.needsSelection ? selection : undefined);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [runtime]);
+
   const commitSelection = useCallback(
     (startedAtMs: number, committedAtMs: number) => {
       new StudioStoreCommands(runtime.store).recordInteractionCommitted(startedAtMs, committedAtMs);
@@ -40,6 +71,7 @@ export function App({ runtime }: AppProps) {
             <h1>Meridian Studio</h1>
           </div>
         </div>
+        <SearchBox runtime={runtime} />
         <label className="file-button">
           <span>Open corpus</span>
           <input
@@ -79,8 +111,11 @@ export function App({ runtime }: AppProps) {
               </span>
             </div>
           </div>
+          <BreadcrumbBar runtime={runtime} />
           <CanvasIsland runtime={runtime} />
+          <Minimap runtime={runtime} />
           {debugEnabled ? <DebugHud stats={stats} metrics={metrics} /> : null}
+          {debugEnabled ? <TunablesPanel store={runtime.store} /> : null}
           {diagnostics.length > 0 ? (
             <div className="diagnostic-strip" role="status" data-testid="diagnostics">
               {diagnostics.at(-1)?.code}: {diagnostics.at(-1)?.message}

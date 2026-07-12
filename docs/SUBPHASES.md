@@ -27,8 +27,8 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 1–2 | ✅ `2Z` — tags `phase-1`, `phase-2` | closed |
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
-| 5 | ✅ `5A`–`5C` · ⬜ `5D`–`5F` | current (visual track) |
-| 6 | ⬜ not started | — |
+| 5 | ✅ `5A`–`5F` built | human row + `phase-5` tag pending |
+| 6 | ✅ `6A`–`6E` built | M2 review + human rows + tag pending |
 | 7 | ✅ `7A`–`7H` — gate walked, tag `phase-7` awaits user | closing (domain track) |
 | 8–12 | ⬜ not started | — |
 
@@ -274,11 +274,11 @@ manual exploratory (trackpad/hi-DPI/resize), DoD, demo recording, tag
 Pure planners first (testable feel), then the controller, then Studio
 choreography, then the human tuning gate. Roadmap refs: Phase 6 §1–13.
 
-### 6A — ADR beat
+### 6A — ADR beat  ✅ DONE (`5f1b4f2`; ADRs accepted `b8c4fb9`)
 Draft ADR-0023 (transition model + 300ms/45fps budget), ADR-0024 (anchor
 rule), ADR-0025 (drill-in vs zoom). Stop for approval.
 
-### 6B — Cut-diff & TransitionChoreographer (pure)
+### 6B — Cut-diff & TransitionChoreographer (pure)  ✅ DONE (`4806a15`)
 `@meridian/navigation`: `RefinementMap` derivation from containment;
 cut-diff → enter/exit/move sets; `TransitionChoreographer.plan()` producing
 inspectable `TransitionPlan`s; anchor-preservation math (ADR-0024) as a
@@ -289,7 +289,7 @@ pure function; degrade-to-crossfade rule (ADR-0023).
 - **Exit:** feel bugs are now inspectable data structures — before any
   animation runs.
 
-### 6C — NavigationController & URL state
+### 6C — NavigationController & URL state  ✅ DONE (`e51cd9f`)
 Zoom scalar ↔ `LodRequest` with the hysteresis state machine; override map
 (expand/collapse-in-place); drill-in/out context stack (`NavContext`);
 URL state codec (`#g=…&z=…&focus=…`); search over the P1 label-token index
@@ -300,7 +300,7 @@ with fly-to targeting; keyboard navigation model.
   no detail.
 - **Exit:** controller fully tested headless against the real resolver.
 
-### 6D — Studio choreography
+### 6D — Studio choreography  ✅ DONE (5F 10k FPS row: environmental fail on loaded host — re-verify idle)
 Wire controller + choreographer into Studio/renderer: animated transitions
 (shared easing, retarget-not-queue on zoom-during-flight), breadcrumb bar,
 search box, minimap, expand/collapse in place, store-mutation-mid-transition
@@ -310,7 +310,7 @@ replan (P1 subscription).
   transition p95 frame time ≤22ms; anchor pixel drift <8px per transition.
 - **Exit:** the book descent runs scripted, within budgets, anchor held.
 
-### 6E — Tuning & M2 gate
+### 6E — Tuning & M2 gate  ✅ BUILT (human rows + M2 review + `phase-6` tag pending — checklists/phase-06.md)
 Debug panel with tunable constants; manual tuning sessions (this is the
 human gate — DRIVING-OPUS.md §4); the "grandmother test"; constants frozen
 into defaults; full verification table, recorded demo, `docs/demos/m2.md`,

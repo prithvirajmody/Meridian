@@ -74,6 +74,17 @@ export interface RenderModel {
   readonly labelRefs: Uint32Array;
   readonly labelClasses: Uint8Array;
 
+  /**
+   * Optional per-node opacity lane `[0,1]`, one entry per node (ADR-0023:
+   * entering nodes fade in, exiting nodes fade out, crossfades blend whole
+   * frames). Absent ⇒ fully opaque. `buildRenderModel` never emits it — only
+   * the Phase 6 transition player constructs transient models carrying alphas;
+   * a settled model is always fully opaque.
+   */
+  readonly nodeAlphas?: Float32Array;
+  /** Optional per-edge opacity lane `[0,1]` (ADR-0023). Absent ⇒ opaque. */
+  readonly edgeAlphas?: Float32Array;
+
   readonly edgeKeys: readonly string[];
   /** `[srcNodeIndex,dstNodeIndex]` per edge. */
   readonly edgeIndices: Uint32Array;

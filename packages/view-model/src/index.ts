@@ -59,6 +59,14 @@ export {
 export type { LabelClass } from './labels.js';
 
 export {
+  characteristicLength,
+  STABILITY_EPSILON,
+  STABILITY_RAMP,
+  stabilityScore,
+} from './stability.js';
+export type { StabilityScore } from './stability.js';
+
+export {
   buildRenderModel,
   EDGE_FLAG_SELECTED,
   EDGE_FLAG_SELECTION_ANCHOR,

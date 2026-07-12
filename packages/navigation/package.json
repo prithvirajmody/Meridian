@@ -1,0 +1,32 @@
+{
+  "name": "@meridian/navigation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Semantic-zoom navigation planners (ROADMAP Phase 6): pure cut-diff → RefinementMap, TransitionChoreographer plans (ADR-0023), and anchor-preservation math (ADR-0024). Headless and deterministic; imports @meridian/abstraction and @meridian/view-model only (§20).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/abstraction": "workspace:*",
+    "@meridian/view-model": "workspace:*"
+  },
+  "devDependencies": {
+    "@meridian/graph-core": "workspace:*",
+    "@types/node": "^24.0.0",
+    "fast-check": "^4.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

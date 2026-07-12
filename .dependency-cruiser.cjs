@@ -156,6 +156,24 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
+      name: 'navigation-only-abstraction-and-view-model',
+      severity: 'error',
+      comment:
+        'ADR-0023/0024 · §20: navigation imports the abstraction engine and the view-model waist only — no layout, renderer, DOM, store, AI, or plugin edge. Pure planners (I6).',
+      from: { path: '^packages/navigation/src' },
+      to: {
+        pathNot: '^packages/navigation/src|^packages/abstraction|^packages/view-model',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'navigation-no-node-builtins',
+      severity: 'error',
+      comment: 'navigation stays isomorphic (browser + workers + Node): no node:* imports.',
+      from: { path: '^packages/navigation/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
       name: 'plugin-api-types-only',
       severity: 'error',
       comment:
@@ -236,12 +254,12 @@ module.exports = {
       name: 'studio-is-the-presentation-composition-root',
       severity: 'error',
       comment:
-        'ADR-0022: Studio composes the Phase-5 pipeline downward; it may use only the declared semantic, plugin, layout, view-model, renderer, and markdown-adapter packages.',
+        'ADR-0022/Phase 6: Studio composes the pipeline downward; it may use only the declared semantic, plugin, layout, view-model, navigation, renderer, and markdown-adapter packages.',
       from: { path: '^apps/studio/src' },
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|abstraction|layout|view-model|renderer|plugin-api|plugin-host|adapters/markdown)',
+          '^packages/(graph-core|graph-store|abstraction|layout|view-model|navigation|renderer|plugin-api|plugin-host|adapters/markdown)',
       },
     },
     {

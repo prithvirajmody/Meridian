@@ -10,6 +10,9 @@ interface UiBudgets {
   readonly 'renderer-max-live-labels': number;
   readonly 'studio-heap-soak-ms': number;
   readonly 'studio-heap-retained-growth-bytes': number;
+  readonly 'transition-frame-p95-ms': number;
+  readonly 'transition-anchor-drift-px': number;
+  readonly 'transition-max-plan-to-settle-ms': number;
 }
 
 export const UI_BUDGETS = JSON.parse(
@@ -64,4 +67,55 @@ export async function settleFrames(page: Page, frames = 3): Promise<void> {
 export function percentile95(values: readonly number[]): number {
   const ordered = [...values].sort((a, b) => a - b);
   return ordered[Math.min(ordered.length - 1, Math.ceil(ordered.length * 0.95) - 1)] ?? 0;
+}
+
+/** Serializable telemetry record shape (mirrors `TransitionRecord`). */
+export interface TelemetryRecord {
+  readonly seq: number;
+  readonly trigger: string;
+  readonly mode: 'choreographed' | 'crossfade' | 'camera-only';
+  readonly planMs: number;
+  readonly layoutMs: number;
+  readonly durationMs: number;
+  readonly settledAtMs: number | null;
+  readonly gestureToSettleMs: number | null;
+  readonly maxDriftPx: number;
+  readonly anchored: boolean;
+  readonly replannedFromFlight: boolean;
+  readonly superseded: boolean;
+  readonly guardTripped: boolean;
+  readonly degradeTriggers: readonly string[];
+  readonly drawTimesMs: readonly number[];
+}
+
+export async function telemetry(page: Page): Promise<readonly TelemetryRecord[]> {
+  return (await page.evaluate(() =>
+    window.__MERIDIAN_STUDIO__!.transitionTelemetry(),
+  )) as unknown as readonly TelemetryRecord[];
+}
+
+/** Wait until no transition is in flight and telemetry has ≥ `count` records. */
+export async function waitForSettled(page: Page, count: number): Promise<void> {
+  await page.waitForFunction(
+    (expected) => {
+      const api = window.__MERIDIAN_STUDIO__!;
+      return !api.transitionActive() && api.transitionTelemetry().length >= expected;
+    },
+    count,
+    { timeout: 15_000 },
+  );
+}
+
+/**
+ * One semantic zoom step about a screen point, waiting for any resulting
+ * transition to settle before the next step (a scripted descent/ascent).
+ */
+export async function zoomStep(page: Page, factor: number, x: number, y: number): Promise<void> {
+  await page.evaluate(
+    ({ factor: f, x: px, y: py }) => window.__MERIDIAN_STUDIO__!.navZoomBy(f, px, py),
+    { factor, x, y },
+  );
+  await page.waitForFunction(() => !window.__MERIDIAN_STUDIO__!.transitionActive(), undefined, {
+    timeout: 15_000,
+  });
 }

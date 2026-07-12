@@ -1,4 +1,5 @@
 import type { PickResult, RendererFault, RendererStats } from '@meridian/renderer';
+import { NAV_TUNABLE_DEFAULTS, type NavTunables } from '@meridian/navigation';
 import {
   createCameraState,
   EMPTY_SELECTION,
@@ -10,6 +11,7 @@ import {
   type SourceRef,
 } from '@meridian/view-model';
 import { createStore, type StoreApi } from 'zustand/vanilla';
+import { sanitizeTunable } from './tunable-specs.js';
 
 export type StudioPhase =
   | 'idle'
@@ -63,6 +65,36 @@ export interface StudioHover {
   readonly receivedAtMs: number;
 }
 
+/** One breadcrumb as shown in the bar (derived upstream, ADR-0025). */
+export interface StudioBreadcrumb {
+  readonly graphId: string;
+  readonly node: string | null;
+  readonly label: string | null;
+}
+
+/**
+ * The navigation slice (6D): serializable values only, derived from the
+ * `NavigationController` after every verb/settle. The navigator instance
+ * itself lives in `StudioSession` (ADR-0022 — no service in Zustand).
+ */
+export interface StudioNavState {
+  readonly depth: number;
+  readonly zoom: number;
+  readonly level: number;
+  readonly breadcrumbs: readonly StudioBreadcrumb[];
+  readonly focus: string | null;
+  readonly cutSize: number;
+  readonly notice: { readonly code: string; readonly message: string } | null;
+  readonly urlFragment: string;
+  readonly transition: {
+    readonly active: boolean;
+    readonly count: number;
+    readonly lastMode: 'choreographed' | 'crossfade' | 'camera-only' | null;
+  };
+  /** ADR-0025 saturation affordance: `z = 1`, further zoom is geometric only. */
+  readonly saturated: boolean;
+}
+
 export interface StudioMetrics {
   readonly layoutReadyAtMs: number | null;
   readonly firstRenderMs: number | null;
@@ -91,6 +123,17 @@ export interface StudioState {
   readonly rendererStats: RendererStats | null;
   readonly metrics: StudioMetrics;
   readonly debugEnabled: boolean;
+  /**
+   * The 6E session copy of the tunable navigation constants. Initialized from
+   * (and reset to) the canonical frozen `NAV_TUNABLE_DEFAULTS` — the shipped
+   * ADR values. The debug panel edits this copy; the navigator reads it at
+   * each verb/plan, so an edit takes effect on the next transition without
+   * reload and nothing ever mutates the defaults module.
+   */
+  readonly tunables: NavTunables;
+  readonly nav: StudioNavState | null;
+  /** Canvas viewport in CSS px (published by the bridge; minimap consumes). */
+  readonly viewport: { readonly width: number; readonly height: number } | null;
 }
 
 export type StudioStore = StoreApi<StudioState>;
@@ -119,6 +162,9 @@ export function initialStudioState(debugEnabled = false): StudioState {
     rendererStats: null,
     metrics: EMPTY_METRICS,
     debugEnabled,
+    tunables: NAV_TUNABLE_DEFAULTS,
+    nav: null,
+    viewport: null,
   };
 }
 
@@ -166,6 +212,7 @@ export class StudioStoreCommands {
       diagnostics: [],
       rendererStats: null,
       metrics: EMPTY_METRICS,
+      nav: null,
     });
   }
 
@@ -227,6 +274,34 @@ export class StudioStoreCommands {
       hover: null,
       diagnostics: boundedDiagnostics(current.diagnostics, [diagnostic]),
     });
+  }
+
+  setNav(nav: StudioNavState | null): void {
+    this.store.setState({ nav });
+  }
+
+  /**
+   * Edit one 6E tunable in the session copy (the debug panel's write path).
+   * Values are sanitized against the panel spec window (`tunable-specs.ts`);
+   * a non-finite value is ignored. The change is visible to the navigator on
+   * its next read — i.e. the next transition — without reload.
+   */
+  setTunable(key: keyof NavTunables, value: number): void {
+    const sane = sanitizeTunable(key, value);
+    if (sane === undefined) return;
+    const current = this.store.getState().tunables;
+    if (current[key] === sane) return;
+    this.store.setState({ tunables: { ...current, [key]: sane } });
+  }
+
+  /** Reset the session copy to the canonical frozen ADR defaults (6E "reset
+   * to defaults" affordance). */
+  resetTunables(): void {
+    this.store.setState({ tunables: NAV_TUNABLE_DEFAULTS });
+  }
+
+  setViewport(viewport: { width: number; height: number } | null): void {
+    this.store.setState({ viewport });
   }
 
   setCamera(camera: CameraState): void {

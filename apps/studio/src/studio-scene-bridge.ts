@@ -21,6 +21,13 @@ import {
 } from '@meridian/view-model';
 import { StudioStoreCommands, type StudioStore } from './store.js';
 
+/** The 6D navigation input sink (wheel/pan reroute when a corpus navigator is
+ * active). Kept structural so the bridge never imports the navigator. */
+export interface BridgeNavigationSink {
+  wheelZoom(factor: number, screen: Point): void;
+  pan(delta: Point): void;
+}
+
 let sceneGenerationSequence = 0;
 
 export interface FrameProbeResult {
@@ -43,6 +50,9 @@ export interface StudioSceneBridgeOptions {
   readonly now?: () => number;
   readonly requestFrame?: (callback: FrameRequestCallback) => number;
   readonly cancelFrame?: (handle: number) => void;
+  /** When it returns a sink, wheel and drag input is semantic (ADR-0025) and
+   * routes through the NavigationController instead of the raw camera. */
+  readonly navigation?: () => BridgeNavigationSink | null;
 }
 
 function viewportOf(canvas: HTMLCanvasElement): ViewportSize {
@@ -89,6 +99,7 @@ export class StudioSceneBridge {
   private publishCameraFrame: number | null = null;
   private dragPoint: Point | null = null;
   private loseContextExtension: WEBGL_lose_context | null = null;
+  private readonly navigation: () => BridgeNavigationSink | null;
 
   constructor(
     readonly store: StudioStore,
@@ -99,6 +110,7 @@ export class StudioSceneBridge {
     this.now = options.now ?? (() => performance.now());
     this.requestFrame = options.requestFrame ?? ((callback) => requestAnimationFrame(callback));
     this.cancelFrame = options.cancelFrame ?? ((handle) => cancelAnimationFrame(handle));
+    this.navigation = options.navigation ?? (() => null);
   }
 
   async mount(canvas: HTMLCanvasElement): Promise<void> {
@@ -124,6 +136,7 @@ export class StudioSceneBridge {
     });
     this.addInputListeners(canvas);
     this.observeResize(canvas);
+    this.commands.setViewport(viewport);
 
     try {
       await this.scene.mount(canvas);
@@ -163,7 +176,11 @@ export class StudioSceneBridge {
     if (!this.ready || model === null || this.scene === null || this.camera === null) return;
     if (sourceGeneration !== null && sourceGeneration !== this.fittedSourceGeneration) {
       this.fittedSourceGeneration = sourceGeneration;
-      this.camera.fitToBounds(model.nodeIds.length === 0 ? null : model.bounds, { padding: 64 });
+      // With a 6D navigator active the boot camera is the controller's
+      // (ADR-0025 scale↔z coupling); auto-fit would desynchronize z.
+      if (this.store.getState().nav === null) {
+        this.camera.fitToBounds(model.nodeIds.length === 0 ? null : model.bounds, { padding: 64 });
+      }
     }
     this.scene.render(model, this.camera.state());
   }
@@ -209,7 +226,9 @@ export class StudioSceneBridge {
     this.resizeObserver = new ResizeObserver(() => {
       if (this.camera === null) return;
       const win = canvas.ownerDocument.defaultView;
-      this.camera.resize(viewportOf(canvas), win?.devicePixelRatio ?? 1);
+      const viewport = viewportOf(canvas);
+      this.camera.resize(viewport, win?.devicePixelRatio ?? 1);
+      this.commands.setViewport(viewport);
     });
     this.resizeObserver.observe(canvas);
   }
@@ -221,11 +240,17 @@ export class StudioSceneBridge {
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
     if (this.dragPoint === null || this.camera === null) return;
-    this.camera.panBy({
+    const delta = {
       x: event.clientX - this.dragPoint.x,
       y: event.clientY - this.dragPoint.y,
-    });
+    };
     this.dragPoint = { x: event.clientX, y: event.clientY };
+    const sink = this.navigation();
+    if (sink !== null) {
+      sink.pan(delta);
+      return;
+    }
+    this.camera.panBy(delta);
   };
 
   private readonly handlePointerUp = (event: PointerEvent): void => {
@@ -239,10 +264,15 @@ export class StudioSceneBridge {
     if (this.camera === null || this.canvas === null) return;
     event.preventDefault();
     const rect = this.canvas.getBoundingClientRect();
-    this.camera.zoomAt(
-      { x: event.clientX - rect.left, y: event.clientY - rect.top },
-      Math.exp(-event.deltaY * 0.0015),
-    );
+    const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const factor = Math.exp(-event.deltaY * 0.0015);
+    const sink = this.navigation();
+    if (sink !== null) {
+      // ADR-0025: wheel is the continuous-zoom verb — semantic, may move the cut.
+      sink.wheelZoom(factor, screen);
+      return;
+    }
+    this.camera.zoomAt(screen, factor);
   };
 
   private addInputListeners(canvas: HTMLCanvasElement): void {
@@ -299,6 +329,23 @@ export class StudioSceneBridge {
       camera.state(),
       camera.viewport(),
     );
+  }
+
+  /** Render one transition frame (ADR-0022: the player's only pixel path).
+   * Transient models never enter the store; the settled model is published by
+   * the navigator at flight end. */
+  renderTransient(model: RenderModel, camera: CameraState): void {
+    if (!this.ready || this.scene === null) return;
+    this.latestModel = model;
+    this.scene.render(model, camera);
+  }
+
+  /** Current canvas viewport in CSS px (the navigator's camera-math input). */
+  viewportSize(): ViewportSize {
+    const camera = this.camera;
+    if (camera === null) return { width: 0, height: 0 };
+    const viewport = camera.viewport();
+    return { width: viewport.width, height: viewport.height };
   }
 
   stats(): Readonly<RendererStats> | null {
