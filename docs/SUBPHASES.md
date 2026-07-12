@@ -29,7 +29,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
 | 5 | ✅ `5A`–`5C` · ⬜ `5D`–`5F` | current (visual track) |
 | 6 | ⬜ not started | — |
-| 7 | ✅ `7A`–`7E` · ⬜ `7F`–`7H` | current (domain track) |
+| 7 | ✅ `7A`–`7H` — gate walked, tag `phase-7` awaits user | closing (domain track) |
 | 8–12 | ⬜ not started | — |
 
 ---
@@ -367,7 +367,7 @@ ADR-0026); edges carry `confidence: 'syntactic'`.
 - **Exit:** module-level induced edges over the fixture repo look sane in
   `meridian cut` output.
 
-### 7F — CFG & lazy AST (DetailResolver)
+### 7F — CFG & lazy AST (DetailResolver)  ✅ DONE (`8b34a4e`)
 `DetailResolver` capability added to `plugin-api` (minor version — first
 post-P2 contract change, note it for the P9 chafe report); CFG builder for
 function bodies; AST subgraphs materialized lazily on drill-in per
@@ -378,7 +378,7 @@ ADR-0027.
 - **Exit:** drill into any function in the fixture repo materializes
   CFG/AST on demand.
 
-### 7G — Incremental: watch mode & minimal deltas
+### 7G — Incremental: watch mode & minimal deltas  ✅ DONE (`b55c405`)
 `IncrementalAdapter.update(SourceChange, sink)`: file change → incremental
 re-parse → minimal `GraphDelta`; `meridian watch ./repo`; the *incremental*
 conformance suite (edit scripts with expected minimal deltas).
@@ -388,7 +388,7 @@ conformance suite (edit scripts with expected minimal deltas).
   delta <100ms p95.
 - **Exit:** incremental conformance green on both languages.
 
-### 7H — Scale, dogfood, phase gate
+### 7H — Scale, dogfood, phase gate  ✅ DONE (`111131f`; human dogfood row + tag `phase-7` await user — checklists/phase-07.md)
 Pinned real OSS repo (~100k LOC) fixture: cold ingest <30s,
 byte-deterministic; include/exclude globs, laziness budget policy (10MB
 generated file excluded), symlink cycles; **dogfood: load Meridian's own
