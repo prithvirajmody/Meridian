@@ -1,6 +1,6 @@
 # ADR-0024 — Anchor rule: the world point under the cursor maps through the refinement, affine rect-to-rect, geometric fallback
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-12
 - **Phase:** 6 (roadmap)
 - **Constitution:** ARCHITECTURE.md §5.4 (anchor preservation — "the Google-Maps rule"), §3.2 (I6); ADR-A3
@@ -142,7 +142,11 @@ projection supplies its `R_out/R_in` correspondence and inherits the rule.
    neighbor-gap) is proposed so near-misses on dense cuts still track the
    obvious node. Alternative: no snapping — any miss is geometric. Recommended
    as specified; flag if you prefer the stricter reading.
+   **Ruling (6A review, 2026-07-12): accepted as specified** —
+   `ANCHOR_SNAP = 0.5·Λ`, tunable in 6E.
 2. **Center-anchored programmatic zooms.** Confirm viewport-center anchoring
    for keyboard/slider/budget-triggered changes, or prefer anchoring to the
    current `focus` node's center when one exists (slightly smarter, slightly
    less predictable).
+   **Ruling (6A review, 2026-07-12): accepted as specified** — viewport
+   center; no focus-node smartness in v1.

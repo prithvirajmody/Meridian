@@ -1,6 +1,6 @@
 # ADR-0023 — Transition model: pure choreographed plans, one shared easing, 300ms/45fps hard budget, degrade-to-crossfade
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-12
 - **Phase:** 6 (roadmap)
 - **Constitution:** ARCHITECTURE.md §5.4 (transitions), §1.4, §16.1 (≤300ms plan-to-settle, ≥45fps during), §3.2 (I6); ADR-A3
@@ -162,8 +162,12 @@ here and re-tuned at the 6E human gate — the ADR-0012 pattern.
 1. **Degrade thresholds.** `MAX_ANIMATED_NODES = 1500`, stability floor `0.5`,
    sourceless majority `50%` are proposed as starting mechanism for 6E tuning.
    Confirm as initial values, or set different ones.
+   **Ruling (6A review, 2026-07-12): accepted as specified** — initial
+   mechanism values, re-tuned at the 6E human gate.
 2. **Runtime guard shape.** Proposed: 3 consecutive >22ms frames → ≤100ms
    finish-fade. Alternative: no runtime guard at all (trust plan-time
    prediction; simpler player). Recommended as specified — the budget is a
    constitutional promise (§16.1) and the guard is what makes it
    unconditional.
+   **Ruling (6A review, 2026-07-12): accepted as specified** — the guard
+   stays.

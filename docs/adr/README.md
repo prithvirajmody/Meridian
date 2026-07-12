@@ -81,9 +81,9 @@ so the decision history stays legible.
 | [0020](0020-label-strategy-tiers.md) | Labels: screen-space MSDF `BitmapText`, geometric tiers, bounded Unicode fallback | Accepted | §1.3, §9.3, §10.3, ADR-A8 | 5 |
 | [0021](0021-spatial-index-picking.md) | Picking: worker-built world-space quadtree, synchronous CPU hit-test | Accepted | §1.3, §9.3, §10.3, ADR-A8 | 5 |
 | [0022](0022-react-canvas-boundary.md) | React/canvas boundary: zustand value bridge, no draw calls from React | Accepted | §1.3, §9.1, §10.3, ADR-A8 | 5 |
-| [0023](0023-transition-model.md) | Transition model: pure choreographed plans, one shared easing, 300ms/45fps hard budget, degrade-to-crossfade | Proposed | §5.4, §16.1, ADR-A3 | 6 |
-| [0024](0024-anchor-rule.md) | Anchor rule: world point under cursor maps through the refinement, affine rect-to-rect, geometric fallback | Proposed | §5.4, ADR-A3 | 6 |
-| [0025](0025-drill-in-vs-zoom.md) | Drill-in vs zoom: zoom moves the cut and saturates; scope changes are always explicit, both directions | Proposed | §5.4, §5.6, §10 | 6 |
+| [0023](0023-transition-model.md) | Transition model: pure choreographed plans, one shared easing, 300ms/45fps hard budget, degrade-to-crossfade | Accepted | §5.4, §16.1, ADR-A3 | 6 |
+| [0024](0024-anchor-rule.md) | Anchor rule: world point under cursor maps through the refinement, affine rect-to-rect, geometric fallback | Accepted | §5.4, ADR-A3 | 6 |
+| [0025](0025-drill-in-vs-zoom.md) | Drill-in vs zoom: zoom moves the cut and saturates; scope changes are always explicit, both directions | Accepted | §5.4, §5.6, §10 | 6 |
 | [0026](0026-resolution-depth-syntactic.md) | Resolution depth: syntactic + import-graph only, no type checker; unresolved calls omitted with counters | Accepted | §7.1–7.3, §3.1, §8.1 | 7 |
 | [0027](0027-laziness-policy-thresholds.md) | Laziness policy: eager to function signatures, lazy bodies via DetailResolver; byte-identical eager/lazy IDs | Accepted | §4.7, §5.5, §7.2, §14.1 | 7 |
 | [0028](0028-id-stability-under-edits.md) | ID stability under edits: (path, qualifiedName, overloadHash); whitespace edit ⇒ empty delta; rename = remove+add, alias table reserved | Accepted | §3.1, §3.2 (U4), §7.4; ADR-0002 | 7 |

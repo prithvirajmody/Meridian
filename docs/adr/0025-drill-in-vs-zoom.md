@@ -1,6 +1,6 @@
 # ADR-0025 — Drill-in vs zoom: zoom moves the cut and saturates; scope changes are always explicit, in both directions
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-12
 - **Phase:** 6 (roadmap)
 - **Constitution:** ARCHITECTURE.md §5.4 (drill-in vs zoom), §5.6 (context stack, breadcrumbs, serializable navigation state), §10 (command taxonomy: navigation effects); ADR-A3
@@ -155,8 +155,14 @@ frozen there.
    saved context state. Recommended as specified (explicit both ways);
    confirm, or choose auto-pop-at-saturation and we make drill-out
    state-restoring on re-entry instead.
+   **Ruling (6A review, 2026-07-12): accepted as specified** — symmetric
+   explicitness; zoom never changes scope in either direction.
 2. **Enter-at-coarse (`z = 0`) on drill-in.** Confirm, or prefer entering at
    a level chosen by the detail chain's declared default (adapter hint) when
    present.
+   **Ruling (6A review, 2026-07-12): accepted as specified** — enter at
+   `z = 0`; adapter default-level hints deferred.
 3. **URL override truncation at 2000 chars.** Confirm the pragmatic cap +
    warning, or require full fidelity (accepting multi-KB fragments).
+   **Ruling (6A review, 2026-07-12): accepted as specified** — cap at
+   `URL_MAX = 2000` with the visible warning.
