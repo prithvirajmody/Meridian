@@ -5,6 +5,26 @@ authors are downstream consumers even while "plugin authors" means us.
 Versioning policy: ADR-0010 (semver; pre-1.0 minors may break, only at
 declared checkpoints P7/P9).
 
+## 0.2.0 — Phase 7F (the P7 amendment checkpoint)
+
+**The first post-2.0 runtime-surface change** (ADR-0010 §3 schedules a breaking
+window at Phase 7; this one is only *additive*, so a **minor** bump, not a
+break). Flagged here and in `capabilities.ts` for the Phase-9 chafe report
+(SUBPHASES §7F / §9E).
+
+Runtime surface: `CAPABILITY_KINDS` gains `detail-resolver` (sixth kind,
+appended — ADR-0011/§14.1) and `PLUGIN_API_VERSION` moves `0.1.0` → `0.2.0`.
+New types (the `detail-resolver` contract shape, ADR-0027): `DetailResolver`
+(`canResolve`/`resolve`), `DetailNode` (the wire node a resolver is handed —
+a `GraphDocument` node), `DetailGraphRef`, `DetailContext` (carries the
+ADR-mandated `AbortSignal`, mirroring `AbstractionContext`); the
+`PluginExports.detailResolvers` export seam (unrouted by the host — consumed by
+P6 navigation / P11 persistence; the code adapter's resolver is exercised
+directly in 7F). A resolver materializes deep detail on drill-in and emits it
+through the existing `IngestSink` as op-based deltas (ADR-0005, no second write
+path). Existing `^0.1.0` consumers still satisfy the range under the 0.x caret
+convention, so no adapter manifest needs editing.
+
 ## Unreleased (Phase 3B)
 
 Additive, type-only — runtime surface unchanged (no version bump required

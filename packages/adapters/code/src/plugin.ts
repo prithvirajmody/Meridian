@@ -19,28 +19,32 @@ import {
   type BundleFile,
 } from './bundle.js';
 import { buildCodeDocument, DOMAIN } from './document.js';
-import { isCodeLanguage, type CodeLanguage } from './languages.js';
+import { isCodeLanguage, languageForPath } from './languages.js';
 import { assembleProject } from './map/assemble.js';
 import type { RawModule } from './map/raw.js';
 import type { CodeMapper } from './mapper.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 
 /** ADR-0027 oversize threshold: a file this large is flagged excluded and not
  * walked (contributes a cold, non-resolvable module node). */
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_FILE_LOC = 50_000;
 
-const TS_EXTENSIONS = /\.(tsx|mts|cts|ts)$/i;
-const PY_EXTENSIONS = /\.(pyi|py)$/i;
 /** Any code extension this adapter routes (7D: TypeScript + Python). */
 const CODE_EXTENSIONS = /\.(tsx|mts|cts|ts|pyi|py)$/i;
 
 export const manifest: PluginManifest = {
   name: '@meridian/adapter-code',
   version: VERSION,
-  apiVersion: '^0.1.0',
-  capabilities: [{ kind: 'domain-parser', id: DOMAIN }],
+  apiVersion: '^0.2.0',
+  capabilities: [
+    { kind: 'domain-parser', id: DOMAIN },
+    // 7F: this adapter materializes a function's CFG/AST on drill-in
+    // (ADR-0027). Declared-but-unrouted by the host (like the other post-parser
+    // kinds); the resolver is exercised directly / by the navigation layer.
+    { kind: 'detail-resolver', id: DOMAIN },
+  ],
   kinds: [
     'code:project',
     'code:package',
@@ -51,6 +55,11 @@ export const manifest: PluginManifest = {
     'code:namespace',
     'code:imports',
     'code:calls',
+    // 7F lazy body levels (ADR-0027): CFG basic blocks + flow edges, AST nodes.
+    'code:block',
+    'code:stmt',
+    'code:expr',
+    'code:flows-to',
   ],
   attrSchemas: {
     'code:language': { type: 'string', description: 'source language of a module (e.g. typescript)' },
@@ -79,14 +88,14 @@ export const manifest: PluginManifest = {
     'code:calls-unresolved': { type: 'number', description: 'outbound in-repo call-sites that did not resolve (ADR-0026)' },
     'code:calls-external': { type: 'number', description: 'outbound call-sites import-bound to a module outside the ingested set (ADR-0026)' },
     'code:imports-external': { type: 'number', description: 'import statements whose specifier resolved to no ingested file (external)' },
+    // 7F — lazy body materialization (ADR-0027).
+    'code:body-span': { type: 'number-array', description: "[start, end] byte span of a function/method body; the DetailResolver.canResolve marker (ADR-0027)" },
+    'code:scope-path': { type: 'string-array', description: "a function/method's ADR-0028 qualifiedName scope chain, so the resolver can re-derive byte-identical body ids" },
+    'code:block-role': { type: 'string', description: 'CFG basic-block role: entry|exit|block (ADR-0027)' },
+    'code:flow': { type: 'string', description: "a code:flows-to edge's control-flow reason: seq|true|false|loop|break|continue|return|exception|fallthrough|finally" },
+    'code:ast-kind': { type: 'string', description: 'the grammar node type of a code:stmt/code:expr AST node (descriptive provenance)' },
   },
 };
-
-function languageFor(path: string): CodeLanguage | undefined {
-  if (TS_EXTENSIONS.test(path)) return 'typescript';
-  if (PY_EXTENSIONS.test(path)) return 'python';
-  return undefined;
-}
 
 function looksBinary(text: string): boolean {
   return text.includes('\u0000');
@@ -95,7 +104,7 @@ function looksBinary(text: string): boolean {
 function sniff(src: SourceDescriptor): number {
   if (src.mediaType === CODE_PROJECT_MEDIA_TYPE) return 1;
   if (src.text === undefined || looksBinary(src.text)) return 0;
-  if (languageFor(src.uri) !== undefined) return 0.9;
+  if (languageForPath(src.uri) !== undefined) return 0.9;
   return 0;
 }
 
@@ -147,7 +156,7 @@ export function createCodePlugin(deps: { readonly mapper: CodeMapper }): Meridia
             const modules: RawModule[] = [];
             let done = 0;
             for (const file of files) {
-              const language = languageFor(file.path);
+              const language = languageForPath(file.path);
               if (language === undefined || !isCodeLanguage(language)) {
                 done += 1;
                 continue; // not a routed code file (TypeScript or Python); skip

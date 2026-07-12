@@ -28,7 +28,8 @@ const DOMAIN_FREE_PACKAGES = [
   'packages/renderer',
 ];
 
-const CODE_KIND = /code:(project|package|module|class|function|method|namespace|imports|calls|contains)/;
+const CODE_KIND =
+  /code:(project|package|module|class|function|method|namespace|imports|calls|contains|block|stmt|expr|flows-to)/;
 
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');

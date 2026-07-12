@@ -56,6 +56,13 @@ function callsOf(node: SyntaxNode): RawCallSite[] {
   return collectCalls(node.childForFieldName('body'), TS_CALLS);
 }
 
+/** The body span of a function-value node (7F), or undefined for a bodyless
+ * declaration (an overload `function_signature` / abstract signature). */
+function bodySpanOf(node: SyntaxNode): readonly [number, number] | undefined {
+  const body = node.childForFieldName('body');
+  return body === null ? undefined : [body.startIndex, body.endIndex];
+}
+
 /** Declaration node types that carry an eager signature/scope. */
 const MAPPABLE = new Set([
   'function_declaration',
@@ -84,6 +91,7 @@ function makeFunction(
   generatorByType = false,
 ): RawDecl {
   const signature = extractSignature(node, generatorByType);
+  const bodySpan = bodySpanOf(node);
   return {
     kind: 'function',
     name,
@@ -94,6 +102,7 @@ function makeFunction(
     sigHash: signatureHash(signature),
     children: [],
     calls: callsOf(node),
+    ...(bodySpan !== undefined ? { bodySpan } : {}),
   };
 }
 
@@ -127,6 +136,7 @@ function mapClassMember(member: SyntaxNode): RawDecl[] {
         sigHash: signatureHash(signature),
         children: [],
         calls: callsOf(member),
+        ...(bodySpanOf(member) !== undefined ? { bodySpan: bodySpanOf(member)! } : {}),
       },
     ];
   }
@@ -156,6 +166,7 @@ function mapClassMember(member: SyntaxNode): RawDecl[] {
         children: [],
         // The body lives on the arrow value, not the field wrapper.
         calls: callsOf(value!),
+        ...(bodySpanOf(value!) !== undefined ? { bodySpan: bodySpanOf(value!)! } : {}),
       },
     ];
   }

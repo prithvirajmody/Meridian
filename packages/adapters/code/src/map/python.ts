@@ -161,6 +161,7 @@ function makeFunction(fn: SyntaxNode, memberKind: MemberKind, decorators: readon
   const names = decorators.map(decoratorName);
   const flags = classifyDecorators(names);
   const signature = extractPySignature(fn, flags);
+  const body = fn.childForFieldName('body');
   return [
     {
       kind: memberKind,
@@ -174,6 +175,7 @@ function makeFunction(fn: SyntaxNode, memberKind: MemberKind, decorators: readon
       sigHash: signatureHash(signature),
       children: [],
       calls: callsOf(fn),
+      ...(body !== null ? { bodySpan: [body.startIndex, body.endIndex] as const } : {}),
     },
   ];
 }
@@ -206,6 +208,7 @@ function mapAssignment(assignment: SyntaxNode, memberKind: MemberKind): RawDecl[
     return [];
   }
   const signature = extractLambdaSignature(right);
+  const body = right.childForFieldName('body');
   return [
     {
       kind: memberKind,
@@ -218,6 +221,7 @@ function mapAssignment(assignment: SyntaxNode, memberKind: MemberKind): RawDecl[
       children: [],
       // The body is the lambda's expression, scanned for its own calls.
       calls: callsOf(right),
+      ...(body !== null ? { bodySpan: [body.startIndex, body.endIndex] as const } : {}),
     },
   ];
 }

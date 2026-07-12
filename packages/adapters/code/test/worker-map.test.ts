@@ -7,7 +7,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { ParseWorkerHost } from '../src/index.js';
 import { makeNodeFactory } from './node-factory.js';
-import { mapPy, mapTs } from './support.js';
+import { mapPy, mapTs, resolveBodyBySpan } from './support.js';
 
 const { factory } = makeNodeFactory();
 const host = new ParseWorkerHost({ factory });
@@ -51,6 +51,25 @@ describe('worker-hosted mapping', () => {
     expect(module.hasErrors).toBe(true);
     expect(module.errorCount).toBeGreaterThan(0);
     expect(module.decls.some((d) => d.name === 'ok')).toBe(true);
+  });
+
+  it('resolveBody runs in the worker and matches the in-process build (7F parity)', async () => {
+    // ADR-0027: `resolve` runs in the parse worker; hosting is a *when*, never
+    // a *what* — the worker-built RawBody must be byte-identical in-process.
+    const { module } = await host.map({ language: 'typescript', source: 'shapes.ts', label: 'shapes.ts', text: SAMPLE });
+    const area = module.decls.find((d) => d.name === 'Circle')!.children.find((d) => d.name === 'area')!;
+    expect(area.bodySpan).toBeDefined();
+    const { body, resolveTimeMs } = await host.resolveBody({
+      language: 'typescript',
+      text: SAMPLE,
+      declSpan: area.span,
+    });
+    expect(body).toBeDefined();
+    expect(body!.blocks.some((b) => b.role === 'entry')).toBe(true);
+    expect(body!.flows.length).toBeGreaterThan(0);
+    expect(resolveTimeMs).toBeGreaterThanOrEqual(0);
+    const inproc = await resolveBodyBySpan('typescript', SAMPLE, area.span);
+    expect(body).toEqual(inproc);
   });
 
   it('maps Python in the worker, byte-identical to the in-process walk (7D parity)', async () => {

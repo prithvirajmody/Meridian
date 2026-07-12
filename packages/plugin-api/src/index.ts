@@ -18,6 +18,12 @@ export { CAPABILITY_KINDS } from './capabilities.js';
 export type { CapabilityKind } from './capabilities.js';
 export type { EdgeCoords, IdFacade, PluginContext, PluginLogger } from './context.js';
 export type {
+  DetailContext,
+  DetailGraphRef,
+  DetailNode,
+  DetailResolver,
+} from './detail.js';
+export type {
   LayoutCapabilities,
   LayoutCut,
   LayoutHints,

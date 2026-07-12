@@ -19,3 +19,15 @@ export const GRAMMAR_FILES: Readonly<Record<CodeLanguage, string>> = {
 export function isCodeLanguage(value: string): value is CodeLanguage {
   return (CODE_LANGUAGES as readonly string[]).includes(value);
 }
+
+const TS_EXTENSIONS = /\.(tsx|mts|cts|ts)$/i;
+const PY_EXTENSIONS = /\.(pyi|py)$/i;
+
+/** The language a path routes to by extension (7D: TS + Python), or undefined
+ * for a non-code path. Shared by the parser's file router and 7F's resolver
+ * (which infers a cold node's language from its provenance uri). */
+export function languageForPath(path: string): CodeLanguage | undefined {
+  if (TS_EXTENSIONS.test(path)) return 'typescript';
+  if (PY_EXTENSIONS.test(path)) return 'python';
+  return undefined;
+}

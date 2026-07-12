@@ -183,6 +183,9 @@ importers:
       '@meridian/graph-core':
         specifier: workspace:*
         version: link:../../graph-core
+      '@meridian/graph-store':
+        specifier: workspace:*
+        version: link:../../graph-store
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.2

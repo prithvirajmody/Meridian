@@ -14,6 +14,8 @@
  * is pure and the shim isomorphic, so "worker vs not" is a *when*, never a
  * *what* (ADR-0027).
  */
+import { buildBody } from './detail/body.js';
+import type { RawBody } from './detail/types.js';
 import type { CodeLanguage } from './languages.js';
 import { mapModuleTree } from './map/map-module.js';
 import type { RawModule } from './map/raw.js';
@@ -31,8 +33,23 @@ export interface MapModuleRequest {
   readonly text: string;
 }
 
+/** A request to materialize one function/method body (7F, ADR-0027): the file
+ * text plus the declaration's byte span (the cold node's provenance span). */
+export interface ResolveBodyRequest {
+  readonly language: CodeLanguage;
+  /** Repository-relative POSIX path — the ADR-0028 `source` coordinate. */
+  readonly source: string;
+  readonly text: string;
+  /** `[startIndex, endIndex]` byte span of the function/method declaration. */
+  readonly declSpan: readonly [number, number];
+}
+
 export interface CodeMapper {
   mapModule(req: MapModuleRequest): Promise<RawModule>;
+  /** Parse `req.text` and build the {@link RawBody} of the declaration at
+   * `req.declSpan`; `undefined` if no resolvable body is found (7F). Honors an
+   * optional cancellation signal (ADR-0027 abandoned drill-in). */
+  resolveBody(req: ResolveBodyRequest, opts?: { readonly signal?: AbortSignal }): Promise<RawBody | undefined>;
   dispose(): Promise<void>;
 }
 
@@ -60,6 +77,19 @@ export function createInProcessMapper(runtimeOptions: ParserRuntimeOptions): Cod
         parser.delete();
       }
     },
+    async resolveBody(req) {
+      const parser = await (await getRuntime()).parser(req.language);
+      try {
+        const { tree } = parseSource(parser, req.language, req.text);
+        try {
+          return buildBody(tree, req.language, req.declSpan);
+        } finally {
+          tree.delete();
+        }
+      } finally {
+        parser.delete();
+      }
+    },
     async dispose() {
       /* the runtime holds no OS handles; nothing to release */
     },
@@ -72,6 +102,10 @@ export function createWorkerMapper(host: ParseWorkerHost): CodeMapper {
     async mapModule(req) {
       const { module } = await host.map(req);
       return module;
+    },
+    async resolveBody(req, opts) {
+      const { body } = await host.resolveBody(req, opts);
+      return body;
     },
     async dispose() {
       await host.dispose();

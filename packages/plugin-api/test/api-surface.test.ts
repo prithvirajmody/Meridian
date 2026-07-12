@@ -7,6 +7,10 @@ import { describe, expect, it } from 'vitest';
 import type {
   AbstractionProposal,
   AbstractionProvider,
+  DetailGraphRef,
+  DetailNode,
+  DetailResolver,
+  IngestSink,
   LevelChainSpec,
   PluginManifest,
 } from '../src/index.js';
@@ -21,13 +25,15 @@ describe('@meridian/plugin-api public surface', () => {
     ]);
   });
 
-  it('capability kinds are the ADR-0011 v1 enum, in declaration order', () => {
+  it('capability kinds are the enum with 7F’s appended detail-resolver, in declaration order', () => {
     expect(api.CAPABILITY_KINDS).toEqual([
       'domain-parser',
       'abstraction-provider',
       'layout-provider',
       'view-projection',
       'ai-provider',
+      // Phase 7F (ADR-0027): first post-P2 runtime-surface change, minor bump.
+      'detail-resolver',
     ]);
   });
 
@@ -56,5 +62,28 @@ describe('@meridian/plugin-api public surface', () => {
     };
     expect(manifest.levelChain?.levels.length).toBe(2);
     expect(provider.id).toBe('x');
+  });
+
+  it('the Phase 7F detail-resolver type surface is exported and shaped (compile-time)', () => {
+    // Type-only shapes for the `detail-resolver` contract (ADR-0027). Pinned so
+    // a breaking edit fails `pnpm typecheck` (ADR-0010).
+    const detailManifest: PluginManifest = {
+      name: '@meridian/y',
+      version: '0.0.0',
+      apiVersion: '^0.2.0',
+      capabilities: [{ kind: 'detail-resolver', id: 'y' }],
+    };
+    const ref: DetailGraphRef = { graph: 'g-detail' };
+    const resolver: DetailResolver = {
+      id: 'y',
+      canResolve: (n: DetailNode) => n.detail === undefined,
+      resolve: async (_n: DetailNode, sink: IngestSink) => {
+        sink.emitDelta({ ops: [] });
+        return ref;
+      },
+    };
+    expect(detailManifest.capabilities[0]?.kind).toBe('detail-resolver');
+    expect(resolver.id).toBe('y');
+    expect(ref.graph).toBe('g-detail');
   });
 });

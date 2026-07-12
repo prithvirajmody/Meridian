@@ -31,6 +31,8 @@ import {
   type MapResponse,
   type ParseResponse,
   type ParseWorkerApi,
+  type ResolveBodyRequest,
+  type ResolveBodyResponse,
 } from './worker-api.js';
 
 /** How a worker died. */
@@ -138,6 +140,20 @@ export class ParseWorkerHost {
    */
   async map(req: Omit<MapRequest, 'requestId'>, opts: ParseHostOptions = {}): Promise<MapResponse> {
     return this.dispatch<MapResponse>((requestId) => this.proxy!.map({ requestId, ...req }), opts);
+  }
+
+  /**
+   * Parse **and** build one function body's CFG/AST {@link RawBody} in the
+   * worker (7F). Same cancellation/crash semantics as {@link map}.
+   */
+  async resolveBody(
+    req: Omit<ResolveBodyRequest, 'requestId'>,
+    opts: ParseHostOptions = {},
+  ): Promise<ResolveBodyResponse> {
+    return this.dispatch<ResolveBodyResponse>(
+      (requestId) => this.proxy!.resolveBody({ requestId, ...req }),
+      opts,
+    );
   }
 
   /** Shared in-flight bookkeeping for `parse`/`map`: one request id, optional

@@ -122,6 +122,14 @@ export interface RawDecl {
   readonly overload?: boolean;
   /** Present for `function`/`method`; absent for `class`/`namespace`. */
   readonly signature?: RawSignature;
+  /** `[startIndex, endIndex]` byte span of the function/method **body** (7F,
+   * ADR-0027): the `statement_block`/`block` (or a concise arrow's expression /
+   * a `lambda`'s expression). Present iff the declaration has a materializable
+   * body — **absent** for an abstract method, an overload/declaration stub, or
+   * a `function_signature`. It is the `code:body-span` eager attr that the
+   * `DetailResolver.canResolve` predicate keys on (a cold declaration with a
+   * body is drill-in-able; one without a body is not). */
+  readonly bodySpan?: readonly [number, number];
   /** Reorder-stable discriminator hash of the signature shape (ADR-0028 case 2);
    * '' when the declaration has no signature (class/namespace). */
   readonly sigHash: string;

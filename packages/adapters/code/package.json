@@ -27,6 +27,7 @@
   "devDependencies": {
     "@meridian/conformance-kit": "workspace:*",
     "@meridian/graph-core": "workspace:*",
+    "@meridian/graph-store": "workspace:*",
     "@types/node": "^24.0.0",
     "playwright-core": "^1.61.1",
     "typescript": "^5.8.0",

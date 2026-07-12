@@ -73,5 +73,29 @@ export {
   createInProcessMapper,
   createWorkerMapper,
 } from './mapper.js';
-export type { CodeMapper, MapModuleRequest } from './mapper.js';
+export type { CodeMapper, MapModuleRequest, ResolveBodyRequest } from './mapper.js';
+export { languageForPath } from './languages.js';
 export { createCodePlugin, manifest as codeManifest } from './plugin.js';
+// 7F — CFG & lazy AST (DetailResolver).
+export { buildCfg } from './detail/cfg.js';
+export type { CfgBlock, CfgEdge, CfgResult } from './detail/cfg.js';
+export { normalizeTsBody } from './detail/ts-body.js';
+export { normalizePyBody } from './detail/py-body.js';
+export { buildAst } from './detail/ast.js';
+export { buildBody } from './detail/body.js';
+export type {
+  CfgCase,
+  CfgStmt,
+  FlowLabel,
+  RawAst,
+  RawBlock,
+  RawBody,
+  RawFlow,
+} from './detail/types.js';
+export { buildBodyDelta, DETAIL_ACTOR, DetailResolveError } from './detail/build-detail.js';
+export { canResolveCodeDetail, createCodeDetailResolver } from './detail/resolver.js';
+export type { CodeDetailResolverDeps } from './detail/resolver.js';
+export type {
+  ResolveBodyRequest as WorkerResolveBodyRequest,
+  ResolveBodyResponse as WorkerResolveBodyResponse,
+} from './worker/worker-api.js';

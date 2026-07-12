@@ -1,9 +1,9 @@
 plugins (2):
-  @meridian/adapter-markdown 0.1.0 — plugin-api ^0.1.0
+  @meridian/adapter-markdown 0.1.0 — plugin-api ^0.2.0
     capabilities  domain-parser:markdown
     kinds         doc:break, doc:code, doc:html, doc:links-to, doc:list, doc:paragraph, doc:quote, doc:section
     attrs         doc:index, doc:items, doc:lang, doc:level, doc:ordered
-  @meridian/adapter-code 0.1.0 — plugin-api ^0.1.0
-    capabilities  domain-parser:code
-    kinds         code:calls, code:class, code:function, code:imports, code:method, code:module, code:namespace, code:package, code:project
-    attrs         code:abstract, code:accessibility, code:async, code:call-sites, code:calls-external, code:calls-resolved, code:calls-unresolved, code:classmethod, code:confidence, code:decorators, code:default-export, code:duplicate, code:error-count, code:excluded, code:exported, code:generator, code:imports-external, code:language, code:overload, code:params, code:parse-error, code:property, code:returns, code:signature, code:static
+  @meridian/adapter-code 0.2.0 — plugin-api ^0.2.0
+    capabilities  domain-parser:code, detail-resolver:code
+    kinds         code:block, code:calls, code:class, code:expr, code:flows-to, code:function, code:imports, code:method, code:module, code:namespace, code:package, code:project, code:stmt
+    attrs         code:abstract, code:accessibility, code:ast-kind, code:async, code:block-role, code:body-span, code:call-sites, code:calls-external, code:calls-resolved, code:calls-unresolved, code:classmethod, code:confidence, code:decorators, code:default-export, code:duplicate, code:error-count, code:excluded, code:exported, code:flow, code:generator, code:imports-external, code:language, code:overload, code:params, code:parse-error, code:property, code:returns, code:scope-path, code:signature, code:static

@@ -13,7 +13,7 @@ const VERSION = '0.1.0';
 export const manifest: PluginManifest = {
   name: '@meridian/adapter-markdown',
   version: VERSION,
-  apiVersion: '^0.1.0',
+  apiVersion: '^0.2.0',
   capabilities: [{ kind: 'domain-parser', id: DOMAIN }],
   kinds: [
     'doc:section',

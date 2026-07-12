@@ -1,10 +1,10 @@
 {
-  "apiVersion": "0.1.0",
+  "apiVersion": "0.2.0",
   "plugins": [
     {
       "name": "@meridian/adapter-markdown",
       "version": "0.1.0",
-      "apiVersion": "^0.1.0",
+      "apiVersion": "^0.2.0",
       "capabilities": [
         {
           "kind": "domain-parser",
@@ -46,11 +46,15 @@
     },
     {
       "name": "@meridian/adapter-code",
-      "version": "0.1.0",
-      "apiVersion": "^0.1.0",
+      "version": "0.2.0",
+      "apiVersion": "^0.2.0",
       "capabilities": [
         {
           "kind": "domain-parser",
+          "id": "code"
+        },
+        {
+          "kind": "detail-resolver",
           "id": "code"
         }
       ],
@@ -63,7 +67,11 @@
         "code:method",
         "code:namespace",
         "code:imports",
-        "code:calls"
+        "code:calls",
+        "code:block",
+        "code:stmt",
+        "code:expr",
+        "code:flows-to"
       ],
       "attrSchemas": {
         "code:language": {
@@ -165,6 +173,26 @@
         "code:imports-external": {
           "type": "number",
           "description": "import statements whose specifier resolved to no ingested file (external)"
+        },
+        "code:body-span": {
+          "type": "number-array",
+          "description": "[start, end] byte span of a function/method body; the DetailResolver.canResolve marker (ADR-0027)"
+        },
+        "code:scope-path": {
+          "type": "string-array",
+          "description": "a function/method's ADR-0028 qualifiedName scope chain, so the resolver can re-derive byte-identical body ids"
+        },
+        "code:block-role": {
+          "type": "string",
+          "description": "CFG basic-block role: entry|exit|block (ADR-0027)"
+        },
+        "code:flow": {
+          "type": "string",
+          "description": "a code:flows-to edge's control-flow reason: seq|true|false|loop|break|continue|return|exception|fallthrough|finally"
+        },
+        "code:ast-kind": {
+          "type": "string",
+          "description": "the grammar node type of a code:stmt/code:expr AST node (descriptive provenance)"
         }
       }
     }

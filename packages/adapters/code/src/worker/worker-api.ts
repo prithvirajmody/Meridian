@@ -16,6 +16,8 @@
  * the serializable {@link ParseOutcome} crosses the boundary (7C's mapping will
  * also run worker-side, so whole trees never need to cross).
  */
+import { buildBody } from '../detail/body.js';
+import type { RawBody } from '../detail/types.js';
 import type { CodeLanguage } from '../languages.js';
 import { mapModuleTree } from '../map/map-module.js';
 import type { RawModule } from '../map/raw.js';
@@ -71,6 +73,22 @@ export interface MapResponse {
   readonly mapTimeMs: number;
 }
 
+/** A body-resolve request (7F): parse one file and materialize the function/
+ * method body at `declSpan` (the cold node's provenance span, ADR-0027). */
+export interface ResolveBodyRequest {
+  readonly requestId: number;
+  readonly language: CodeLanguage;
+  readonly text: string;
+  readonly declSpan: readonly [number, number];
+}
+
+export interface ResolveBodyResponse {
+  readonly requestId: number;
+  /** `undefined` when no resolvable body is found (abstract/overload/stale). */
+  readonly body: RawBody | undefined;
+  readonly resolveTimeMs: number;
+}
+
 /** The Comlink-exposed worker surface. */
 export interface ParseWorkerApi {
   /** Pre-load a grammar (idempotent) so first-parse latency excludes it. */
@@ -78,6 +96,8 @@ export interface ParseWorkerApi {
   parse(req: ParseRequest): Promise<ParseResponse>;
   /** Parse **and** map one file to its {@link RawModule} skeleton (7C). */
   map(req: MapRequest): Promise<MapResponse>;
+  /** Parse **and** build one function body's CFG/AST {@link RawBody} (7F). */
+  resolveBody(req: ResolveBodyRequest): Promise<ResolveBodyResponse>;
 }
 
 /** Portable `AbortError` (`DOMException` where available). */
@@ -158,6 +178,29 @@ export function createParseWorker(opts: {
             const mapTimeMs = performance.now() - started;
             if (cancelled.delete(req.requestId)) throw abortError();
             return { module, requestId: req.requestId, mapTimeMs };
+          } finally {
+            tree.delete();
+          }
+        } finally {
+          parser.delete();
+        }
+      } finally {
+        cancelled.delete(req.requestId);
+      }
+    },
+
+    async resolveBody(req: ResolveBodyRequest): Promise<ResolveBodyResponse> {
+      try {
+        if (cancelled.delete(req.requestId)) throw abortError();
+        const parser = await (await getRuntime()).parser(req.language);
+        const started = performance.now();
+        try {
+          const { tree } = parseSource(parser, req.language, req.text);
+          try {
+            const body = buildBody(tree, req.language, req.declSpan);
+            const resolveTimeMs = performance.now() - started;
+            if (cancelled.delete(req.requestId)) throw abortError();
+            return { body, requestId: req.requestId, resolveTimeMs };
           } finally {
             tree.delete();
           }

@@ -66,19 +66,31 @@ is **deferred to P11**, which the roadmap states DetailResolver exists to serve
 
 **`DetailResolver` semantics** (the `plugin-api` capability added in 7F as an
 additive minor version, ADR-0010/0011 — this record specifies its contract; 7A
-writes no code):
+writes no code). *Amended 7F* — the shipped contract speaks the **wire IR**
+(ADR-0009 clone-safety: `DetailNode` is a `GraphDocument` node, structurally
+widened from the store's branded `SemanticNode`; `DetailGraphRef` structurally
+equals `GraphRef`), carries a manifest-matching `id` like `AbstractionProvider`,
+and takes an explicit capability-scoped context because this record *requires*
+resolvers honor an `AbortSignal`:
 
 ```ts
 interface DetailResolver {
-  canResolve(node: SemanticNode): boolean;                         // pure, cheap
-  resolve(node: SemanticNode, sink: IngestSink): Promise<GraphRef>; // materialize on demand
+  readonly id: string;                              // matches the manifest capability id
+  canResolve(node: DetailNode): boolean;            // pure, cheap
+  resolve(node: DetailNode, sink: IngestSink, ctx: DetailContext): Promise<DetailGraphRef>;
 }
+interface DetailContext { apiVersion; log; signal?: AbortSignal }
 ```
 
 - `canResolve` is a **pure synchronous predicate**: true iff
   `node.kind ∈ {code:function, code:method}`, the node carries a body-span attr,
   and it has no `detail` yet (cold). The host/UI shows a drill-in affordance
-  without resolving.
+  without resolving. *Amended 7F:* the marker is realized as **two eager attrs**
+  on every body-carrying declaration: `code:body-span` (number-array, the body's
+  byte span) and `code:scope-path` (the function's ADR-0028 qualified path) —
+  the latter because a wire `DetailNode` does not carry its ADR-0028 coordinates,
+  and body IDs must derive from the function's qualifiedName for the
+  byte-identity invariant below.
 - `resolve` emits the body subgraph **through the ordinary `IngestSink` as
   op-based deltas** (ADR-0005 — no second write path): a `node:detail` op setting
   the function's `detail` from absent → the new graph, plus `graph:add`/
@@ -100,6 +112,31 @@ whether materialized eagerly or lazily.** Laziness is purely a *when*, never a
 *what*; a golden test materializes a body both ways and asserts byte-identity.
 Every body node carries `origin: 'source'` with the file URI + span — deterministic
 parse output, **not** an AI proposal, so it enters as a plain source-tagged delta.
+
+**CFG edge semantics** (*added 7F* — this record names `code:block` +
+`code:flows-to` but originally left the flow model unfixed; the builder's model
+is pinned by hand-drawn truth tests in both languages and is now normative):
+
+- Two **sentinel blocks** bracket every body: `entry` and `exit`, exactly one
+  of each per function.
+- A basic block is a maximal straight-line run; control-flow constructs end the
+  current block and open successors.
+- Flows are **labelled** (`code:flow` attr):
+  `seq | true | false | loop | break | continue | return | exception | fallthrough | finally`.
+  `if` arms rejoin at a fresh block; loops have a head block with `true` → body,
+  `false` → after, and a `loop` back-edge from the body's normal end;
+  `do…while` tests at the tail. TS `switch` cases fall through (`fallthrough`)
+  until a `break`; Python `match` arms each rejoin (no fallthrough).
+- Abrupt exits (`return`, `break`, `continue`, `throw`/`raise`) route **through
+  any enclosing `finally`** before reaching their target.
+- Exception edges go to the innermost enclosing handler, else finalizer, else
+  `exit`. **Implicit**-exception edges are modelled once, from the protected
+  region's entry block — a bounded, documented over-approximation (a real
+  analysis would edge every statement).
+- A `finally` region is a single block region; its out-edges are the **union of
+  the continuations it intercepts** (normal successor plus each abrupt target).
+  Precise for one finalizer; a documented over-approximation for nested
+  finalizers.
 
 **Composition with P3 LOD (ADR-0012/0013/0014) — no change to those ADRs.** A cold
 body is exactly ADR-0012's "cold (unhydrated) detail graph": the resolver emits

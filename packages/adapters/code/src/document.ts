@@ -33,6 +33,11 @@ import {
 
 export const DOMAIN = 'code';
 
+/** Mutable attr bag the walk fills — scalars plus the homogeneous arrays 7F
+ * adds (`code:body-span`, `code:scope-path`). Widened from the 7C scalar-only
+ * shape; assignable to the wire node's `AttrBag`. */
+type MutAttrs = Record<string, string | number | boolean | string[] | number[]>;
+
 type WireGraph = GraphDocument['graphs'][number];
 type WireNode = WireGraph['nodes'][number];
 type WireEdge = WireGraph['edges'][number];
@@ -123,7 +128,7 @@ export function buildCodeDocument(
   const modules: ModuleAcc[] = [];
   const files = new Set<string>();
   /** function/method node id → its (mutable) attrs, for post-resolution counters. */
-  const fnAttrs = new Map<string, Record<string, string | number | boolean>>();
+  const fnAttrs = new Map<string, MutAttrs>();
   /** module node id → its (mutable) attrs, for the external-imports counter. */
   const moduleAttrById = new Map<string, Record<string, string | number | boolean>>();
 
@@ -175,6 +180,15 @@ export function buildCodeDocument(
       const hasChildren = e.decl.children.length > 0;
       const detailId = hasChildren ? ctx.ids.graphId(e.coord) : undefined;
       const attrs = declAttrs(e.decl, e.duplicate);
+      // 7F: a function/method with a materializable body is drill-in-able. The
+      // eager node stays cold (no detail); `code:body-span` is the marker
+      // `DetailResolver.canResolve` keys on, and `code:scope-path` carries the
+      // ADR-0028 qualifiedName so the resolver can re-derive body ids
+      // (ADR-0027 byte-identity: body ids come from the function's coordinates).
+      if ((e.decl.kind === 'function' || e.decl.kind === 'method') && e.decl.bodySpan !== undefined) {
+        attrs['code:body-span'] = [e.decl.bodySpan[0], e.decl.bodySpan[1]];
+        attrs['code:scope-path'] = [...e.path];
+      }
       nodes.push({
         id: e.nodeId,
         kind: `${DOMAIN}:${e.decl.kind}`,
@@ -324,8 +338,8 @@ function moduleAttrs(module: RawModule): Record<string, string | number | boolea
   return attrs;
 }
 
-function declAttrs(decl: RawDecl, duplicate: boolean): Record<string, string | number | boolean> {
-  const attrs: Record<string, string | number | boolean> = {};
+function declAttrs(decl: RawDecl, duplicate: boolean): MutAttrs {
+  const attrs: MutAttrs = {};
   const sig = decl.signature;
   if (sig !== undefined) {
     attrs['code:signature'] = sig.signature;
