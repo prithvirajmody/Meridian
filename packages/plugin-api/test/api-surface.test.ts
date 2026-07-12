@@ -10,9 +10,11 @@ import type {
   DetailGraphRef,
   DetailNode,
   DetailResolver,
+  IncrementalAdapter,
   IngestSink,
   LevelChainSpec,
   PluginManifest,
+  SourceChange,
 } from '../src/index.js';
 import * as api from '../src/index.js';
 
@@ -85,5 +87,22 @@ describe('@meridian/plugin-api public surface', () => {
     expect(detailManifest.capabilities[0]?.kind).toBe('detail-resolver');
     expect(resolver.id).toBe('y');
     expect(ref.graph).toBe('g-detail');
+  });
+
+  it('the Phase 7G incremental type surface is exported and shaped (compile-time)', () => {
+    // Type-only shapes for watch-mode (ADR-0028 / ROADMAP §7): a `SourceChange`
+    // in, a minimal delta out through the ordinary sink. No runtime surface
+    // change (types erase), so no version bump — pinned so a breaking edit fails
+    // `pnpm typecheck` (ADR-0010).
+    const del: SourceChange = { path: 'src/a.ts', newText: undefined };
+    const mod: SourceChange = { path: 'src/a.ts', oldText: 'a', newText: 'b' };
+    const adapter: IncrementalAdapter = {
+      update: async (_change: SourceChange, sink: IngestSink) => {
+        sink.emitDelta({ ops: [] });
+      },
+    };
+    expect(del.newText).toBeUndefined();
+    expect(mod.oldText).toBe('a');
+    expect(typeof adapter.update).toBe('function');
   });
 });

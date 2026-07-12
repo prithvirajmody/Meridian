@@ -54,7 +54,7 @@ function formatIssue(issue: Issue): string {
   return `[${issue.code}] ${location}${issue.message}`;
 }
 
-const idFacade: IdFacade = {
+export const idFacade: IdFacade = {
   nodeId: (coords) => deriveNodeId(coords) as string,
   graphId: (coords) => deriveGraphId(coords) as string,
   edgeId: (coords) =>
@@ -95,9 +95,14 @@ export function buildHost(): BuiltHost {
 const CODE_EXTENSIONS = /\.(tsx|mts|cts|ts|pyi|py)$/i;
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.turbo']);
 
-/** Walk a directory into a code-project bundle descriptor (composition root
- * resolves I/O; the adapter only sees text — ADR-0009). */
-async function readCodeProject(dir: string): Promise<SourceDescriptor> {
+/** True for a code file this adapter routes (the watcher uses it to filter). */
+export function isCodeFile(name: string): boolean {
+  return CODE_EXTENSIONS.test(name);
+}
+
+/** Walk a directory into the project name + repo-relative code files
+ * (composition root resolves I/O; the adapter only sees text — ADR-0009). */
+export async function readCodeFiles(dir: string): Promise<{ root: string; files: BundleFile[] }> {
   const files: BundleFile[] = [];
   const walk = async (current: string): Promise<void> => {
     for (const entry of await readdir(current, { withFileTypes: true })) {
@@ -113,6 +118,19 @@ async function readCodeProject(dir: string): Promise<SourceDescriptor> {
   };
   await walk(dir);
   const root = dir.split(sep).filter((s) => s.length > 0).pop() ?? dir;
+  return { root, files };
+}
+
+/** A worker-backed code mapper (grammars only in workers, ADR-0017) plus its
+ * release handle — the pieces `meridian watch <repo>` wires into a session. */
+export function buildCodeMapper(): { mapper: CodeMapper; dispose: () => Promise<void> } {
+  const parseHost = new ParseWorkerHost({ factory: codeWorkerFactory() });
+  const mapper = createWorkerMapper(parseHost);
+  return { mapper, dispose: () => mapper.dispose() };
+}
+
+async function readCodeProject(dir: string): Promise<SourceDescriptor> {
+  const { root, files } = await readCodeFiles(dir);
   return {
     uri: dir,
     mediaType: CODE_PROJECT_MEDIA_TYPE,

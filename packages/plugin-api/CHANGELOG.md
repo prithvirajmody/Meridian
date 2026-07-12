@@ -5,6 +5,19 @@ authors are downstream consumers even while "plugin authors" means us.
 Versioning policy: ADR-0010 (semver; pre-1.0 minors may break, only at
 declared checkpoints P7/P9).
 
+## Unreleased — Phase 7G (incremental watch mode)
+
+Additive, **type-only** — runtime surface unchanged (`CAPABILITY_KINDS`,
+`NAMESPACED_KEY_PATTERN`, `PLUGIN_API_VERSION` still the only runtime exports),
+so no version bump per ADR-0010 (the api-surface snapshot is unmoved). New
+types: `SourceChange` (`{ path, oldText?, newText? }`, the file-level diff a
+watcher feeds in — ROADMAP §7) and `IncrementalAdapter` (`update(change, sink)`,
+the watch-mode contract: file change in, a **minimal** op delta out through the
+ordinary `IngestSink`, ADR-0005). The incremental *conformance* suite in
+`@meridian/conformance-kit` is written against this shape. Flagged for the
+Phase-9 chafe report as the second post-P2 contract addition (after 7F's
+`detail-resolver`).
+
 ## 0.2.0 — Phase 7F (the P7 amendment checkpoint)
 
 **The first post-2.0 runtime-surface change** (ADR-0010 §3 schedules a breaking

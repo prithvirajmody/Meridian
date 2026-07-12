@@ -19,7 +19,6 @@ import {
   encodeCanonical,
   type GraphId,
   type NodeId,
-  type VocabularyRegistry,
 } from '@meridian/graph-core';
 import {
   NAMESPACED_KEY_PATTERN,
@@ -30,11 +29,11 @@ import {
   type IdFacade,
   type MeridianPlugin,
   type PluginContext,
-  type PluginManifest,
   type SourceDescriptor,
 } from '@meridian/plugin-api';
 import { describe, expect, it } from 'vitest';
 import type { CorpusEntry } from './corpus.js';
+import { vocabularyOf } from './vocabulary.js';
 
 export interface ConformanceOptions {
   readonly plugin: MeridianPlugin;
@@ -57,15 +56,7 @@ export function idFacade(): IdFacade {
   };
 }
 
-/** A plugin's own declared vocabulary, as the IR gate consumes it (U8). */
-export function vocabularyOf(manifest: PluginManifest): VocabularyRegistry {
-  return {
-    attrs: new Map(
-      Object.entries(manifest.attrSchemas ?? {}).map(([key, schema]) => [key, schema.type]),
-    ),
-    kinds: new Set(manifest.kinds ?? []),
-  };
-}
+export { vocabularyOf } from './vocabulary.js';
 
 interface Emissions {
   readonly documents: readonly GraphDocument[];
@@ -221,3 +212,11 @@ export function describeParserConformance(opts: ConformanceOptions): void {
 
 export { loadCorpusDir } from './corpus.js';
 export type { CorpusEntry, LoadCorpusOptions } from './corpus.js';
+export { describeIncrementalConformance } from './incremental.js';
+export type {
+  IncrementalConformanceOptions,
+  IncrementalEdit,
+  IncrementalScenario,
+  IncrementalSession,
+  ScenarioFile,
+} from './incremental.js';

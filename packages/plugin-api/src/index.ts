@@ -41,10 +41,11 @@ export type { AttrSchema, CapabilityDeclaration, PluginManifest } from './manife
 export type {
   DeltaWire,
   DomainParser,
+  IncrementalAdapter,
   IngestReport,
   IngestSink,
   ProvenanceTally,
 } from './parser.js';
 export type { MeridianPlugin, PluginExports } from './plugin.js';
-export type { Progress, SourceDescriptor } from './source.js';
+export type { Progress, SourceChange, SourceDescriptor } from './source.js';
 export { PLUGIN_API_VERSION } from './version.js';

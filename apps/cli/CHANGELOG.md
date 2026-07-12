@@ -1,5 +1,15 @@
 # @meridian/cli
 
+## Unreleased — Phase 7G
+
+- **`watch <repo/>`** now recognises a directory as a source repo and follows
+  it with the code adapter's incremental session (`IncrementalAdapter`): each
+  file save is re-parsed into a **minimal** code delta (ADR-0028 — whitespace
+  edits are no-ops), applied to a live store whose change events stream out.
+  `--edits <script.json>` replays a recorded edit sequence and exits
+  (deterministic, for scripts/tests); without it, `fs.watch` follows the tree
+  live. A file argument still means the Phase-1 GraphDocument follower.
+
 ## Unreleased — Phase 3E
 
 - **Phase 3:** `cut <file> (--level <N> | --zoom <z>) [--focus <id>]

@@ -95,6 +95,20 @@ export type {
 export { buildBodyDelta, DETAIL_ACTOR, DetailResolveError } from './detail/build-detail.js';
 export { canResolveCodeDetail, createCodeDetailResolver } from './detail/resolver.js';
 export type { CodeDetailResolverDeps } from './detail/resolver.js';
+export { CODE_EXTENSIONS, mapFileToModule, oversizeReason } from './map/map-file.js';
+// 7G — incremental watch mode & minimal deltas (ADR-0028, ADR-0027 composition).
+export { diffCodeDocuments } from './incremental/diff.js';
+export { buildBodyGraphs } from './incremental/body-graphs.js';
+export type { BodyGraphs } from './incremental/body-graphs.js';
+export {
+  CodeIncrementalSession,
+  createCodeIncrementalSession,
+  INCREMENTAL_ACTOR,
+} from './incremental/session.js';
+export type {
+  CodeIncrementalSessionDeps,
+  CodeProjectState,
+} from './incremental/session.js';
 export type {
   ResolveBodyRequest as WorkerResolveBodyRequest,
   ResolveBodyResponse as WorkerResolveBodyResponse,

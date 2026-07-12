@@ -19,20 +19,13 @@ import {
   type BundleFile,
 } from './bundle.js';
 import { buildCodeDocument, DOMAIN } from './document.js';
-import { isCodeLanguage, languageForPath } from './languages.js';
+import { languageForPath } from './languages.js';
 import { assembleProject } from './map/assemble.js';
+import { CODE_EXTENSIONS, mapFileToModule } from './map/map-file.js';
 import type { RawModule } from './map/raw.js';
 import type { CodeMapper } from './mapper.js';
 
-const VERSION = '0.2.0';
-
-/** ADR-0027 oversize threshold: a file this large is flagged excluded and not
- * walked (contributes a cold, non-resolvable module node). */
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_FILE_LOC = 50_000;
-
-/** Any code extension this adapter routes (7D: TypeScript + Python). */
-const CODE_EXTENSIONS = /\.(tsx|mts|cts|ts|pyi|py)$/i;
+export const VERSION = '0.2.0';
 
 export const manifest: PluginManifest = {
   name: '@meridian/adapter-code',
@@ -129,13 +122,6 @@ function resolveInput(src: SourceDescriptor): { root: string; files: readonly Bu
   return { root, files: [{ path: base, text: src.text }] };
 }
 
-function oversizeReason(text: string): 'oversize' | undefined {
-  if (text.length > MAX_FILE_BYTES) return 'oversize';
-  let lines = 1;
-  for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) lines++;
-  return lines > MAX_FILE_LOC ? 'oversize' : undefined;
-}
-
 /**
  * Build the code plugin around an injected mapper. `mapper` owns the grammar
  * runtime (worker or in-process); the plugin only sequences files, applies the
@@ -156,30 +142,8 @@ export function createCodePlugin(deps: { readonly mapper: CodeMapper }): Meridia
             const modules: RawModule[] = [];
             let done = 0;
             for (const file of files) {
-              const language = languageForPath(file.path);
-              if (language === undefined || !isCodeLanguage(language)) {
-                done += 1;
-                continue; // not a routed code file (TypeScript or Python); skip
-              }
-              const source = normalizePosixPath(file.path);
-              const label = source.split('/').pop() ?? source;
-              const excluded = oversizeReason(file.text);
-              if (excluded !== undefined) {
-                // Flagged, cold, non-resolvable: a module node with no walk.
-                modules.push({
-                  source,
-                  language,
-                  label,
-                  span: [0, file.text.length],
-                  decls: [],
-                  imports: [],
-                  hasErrors: false,
-                  errorCount: 0,
-                  excluded,
-                });
-              } else {
-                modules.push(await mapper.mapModule({ language, source, label, text: file.text }));
-              }
+              const module = await mapFileToModule(mapper, file);
+              if (module !== undefined) modules.push(module);
               sink.progress({ stage: 'map', done: ++done, total: files.length });
             }
             sink.progress({ stage: 'build', done: files.length, total: files.length });

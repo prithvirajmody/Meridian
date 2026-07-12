@@ -5,7 +5,7 @@
  * gate before it can touch a store.
  */
 import type { GraphDocument } from '@meridian/graph-core';
-import type { Progress, SourceDescriptor } from './source.js';
+import type { Progress, SourceChange, SourceDescriptor } from './source.js';
 
 /**
  * Wire form of an op-based delta (ADR-0005). The op vocabulary belongs to
@@ -35,6 +35,23 @@ export interface DomainParser {
   sniff(src: SourceDescriptor): number;
   /** The skeleton pass: deterministic, AI-free, offline (§7.2.3). */
   ingest(src: SourceDescriptor, sink: IngestSink): Promise<void>;
+}
+
+/**
+ * Watch-mode contract (ROADMAP Phase 7 §5, §7): a stateful adapter that, given
+ * one {@link SourceChange}, emits a **minimal** `GraphDelta` through the ordinary
+ * {@link IngestSink} (ADR-0005 — one write path) rather than re-ingesting the
+ * whole source. It holds the prior parse across calls, so `update` is the
+ * incremental analogue of a `DomainParser.ingest`: file change in, op delta out.
+ *
+ * Type-only surface (like the other post-P2 contract shapes): a plugin does not
+ * *declare* this as a capability — a host obtains an incremental session from an
+ * adapter it already knows can parse the domain. The incremental *conformance*
+ * suite in `conformance-kit` is written against exactly this shape, so any
+ * adapter's session is exercised by the same reusable harness.
+ */
+export interface IncrementalAdapter {
+  update(change: SourceChange, sink: IngestSink): Promise<void>;
 }
 
 /** Element provenance counts across everything one ingest emitted (U7). */

@@ -6,7 +6,7 @@
  * no domain knowledge lives in the CLI (composition root, §20).
  */
 import { watch as fsWatch } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, stat, writeFile } from 'node:fs/promises';
 import {
   buildContainmentIndex,
   containmentPathOf,
@@ -24,6 +24,7 @@ import {
 import { cmdCut } from './cut.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
 import { cmdLayout } from './layout.js';
+import { cmdWatchRepo } from './watch-repo.js';
 import {
   createStore,
   decodeDelta,
@@ -61,6 +62,13 @@ Usage:
                                              with --apply, replay scripts and
                                              exit — without, follow the file
                                              and apply semantic diffs live
+  meridian watch <repo/> [--edits <script.json>] [--json]
+                                             watch a source directory: each file
+                                             save becomes a minimal code delta
+                                             (incremental re-parse, ADR-0028).
+                                             --edits replays a recorded edit
+                                             sequence and exits; without it,
+                                             follow the tree live
   meridian cut <file> (--level <N> | --zoom <z>) [--focus <id>] [--json]
                                              resolve the visible cut of a
                                              GraphDocument at a base level
@@ -569,7 +577,7 @@ async function cmdWatch(
 
 // ---------------------------------------------------------------------- main
 
-const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider']);
+const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider']);
 const BOOL_FLAGS = new Set(['--worker']);
 
 interface Cli {
@@ -658,6 +666,27 @@ async function main(): Promise<void> {
       break;
     }
     case 'watch': {
+      // A directory is a source repo (7G incremental code adapter); a file is a
+      // GraphDocument followed for semantic diffs (Phase 1).
+      let isDir = false;
+      try {
+        isDir = (await stat(file)).isDirectory();
+      } catch {
+        /* fall through to the file path, which reports the read error */
+      }
+      if (isDir) {
+        allowFlags(cli, command, ['--edits']);
+        process.exit(
+          await cmdWatchRepo(
+            file,
+            {
+              json: cli.json,
+              ...(cli.values.has('--edits') ? { edits: cli.values.get('--edits')! } : {}),
+            },
+            (change) => printChange(change, cli.json),
+          ),
+        );
+      }
       allowFlags(cli, command, ['--apply']);
       process.exit(
         await cmdWatch(file, await readDocument(file), {
