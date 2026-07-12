@@ -20,5 +20,8 @@
   "renderer-interaction-p95-ms": 16,
   "renderer-max-live-labels": 512,
   "studio-heap-soak-ms": 300000,
-  "studio-heap-retained-growth-bytes": 16777216
+  "studio-heap-retained-growth-bytes": 16777216,
+  "transition-frame-p95-ms": 22,
+  "transition-anchor-drift-px": 8,
+  "transition-max-plan-to-settle-ms": 300
 }

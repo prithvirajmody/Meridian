@@ -46,6 +46,19 @@ export interface PlannedLabel {
   /** Hover or selection-anchor promotion; may overlap and has eviction priority. */
   readonly forced: boolean;
   readonly isHover: boolean;
+  /**
+   * Draw opacity `(0,1]`. `1` outside transitions. During a transition frame
+   * (ADR-0023) a label follows its node's alpha through the final-30% window:
+   * text fades in only over the last 30% of its node's fade so mid-flight text
+   * never pops.
+   */
+  readonly alpha: number;
+}
+
+/** ADR-0023 label fade window: node alpha `[0.7, 1] → [0, 1]`, else invisible. */
+export function labelFadeAlpha(nodeAlpha: number): number {
+  const value = (nodeAlpha - 0.7) / 0.3;
+  return value < 0 ? 0 : value > 1 ? 1 : value;
 }
 
 export interface LabelPlan {
@@ -150,6 +163,12 @@ export function planLabels(input: LabelPlanInput, options: LabelPlanOptions = {}
   const candidates: Candidate[] = [];
   for (const nodeIndex of input.visibleNodeIndices) {
     if (nodeIndex < 0 || nodeIndex >= model.nodeIds.length) continue;
+    // Transition frames (ADR-0023): a node still outside its label fade
+    // window contributes no label candidate at all — invisible text must not
+    // claim occupancy cells or live-label slots.
+    if (model.nodeAlphas !== undefined && labelFadeAlpha(model.nodeAlphas[nodeIndex] ?? 1) <= 0) {
+      continue;
+    }
     const lane = nodeIndex * 4;
     const worldHeight = model.nodeRects[lane + 3]!;
     const projected = projectedNodeHeight(
@@ -226,6 +245,10 @@ export function planLabels(input: LabelPlanInput, options: LabelPlanOptions = {}
       renderKind,
       forced: candidate.forced,
       isHover: candidate.isHover,
+      alpha:
+        model.nodeAlphas === undefined
+          ? 1
+          : labelFadeAlpha(model.nodeAlphas[candidate.nodeIndex] ?? 1),
     });
   }
 

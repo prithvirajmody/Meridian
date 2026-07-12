@@ -81,6 +81,9 @@ importers:
       '@meridian/layout':
         specifier: workspace:*
         version: link:../../packages/layout
+      '@meridian/navigation':
+        specifier: workspace:*
+        version: link:../../packages/navigation
       '@meridian/plugin-api':
         specifier: workspace:*
         version: link:../../packages/plugin-api

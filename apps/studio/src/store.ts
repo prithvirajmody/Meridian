@@ -63,6 +63,36 @@ export interface StudioHover {
   readonly receivedAtMs: number;
 }
 
+/** One breadcrumb as shown in the bar (derived upstream, ADR-0025). */
+export interface StudioBreadcrumb {
+  readonly graphId: string;
+  readonly node: string | null;
+  readonly label: string | null;
+}
+
+/**
+ * The navigation slice (6D): serializable values only, derived from the
+ * `NavigationController` after every verb/settle. The navigator instance
+ * itself lives in `StudioSession` (ADR-0022 — no service in Zustand).
+ */
+export interface StudioNavState {
+  readonly depth: number;
+  readonly zoom: number;
+  readonly level: number;
+  readonly breadcrumbs: readonly StudioBreadcrumb[];
+  readonly focus: string | null;
+  readonly cutSize: number;
+  readonly notice: { readonly code: string; readonly message: string } | null;
+  readonly urlFragment: string;
+  readonly transition: {
+    readonly active: boolean;
+    readonly count: number;
+    readonly lastMode: 'choreographed' | 'crossfade' | 'camera-only' | null;
+  };
+  /** ADR-0025 saturation affordance: `z = 1`, further zoom is geometric only. */
+  readonly saturated: boolean;
+}
+
 export interface StudioMetrics {
   readonly layoutReadyAtMs: number | null;
   readonly firstRenderMs: number | null;
@@ -91,6 +121,9 @@ export interface StudioState {
   readonly rendererStats: RendererStats | null;
   readonly metrics: StudioMetrics;
   readonly debugEnabled: boolean;
+  readonly nav: StudioNavState | null;
+  /** Canvas viewport in CSS px (published by the bridge; minimap consumes). */
+  readonly viewport: { readonly width: number; readonly height: number } | null;
 }
 
 export type StudioStore = StoreApi<StudioState>;
@@ -119,6 +152,8 @@ export function initialStudioState(debugEnabled = false): StudioState {
     rendererStats: null,
     metrics: EMPTY_METRICS,
     debugEnabled,
+    nav: null,
+    viewport: null,
   };
 }
 
@@ -166,6 +201,7 @@ export class StudioStoreCommands {
       diagnostics: [],
       rendererStats: null,
       metrics: EMPTY_METRICS,
+      nav: null,
     });
   }
 
@@ -227,6 +263,14 @@ export class StudioStoreCommands {
       hover: null,
       diagnostics: boundedDiagnostics(current.diagnostics, [diagnostic]),
     });
+  }
+
+  setNav(nav: StudioNavState | null): void {
+    this.store.setState({ nav });
+  }
+
+  setViewport(viewport: { width: number; height: number } | null): void {
+    this.store.setState({ viewport });
   }
 
   setCamera(camera: CameraState): void {

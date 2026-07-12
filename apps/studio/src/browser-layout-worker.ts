@@ -8,7 +8,7 @@ import {
   type WorkerFactory,
   type WorkerHandle,
 } from '@meridian/layout';
-import type { StudioLayoutService } from './studio-session.js';
+import type { StudioLayoutService } from './pipeline/layout-cut.js';
 
 interface LayoutInitMessage {
   readonly type: 'meridian-layout-init';
@@ -53,8 +53,14 @@ export function browserLayoutWorkerFactory(): WorkerFactory {
 export class BrowserStudioLayoutService implements StudioLayoutService {
   private readonly host = new LayoutWorkerHost({ factory: browserLayoutWorkerFactory() });
 
-  async compute(providerId: string, input: LayoutInput): Promise<LayoutResult> {
-    return (await this.host.compute(providerId, input)).layout;
+  async compute(
+    providerId: string,
+    input: LayoutInput,
+    prev?: LayoutResult,
+  ): Promise<LayoutResult> {
+    return (
+      await this.host.compute(providerId, input, prev !== undefined ? { prev } : {})
+    ).layout;
   }
 
   async dispose(): Promise<void> {

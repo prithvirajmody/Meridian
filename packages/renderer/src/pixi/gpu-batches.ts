@@ -197,11 +197,25 @@ function destroyBatch(batch: BatchBuffers): void {
   batch.geometry.destroy(true);
 }
 
-function writeColor(target: Float32Array, offset: number, color: readonly number[]): void {
-  target[offset] = color[0]!;
-  target[offset + 1] = color[1]!;
-  target[offset + 2] = color[2]!;
-  target[offset + 3] = color[3]!;
+function writeColor(
+  target: Float32Array,
+  offset: number,
+  color: readonly number[],
+  alpha = 1,
+): void {
+  // Premultiplied: Pixi's normal blend mode expects premultiplied sources, so
+  // a straight alpha in the color attribute would brighten fading primitives.
+  target[offset] = color[0]! * alpha;
+  target[offset + 1] = color[1]! * alpha;
+  target[offset + 2] = color[2]! * alpha;
+  target[offset + 3] = color[3]! * alpha;
+}
+
+/** Transition-frame opacity for one primitive (ADR-0023); absent lane ⇒ 1. */
+function laneAlpha(lane: Float32Array | undefined, index: number): number {
+  const value = lane?.[index];
+  if (value === undefined) return 1;
+  return value < 0 ? 0 : value > 1 ? 1 : value;
 }
 
 /** Owns only bounded mesh batches; never one display object per graph element. */
@@ -274,6 +288,7 @@ export class PixiGpuBatches {
           batch.colors,
           target,
           colorById(model.nodeColorKeys, model.nodeColorIds, nodeIndex),
+          laneAlpha(model.nodeAlphas, nodeIndex),
         );
         batch.flags[slot] = model.nodeFlags[nodeIndex] ?? 0;
       }
@@ -316,6 +331,7 @@ export class PixiGpuBatches {
           batch.colors,
           target,
           colorById(model.edgeColorKeys, model.edgeColorIds, edgeIndex),
+          laneAlpha(model.edgeAlphas, edgeIndex),
         );
         batch.flags[slot] = model.edgeFlags[edgeIndex] ?? 0;
         batch.widths[slot] = 1.25 / cameraScale;

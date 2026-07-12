@@ -1,19 +1,12 @@
 /**
  * Studio's imperative composition root (ADR-0022): source I/O arrives as a
- * value, then plugin sniff/ingest → IR gate → op-based store → LOD → layout →
- * pure RenderModel. No service instance enters React or Zustand state.
+ * value, then plugin sniff/ingest → IR gate → op-based store → navigator boot
+ * (LOD → layout → pure RenderModel) → 6D choreography. No service instance
+ * enters React or Zustand state.
  */
-import {
-  buildLevelChain,
-  resolveLod,
-  type LevelChain,
-  type LodResult,
-  type ZoomPolicy,
-} from '@meridian/abstraction';
+import { buildLevelChain, type LevelChain, type LodResult, type ZoomPolicy } from '@meridian/abstraction';
 import { markdownPlugin } from '@meridian/adapter-markdown';
 import {
-  buildContainmentIndex,
-  containmentPathOf,
   createGraphSpace,
   decode,
   deriveEdgeId,
@@ -25,7 +18,7 @@ import {
   type GraphSpace,
   type NodeId,
   type SemanticEdge,
-  type SemanticNode,
+  type SemanticGraph,
 } from '@meridian/graph-core';
 import {
   createStore,
@@ -34,47 +27,38 @@ import {
   formatVersion,
   type GraphStore,
 } from '@meridian/graph-store';
-import {
-  BUILTIN_LAYOUT_PROVIDERS,
-  chooseProvider,
-  type CompoundNesting,
-  type LayoutInput,
-  type LayoutResult,
-  type Size,
-} from '@meridian/layout';
+import { BUILTIN_LAYOUT_PROVIDERS, type LayoutInput, type LayoutResult } from '@meridian/layout';
 import type { IdFacade, SourceDescriptor } from '@meridian/plugin-api';
 import { createPluginHost, type PluginHost } from '@meridian/plugin-host';
-import {
-  buildRenderModel,
-  type RenderModel,
-  type SelectionState,
-} from '@meridian/view-model';
+import type { RenderModel, SelectionState, ViewportSize } from '@meridian/view-model';
+import { StudioNavigator } from './navigation/studio-navigator.js';
+import type { StudioLayoutService } from './pipeline/layout-cut.js';
+import { realClock, type StudioClock } from './transition/clock.js';
 import {
   StudioStoreCommands,
   type SelectedElementPanel,
   type StudioStore,
 } from './store.js';
 
-export interface StudioLayoutService {
-  compute(providerId: string, input: LayoutInput): Promise<LayoutResult>;
-  dispose(): void | Promise<void>;
-}
+export type { StudioLayoutService } from './pipeline/layout-cut.js';
 
 export class DirectStudioLayoutService implements StudioLayoutService {
-  async compute(providerId: string, input: LayoutInput): Promise<LayoutResult> {
+  async compute(
+    providerId: string,
+    input: LayoutInput,
+    prev?: LayoutResult,
+  ): Promise<LayoutResult> {
     const provider = BUILTIN_LAYOUT_PROVIDERS.get(providerId);
     if (provider === undefined) throw new Error(`Studio: unknown layout provider "${providerId}"`);
-    return provider.compute(input);
+    return provider.compute(input, prev);
   }
 
   dispose(): void {}
 }
 
 interface PipelineArtifacts {
-  readonly space: GraphSpace;
   readonly store: GraphStore;
-  readonly lod: LodResult;
-  readonly layout: LayoutResult;
+  space: GraphSpace;
 }
 
 const idFacade: IdFacade = {
@@ -117,37 +101,6 @@ function initialZoom(chain: LevelChain): number {
   return (level + 0.5) / bands;
 }
 
-function nodeSize(label: string): Size {
-  return {
-    width: Math.max(72, Math.min(260, 24 + Array.from(label).length * 7)),
-    height: 34,
-  };
-}
-
-function indexNodes(space: GraphSpace): ReadonlyMap<NodeId, SemanticNode> {
-  const result = new Map<NodeId, SemanticNode>();
-  for (const graph of space.graphs.values()) {
-    for (const node of graph.nodes.values()) result.set(node.id, node);
-  }
-  return result;
-}
-
-function buildCompound(space: GraphSpace, lod: LodResult): CompoundNesting {
-  const containment = buildContainmentIndex(space);
-  const groupOf = new Map<NodeId, string>();
-  const parentOf = new Map<string, string>();
-  for (const id of lod.cut.members) {
-    const graph = lod.cut.trace.get(id)?.graph;
-    if (graph === undefined) continue;
-    groupOf.set(id, graph);
-    const path = containmentPathOf(space, graph, containment);
-    for (let index = 1; index < path.length; index++) {
-      parentOf.set(path[index]!, path[index - 1]!);
-    }
-  }
-  return { groupOf, parentOf };
-}
-
 function mediaTypeFor(name: string): string | undefined {
   const extension = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : '';
   if (extension === 'md' || extension === 'markdown' || extension === 'mdown') return 'text/markdown';
@@ -171,30 +124,51 @@ function findBaseEdge(space: GraphSpace, id: EdgeId): SemanticEdge | undefined {
   return undefined;
 }
 
+export interface StudioSessionOptions {
+  readonly layoutService?: StudioLayoutService;
+  /** Canvas viewport at navigator-boot time (defaults to 1280×800 headless). */
+  readonly viewportProvider?: () => ViewportSize;
+  /** Injected transition clock (ADR-0023). Defaults to `performance.now`. */
+  readonly clock?: StudioClock;
+  /** Linkable-view sink: receives the `#`-fragment on navigation settles. */
+  readonly onUrl?: (fragment: string) => void;
+  /** Called once per opened corpus after the navigator boots. */
+  readonly onNavigatorReady?: (navigator: StudioNavigator) => void;
+}
+
 export class StudioSession {
   private readonly commands: StudioStoreCommands;
   private readonly host: PluginHost;
   private readonly layoutService: StudioLayoutService;
+  private readonly options: StudioSessionOptions;
   private generation = 0;
   private artifacts: PipelineArtifacts | null = null;
+  private navigator: StudioNavigator | null = null;
   private readonly unsubscribeSelection: () => void;
+  private unsubscribeGraphStore: (() => void) | null = null;
   private disposed = false;
 
   constructor(
     readonly store: StudioStore,
-    options: { readonly layoutService?: StudioLayoutService } = {},
+    options: StudioSessionOptions = {},
   ) {
     this.commands = new StudioStoreCommands(store);
     this.host = buildHost();
+    this.options = options;
     this.layoutService = options.layoutService ?? new DirectStudioLayoutService();
     this.unsubscribeSelection = store.subscribe((state, previous) => {
       if (state.selection !== previous.selection) this.selectionChanged(state.selection);
     });
   }
 
+  /** The 6D choreography driver for the currently open corpus, if any. */
+  nav(): StudioNavigator | null {
+    return this.navigator?.active === true ? this.navigator : null;
+  }
+
   async openFile(file: Pick<File, 'name' | 'size' | 'text'>): Promise<void> {
     const generation = ++this.generation;
-    this.artifacts = null;
+    this.resetPipeline();
     this.commands.beginOpen({ generation, name: file.name, bytes: file.size });
     try {
       const text = await file.text();
@@ -207,13 +181,21 @@ export class StudioSession {
 
   async openText(name: string, text: string): Promise<void> {
     const generation = ++this.generation;
-    this.artifacts = null;
+    this.resetPipeline();
     this.commands.beginOpen({
       generation,
       name,
       bytes: new TextEncoder().encode(text).byteLength,
     });
     await this.openTextInternal(generation, name, text);
+  }
+
+  private resetPipeline(): void {
+    this.unsubscribeGraphStore?.();
+    this.unsubscribeGraphStore = null;
+    this.navigator?.destroy();
+    this.navigator = null;
+    this.artifacts = null;
   }
 
   private async openTextInternal(generation: number, name: string, text: string): Promise<void> {
@@ -250,40 +232,68 @@ export class StudioSession {
 
       this.commands.stage('resolving', 'Resolving the visible abstraction…');
       const chain = buildLevelChain(space);
-      const lod = resolveLod(space, chain, canonicalPolicy(chain), {
-        zoom: initialZoom(chain),
-        overrides: new Map(),
+      const policy = canonicalPolicy(chain);
+
+      this.commands.stage('layout', 'Laying out…');
+      const navigator = new StudioNavigator({
+        space,
+        policy,
+        viewport: this.options.viewportProvider?.() ?? { width: 1280, height: 800 },
+        initialZoom: initialZoom(chain),
+        layoutService: this.layoutService,
+        store: this.store,
+        clock: this.options.clock ?? realClock(),
+        ...(this.options.onUrl !== undefined ? { onUrl: this.options.onUrl } : {}),
       });
-      if (!this.isCurrent(generation)) return;
-
-      const nodes = indexNodes(space);
-      const sizes = new Map<NodeId, Size>();
-      for (const id of lod.cut.members) sizes.set(id, nodeSize(nodes.get(id)?.label ?? String(id)));
-      const providerId = chooseProvider(lod.cut, lod.inducedEdges);
-      const compound = providerId === 'elk-layered' ? buildCompound(space, lod) : undefined;
-      const input: LayoutInput = {
-        cut: lod.cut,
-        edges: lod.inducedEdges,
-        sizes,
-        hints: {},
-        ...(compound !== undefined ? { compound } : {}),
-      };
-
-      this.commands.stage('layout', `Laying out with ${providerId}…`);
-      const layout = await this.layoutService.compute(providerId, input);
-      if (!this.isCurrent(generation)) return;
+      const { model, message } = await navigator.boot();
+      if (!this.isCurrent(generation)) {
+        navigator.destroy();
+        return;
+      }
       const layoutReadyAtMs = now();
-      const model = buildRenderModel(space, lod, layout, this.store.getState().selection);
-      this.artifacts = { space, store, lod, layout };
-      this.commands.publishModel(
-        model,
-        formatVersion(store.version()),
-        layoutReadyAtMs,
-        `${model.nodeIds.length.toLocaleString()} nodes · ${model.edgeKeys.length.toLocaleString()} edges · ${providerId}`,
-      );
+      this.artifacts = { store, space };
+      this.navigator = navigator;
+      // P1 subscription (roadmap 6D failure case): a committed delta forces a
+      // replan — mid-transition included.
+      this.unsubscribeGraphStore = store.subscribe(() => {
+        const artifacts = this.artifacts;
+        if (artifacts === null || this.navigator !== navigator) return;
+        artifacts.space = store.snapshot();
+        navigator.spaceMutated(artifacts.space);
+      });
+      this.commands.publishModel(model, formatVersion(store.version()), layoutReadyAtMs, message);
+      this.options.onNavigatorReady?.(navigator);
     } catch (error) {
       this.commands.fail(generation, 'open-failed', errorMessage(error));
     }
+  }
+
+  /**
+   * Apply a label edit as an op-based delta through the P1 store — the only
+   * write path (never a direct space mutation). Drives the 6D
+   * store-mutation-mid-transition tests.
+   */
+  mutateNodeLabel(nodeId: string, label: string): boolean {
+    const artifacts = this.artifacts;
+    if (artifacts === null) return false;
+    const current = artifacts.store.snapshot();
+    let touchedGraph: SemanticGraph | undefined;
+    for (const graph of current.graphs.values()) {
+      if (graph.nodes.has(nodeId as NodeId)) {
+        touchedGraph = graph;
+        break;
+      }
+    }
+    if (touchedGraph === undefined) return false;
+    const node = touchedGraph.nodes.get(nodeId as NodeId)!;
+    const nodes = new Map(touchedGraph.nodes);
+    nodes.set(node.id, { ...node, label });
+    const graphs = new Map(current.graphs);
+    graphs.set(touchedGraph.id, { ...touchedGraph, nodes });
+    const modified: GraphSpace = { ...current, graphs };
+    const delta = diffSpaces(current, modified, { actor: 'studio:6d-mutation' });
+    if (delta.ops.length === 0) return false;
+    return artifacts.store.apply(delta).ok;
   }
 
   private materialize(outcome: Awaited<ReturnType<PluginHost['ingest']>>): GraphSpace {
@@ -314,29 +324,25 @@ export class StudioSession {
   }
 
   private selectionChanged(selection: SelectionState): void {
+    const navigator = this.nav();
     const artifacts = this.artifacts;
-    if (artifacts === null) {
+    if (navigator === null || artifacts === null) {
       this.commands.setPanel(null);
       return;
     }
-    this.commands.setPanel(this.panelFor(selection, artifacts));
-    const model = buildRenderModel(
-      artifacts.space,
-      artifacts.lod,
-      artifacts.layout,
-      selection,
-    );
-    this.commands.replaceModelAfterSelection(model);
+    this.commands.setPanel(this.panelFor(selection, artifacts.space, navigator.currentLod()));
+    this.commands.replaceModelAfterSelection(navigator.modelForSelection(selection));
   }
 
   private panelFor(
     selection: SelectionState,
-    artifacts: PipelineArtifacts,
+    space: GraphSpace,
+    lod: LodResult,
   ): SelectedElementPanel | null {
     const anchor = selection.anchor;
     if (anchor === undefined) return null;
     if (anchor.kind === 'node') {
-      for (const graph of artifacts.space.graphs.values()) {
+      for (const graph of space.graphs.values()) {
         const node = graph.nodes.get(anchor.id);
         if (node !== undefined) {
           return {
@@ -351,11 +357,11 @@ export class StudioSession {
       }
       return null;
     }
-    const induced = artifacts.lod.inducedEdges.find(
+    const induced = lod.inducedEdges.find(
       (edge) => edgeKey(edge.src, edge.dst, edge.kind) === anchor.key,
     );
     const sample = induced?.samples[0];
-    const edge = sample === undefined ? undefined : findBaseEdge(artifacts.space, sample);
+    const edge = sample === undefined ? undefined : findBaseEdge(space, sample);
     if (induced === undefined || edge === undefined) return null;
     return {
       kind: 'edge',
@@ -370,7 +376,7 @@ export class StudioSession {
   /** Test/support seam: publish a renderer fixture without pretending it was ingested. */
   publishFixture(model: RenderModel, name = 'renderer-fixture'): void {
     const generation = ++this.generation;
-    this.artifacts = null;
+    this.resetPipeline();
     this.commands.beginOpen({ generation, name, bytes: 0 });
     this.commands.adapterResolved({ domain: 'test-fixture', plugin: 'studio:test-support', score: 1 });
     this.commands.publishModel(model, 'v0', now(), `${model.nodeIds.length.toLocaleString()} nodes · fixture`);
@@ -385,7 +391,7 @@ export class StudioSession {
     this.disposed = true;
     this.generation++;
     this.unsubscribeSelection();
-    this.artifacts = null;
+    this.resetPipeline();
     await this.layoutService.dispose();
   }
 }

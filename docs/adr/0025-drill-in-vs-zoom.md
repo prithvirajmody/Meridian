@@ -48,6 +48,17 @@ is derived, then fed to the resolver with `prevLevel` for hysteresis
 (ADR-0012). `zoomTo(z, anchor)` inverts the same map. One mapping, two
 directions — the scalar is never a second, independently-drifting state.
 
+*(Amended during 6D: the controller's public surface grew the wiring verbs
+this record implies but did not name — `panBy`, `setCamera` (camera write-back
+from the anchored zoom solve and restores), `drillOutTo(depth)` (breadcrumb
+multi-pop), `updateScaleRange(range, preserveZ)`, and `currentSpace()`.
+Per-context `[s_min, s_max]` ranges derive from each context's **first**
+layout and are memoized per graph; the first drill momentarily uses the root
+range, and the z-preserving range update prevents cut flaps when the real
+range arrives. The 6C search port is realized as a Map rebuilt with
+graph-store's own `tokenizeLabel` on every committed delta — the store does
+not export its internal token index.)*
+
 **Saturation — zoom never changes scope.** At `z = 1` (finest level in this
 context) further zoom-in is *geometric only*: the camera may continue to
 `OVERZOOM_MAX = 4×` past `s_max` (crispness per ADR-0020 MSDF labels), the

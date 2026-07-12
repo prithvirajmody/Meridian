@@ -91,6 +91,7 @@ export class PixiLabelLayer {
     if (text.text !== label.text) text.text = label.text;
     text.position.set(label.screenX, label.screenY);
     text.tint = CLASS_TINT[label.labelClass];
+    text.alpha = label.alpha;
     text.visible = true;
   }
 
@@ -115,6 +116,7 @@ export class PixiLabelLayer {
     entry.lastUsedFrame = this.frame;
     entry.text.position.set(label.screenX, label.screenY);
     entry.text.tint = CLASS_TINT[label.labelClass];
+    entry.text.alpha = label.alpha;
     entry.text.visible = true;
   }
 

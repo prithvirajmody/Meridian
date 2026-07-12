@@ -1,4 +1,7 @@
+import { keyToNavCommand } from '@meridian/navigation';
+import type { NodeId } from '@meridian/view-model';
 import { BrowserStudioLayoutService } from './browser-layout-worker.js';
+import type { StudioNavigator, TransitionRecord } from './navigation/studio-navigator.js';
 import {
   createEmptyRenderModel,
   createHostileLayoutRenderModel,
@@ -7,6 +10,7 @@ import {
 } from './performance-fixtures.js';
 import { StudioSceneBridge, type FrameProbeResult } from './studio-scene-bridge.js';
 import { StudioSession } from './studio-session.js';
+import { ManualClock, realClock, type StudioClock } from './transition/clock.js';
 import { createStudioStore, type StudioStore } from './store.js';
 
 export interface StudioTestState {
@@ -19,6 +23,7 @@ export interface StudioTestState {
   readonly metrics: ReturnType<StudioStore['getState']>['metrics'];
   readonly rendererStats: ReturnType<StudioStore['getState']>['rendererStats'];
   readonly camera: ReturnType<StudioStore['getState']>['camera'];
+  readonly nav: ReturnType<StudioStore['getState']>['nav'];
   readonly modelRevision: string | null;
   readonly nodeIds: readonly string[];
   readonly edgeKeys: readonly string[];
@@ -39,24 +44,90 @@ export interface MeridianStudioTestApi {
   runFrameProbe(frames?: number, warmup?: number): Promise<FrameProbeResult>;
   loseContext(): boolean;
   restoreContext(): boolean;
+  // ---- 6D navigation surface ----
+  navActive(): boolean;
+  navZoomBy(factor: number, x?: number, y?: number): void;
+  navZoomTo(z: number): void;
+  navPan(dx: number, dy: number): void;
+  navDrillIn(nodeId: string): void;
+  navDrillOut(): void;
+  navBreadcrumb(depth: number): void;
+  navToggleExpand(nodeId: string): void;
+  navFlyTo(nodeId: string): void;
+  navSearch(query: string): readonly { node: string; score: number; label: string }[];
+  /** Node ids the current cut can expand in place (ADR-0012 frontier). */
+  navExpandable(): readonly string[];
+  navKey(key: string, selection?: string): void;
+  navUrl(): string;
+  navRestore(fragment: string): { ok: boolean; errors: readonly string[] };
+  transitionTelemetry(): readonly TransitionRecord[];
+  transitionActive(): boolean;
+  mutateNodeLabel(nodeId: string, label: string): boolean;
+  /** Manual clock only: advance the injected clock and tick the player. */
+  clockAdvance(ms: number): void;
+  clockIsManual(): boolean;
 }
 
 export class StudioRuntime {
   readonly store: StudioStore;
   readonly session: StudioSession;
+  readonly clock: StudioClock;
   private bridge: StudioSceneBridge | null = null;
+  /** The hash the page arrived with — captured before any replaceState so a
+   * linked view survives the navigator's own boot-time URL emission. */
+  private pendingRestoreHash: string;
 
-  constructor(debugEnabled: boolean) {
+  constructor(debugEnabled: boolean, options: { readonly manualClock?: boolean } = {}) {
     this.store = createStudioStore(debugEnabled);
+    this.pendingRestoreHash = typeof location !== 'undefined' ? location.hash : '';
+    this.clock = options.manualClock === true ? new ManualClock() : realClock();
     this.session = new StudioSession(this.store, {
       layoutService: new BrowserStudioLayoutService(),
+      clock: this.clock,
+      viewportProvider: () => {
+        const size = this.bridge?.viewportSize();
+        return size !== undefined && size.width > 0 && size.height > 0
+          ? size
+          : { width: 1280, height: 800 };
+      },
+      onUrl: (fragment) => {
+        if (typeof history !== 'undefined' && typeof location !== 'undefined') {
+          history.replaceState(null, '', `${location.pathname}${location.search}${fragment}`);
+        }
+      },
+      onNavigatorReady: (navigator) => {
+        this.attachNavigatorRenderer(navigator);
+        // Restore the linked view (#g=…&z=…&focus=…) the page arrived with,
+        // once — later opens start fresh.
+        if (this.pendingRestoreHash.length > 1) {
+          const fragment = this.pendingRestoreHash;
+          this.pendingRestoreHash = '';
+          navigator.restoreFromFragment(fragment);
+        }
+      },
+    });
+  }
+
+  navigator(): StudioNavigator | null {
+    return this.session.nav();
+  }
+
+  private attachNavigatorRenderer(navigator: StudioNavigator): void {
+    const bridge = this.bridge;
+    if (bridge === null) return;
+    navigator.attachRenderer({
+      render: (model, camera) => bridge.renderTransient(model, camera),
     });
   }
 
   createBridge(canvas: HTMLCanvasElement): StudioSceneBridge {
-    const bridge = new StudioSceneBridge(this.store);
+    const bridge = new StudioSceneBridge(this.store, {
+      navigation: () => this.navigator(),
+    });
     this.bridge = bridge;
     void bridge.mount(canvas);
+    const navigator = this.navigator();
+    if (navigator !== null) this.attachNavigatorRenderer(navigator);
     return bridge;
   }
 
@@ -69,6 +140,15 @@ export class StudioRuntime {
     const bridge = (): StudioSceneBridge => {
       if (this.bridge === null) throw new Error('Studio canvas bridge is not mounted');
       return this.bridge;
+    };
+    const nav = (): StudioNavigator => {
+      const navigator = this.navigator();
+      if (navigator === null) throw new Error('Studio navigator is not active (open a corpus first)');
+      return navigator;
+    };
+    const viewportCenter = (): { x: number; y: number } => {
+      const size = bridge().viewportSize();
+      return { x: size.width / 2, y: size.height / 2 };
     };
     return {
       openText: (name, text) => this.session.openText(name, text),
@@ -92,6 +172,7 @@ export class StudioRuntime {
           metrics: state.metrics,
           rendererStats: state.rendererStats,
           camera: state.camera,
+          nav: state.nav,
           modelRevision: state.renderModel?.revision ?? null,
           nodeIds: state.renderModel?.nodeIds ?? [],
           edgeKeys: state.renderModel?.edgeKeys ?? [],
@@ -105,6 +186,37 @@ export class StudioRuntime {
       runFrameProbe: (frames, warmup) => bridge().runFrameProbe(frames, warmup),
       loseContext: () => bridge().loseContext(),
       restoreContext: () => bridge().restoreContext(),
+      navActive: () => this.navigator() !== null,
+      navZoomBy: (factor, x, y) => {
+        const screen = x === undefined || y === undefined ? viewportCenter() : { x, y };
+        nav().wheelZoom(factor, screen);
+      },
+      navZoomTo: (z) => nav().zoomTo(z),
+      navPan: (dx, dy) => nav().pan({ x: dx, y: dy }),
+      navDrillIn: (nodeId) => nav().drillInto(nodeId as NodeId),
+      navDrillOut: () => nav().drillOut(),
+      navBreadcrumb: (depth) => nav().breadcrumbTo(depth),
+      navToggleExpand: (nodeId) => nav().toggleExpand(nodeId as NodeId),
+      navFlyTo: (nodeId) => nav().flyTo(nodeId as NodeId),
+      navSearch: (query) => nav().search(query),
+      navExpandable: () => [...nav().currentLod().frontier.expandable],
+      navKey: (key, selection) => {
+        const command = keyToNavCommand(key);
+        if (command !== null) nav().dispatchKey(command.verb, selection as NodeId | undefined);
+      },
+      navUrl: () => nav().urlFragment(),
+      navRestore: (fragment) => nav().restoreFromFragment(fragment),
+      transitionTelemetry: () => nav().telemetry(),
+      transitionActive: () => nav().inFlight(),
+      mutateNodeLabel: (nodeId, label) => this.session.mutateNodeLabel(nodeId, label),
+      clockAdvance: (ms) => {
+        if (!(this.clock instanceof ManualClock)) {
+          throw new Error('clockAdvance requires ?clock=manual');
+        }
+        this.clock.advance(ms);
+        this.navigator()?.tick();
+      },
+      clockIsManual: () => this.clock.manual,
     };
   }
 

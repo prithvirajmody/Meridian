@@ -67,6 +67,15 @@ therefore yields a truly empty plan. `TransitionFrame` additionally carries an
 optional `hints?: LayoutHints` so Λ's spacing fallback is available when a
 layout emits no `edgeRoutes`.)*
 
+*(Amended during 6D: the pixel path for fades is a pair of **optional**
+per-node/per-edge alpha lanes on `RenderModel` (`nodeAlphas`/`edgeAlphas`) —
+present only on transition frames; `buildRenderModel` never emits them, so
+the view-model contract is unchanged for static frames. Incoming-cut **edges**
+fade in with the eased progress (edge routes are target-layout truth; this
+record was silent on edges). A crossfade draws the **union** of both frames —
+nodes present in both cuts appear once per frame set and blend at
+approximately constant alpha, avoiding a mid-fade dip.)*
+
 **One shared easing.** `easeInOutCubic` for every animated property — rects,
 alpha, and the camera path (ADR-0024). One curve is a feel decision: mixed
 easings read as jitter. It is a named constant in the 6E debug panel.

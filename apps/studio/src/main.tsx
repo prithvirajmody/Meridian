@@ -14,7 +14,11 @@ const rootElement = document.querySelector<HTMLElement>('#root');
 if (rootElement === null) throw new Error('Meridian Studio root element is missing');
 
 const params = new URLSearchParams(window.location.search);
-const runtime = new StudioRuntime(params.get('debug') === '1');
+const runtime = new StudioRuntime(params.get('debug') === '1', {
+  // ADR-0023 "time is injected": Playwright boots the deterministic clock so
+  // mid-transition screenshot baselines are drivable frame by frame.
+  manualClock: params.get('clock') === 'manual',
+});
 if (params.get('e2e') === '1') window.__MERIDIAN_STUDIO__ = runtime.testApi();
 
 createRoot(rootElement).render(

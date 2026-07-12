@@ -254,12 +254,12 @@ module.exports = {
       name: 'studio-is-the-presentation-composition-root',
       severity: 'error',
       comment:
-        'ADR-0022: Studio composes the Phase-5 pipeline downward; it may use only the declared semantic, plugin, layout, view-model, renderer, and markdown-adapter packages.',
+        'ADR-0022/Phase 6: Studio composes the pipeline downward; it may use only the declared semantic, plugin, layout, view-model, navigation, renderer, and markdown-adapter packages.',
       from: { path: '^apps/studio/src' },
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|abstraction|layout|view-model|renderer|plugin-api|plugin-host|adapters/markdown)',
+          '^packages/(graph-core|graph-store|abstraction|layout|view-model|navigation|renderer|plugin-api|plugin-host|adapters/markdown)',
       },
     },
     {

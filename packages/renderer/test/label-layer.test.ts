@@ -87,6 +87,7 @@ function fallback(node: number, text = '中文'): PlannedLabel {
     renderKind: 'fallback',
     forced: false,
     isHover: false,
+    alpha: 1,
   };
 }
 
