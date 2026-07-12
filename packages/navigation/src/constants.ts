@@ -37,3 +37,30 @@ export const ANCHOR_SNAP_FACTOR = 0.5;
  * camera path (ADR-0023). A named constant so the 6E panel can display it;
  * sampling the curve is the renderer-side player's job, not this package's. */
 export const EASING = 'easeInOutCubic' as const;
+
+// --------------------------------------------------------------- 6C: nav/zoom
+
+/** Geometric overzoom slack past the scale range in either direction
+ * (ADR-0025 `OVERZOOM_MAX = 4×`): at `z = 1` the camera may keep zooming in to
+ * `s_max · OVERZOOM_MAX`, and symmetrically out to `s_min / OVERZOOM_MAX` at
+ * `z = 0`, while the cut stops changing and scope never changes. */
+export const OVERZOOM_MAX = 4;
+
+/** Fit-margin fraction when a context frames its world bounds on drill-in
+ * (ADR-0025 `FRAME_MARGIN = 10%`). Consumed by the scale-range derivation. */
+export const FRAME_MARGIN = 0.1;
+
+/** Per-keypress zoom factor for the `+`/`−` keys (ADR-0025 trigger table). A
+ * navigation constant frozen here as mechanism; re-tuned at the 6E gate. */
+export const KEY_ZOOM_FACTOR = 1.25;
+
+/** Hard cap on a serialized navigation fragment (ADR-0025 `URL_MAX = 2000`):
+ * beyond it the override list `ov` is truncated with a visible diagnostic so
+ * the link stays shareable and honest. */
+export const URL_MAX = 2000;
+
+/** Default readable on-screen size (CSS px) of a "typical leaf" — the `s_max`
+ * end of the scale range (ADR-0025 "typical leaf at readable size"). Tunable
+ * at the 6E gate; overridable per call in {@link
+ * import('./coupling.js').deriveScaleRange}. */
+export const READABLE_LEAF_PX = 120;

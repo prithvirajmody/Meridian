@@ -30,6 +30,15 @@ whole navigation state round-trips (§5.6: "where I am" is a value).
 | Expand/collapse in place | affordance click; `Space` on selection | ADR-0012 override — same context, mixed-depth cut |
 | Fly-to | search result selection | camera flight within context; sets `focus`; never drills |
 
+*(Amended during 6C: search runs over the P1 label-token index through an
+injected `LabelTokenIndex` port — §20 forbids `navigation → graph-store`, so
+Studio supplies the store's index and navigation owns only the pure search/
+ranking; navigation's `tokenize` mirrors graph-store's `tokenizeLabel`
+contract and must stay in lockstep. The `[s_min, s_max]` scale range is
+likewise a pure hook (`deriveScaleRange`) — deriving it from real layout
+world bounds is 6D wiring, and "typical leaf at readable size" is the named
+tunable `READABLE_LEAF_PX` for the 6E panel.)*
+
 **Scale↔z coupling.** The controller owns a log-linear map from camera scale
 to the zoom scalar: per context, `z = clamp((log s − log s_min) / (log s_max −
 log s_min), 0, 1)`, with `[s_min, s_max]` derived from the context's world
@@ -77,7 +86,11 @@ stack is written only by drill verbs.
 
 `ctx` is the drill path (node IDs, in order — graph IDs are recoverable from
 the nodes' detail refs); `ov` is the ADR-0012 override map, run-length-
-compact, values `p`in/`e`xpand/`c`ollapse. Restoring parses, replays the
+compact, values `p`in/`e`xpand/`c`ollapse. *(Amended during 6C: node IDs are
+percent-encoded per component — `encodeURIComponent` — with the `&,:=`
+delimiters literal, since code-domain IDs contain all four; and signed zero in
+`cam` normalizes to `+0` on round-trip, the same coordinate.)* Restoring
+parses, replays the
 drill path (hydrating as needed), applies overrides, sets camera, and
 resolves — "URL round-trip restores the exact view" (roadmap §11) is the
 gate, so everything the cut depends on is in the fragment. `prevLevel` /
