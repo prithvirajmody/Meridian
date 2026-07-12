@@ -1,0 +1,30 @@
+{
+  "repo": "vuejs/core",
+  "commit": "c0606e91798c8dca4f33d101e1dd836d672592c1",
+  "adapter": "code",
+  "totals": {
+    "graphs": 365,
+    "nodes": 1928,
+    "edges": 1659,
+    "roots": 1
+  },
+  "nodesByKind": {
+    "code:class": 16,
+    "code:function": 1213,
+    "code:method": 131,
+    "code:module": 489,
+    "code:namespace": 1,
+    "code:package": 77,
+    "code:project": 1
+  },
+  "edgesByKind": {
+    "code:calls": 954,
+    "code:imports": 705
+  },
+  "callResolution": {
+    "resolved": 1797,
+    "unresolved": 2579,
+    "rate": 0.4106
+  },
+  "documentSha256": "43658ad9e11e8bef5505e5d450ec3a478dd1e9a6477e0dc8c8ff64a1b21d1212"
+}

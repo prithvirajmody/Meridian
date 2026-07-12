@@ -18,6 +18,7 @@ import { join, sep } from 'node:path';
 import {
   codeManifest,
   createCodeIncrementalSession,
+  languageForPath,
   type CodeIncrementalSession,
 } from '@meridian/adapter-code';
 import { decode, type VocabularyRegistry } from '@meridian/graph-core';
@@ -29,7 +30,9 @@ import {
   type GraphStore,
 } from '@meridian/graph-store';
 import type { IngestSink, SourceChange } from '@meridian/plugin-api';
-import { buildCodeMapper, idFacade, isCodeFile, readCodeFiles } from './ingest.js';
+import type { CodeLanguage } from '@meridian/adapter-code';
+import { buildCodeMapper, idFacade, isCodeFile, readCodeFiles, type CodeWalkOptions } from './ingest.js';
+import { buildPathFilter } from './globs.js';
 
 function out(line: string): void {
   process.stdout.write(line + '\n');
@@ -83,6 +86,22 @@ interface ScriptedEdit {
 export interface WatchRepoOptions {
   readonly json: boolean;
   readonly edits?: string;
+  readonly include?: readonly string[];
+  readonly exclude?: readonly string[];
+  readonly langs?: ReadonlySet<CodeLanguage>;
+}
+
+/** True for a repo-relative POSIX path the watcher routes under the active
+ * include/exclude globs and language allowlist (mirrors the initial walk). */
+function routedUnder(opts: WatchRepoOptions): (rel: string) => boolean {
+  const filter = buildPathFilter({ include: opts.include, exclude: opts.exclude });
+  const langs = opts.langs;
+  return (rel: string): boolean => {
+    if (!isCodeFile(rel)) return false;
+    const language = languageForPath(rel);
+    if (langs !== undefined && (language === undefined || !langs.has(language))) return false;
+    return filter.accepts(rel);
+  };
 }
 
 /**
@@ -94,7 +113,12 @@ export async function cmdWatchRepo(
   opts: WatchRepoOptions,
   printChange: (change: ChangeSet) => void,
 ): Promise<number> {
-  const { root, files } = await readCodeFiles(dir);
+  const walk: CodeWalkOptions = {
+    ...(opts.include !== undefined ? { include: opts.include } : {}),
+    ...(opts.exclude !== undefined ? { exclude: opts.exclude } : {}),
+    ...(opts.langs !== undefined ? { langs: opts.langs } : {}),
+  };
+  const { root, files } = await readCodeFiles(dir, walk);
   const { mapper, dispose } = buildCodeMapper();
   try {
     const session = await createCodeIncrementalSession({ mapper, ids: idFacade }, { root, files });
@@ -114,7 +138,7 @@ export async function cmdWatchRepo(
     if (opts.edits !== undefined) {
       return await replayEdits(session, store, dir, opts.edits);
     }
-    await liveWatch(session, store, dir);
+    await liveWatch(session, store, dir, routedUnder(opts));
     return 0;
   } finally {
     await dispose();
@@ -154,12 +178,17 @@ async function replayEdits(
 }
 
 /** Live mode: follow the tree; each save is re-parsed into a minimal delta. */
-async function liveWatch(session: CodeIncrementalSession, store: GraphStore, dir: string): Promise<void> {
+async function liveWatch(
+  session: CodeIncrementalSession,
+  store: GraphStore,
+  dir: string,
+  routed: (rel: string) => boolean,
+): Promise<void> {
   const pending = new Map<string, NodeJS.Timeout>();
   const onEvent = (filename: string | null): void => {
     if (filename === null) return;
     const rel = filename.split(sep).join('/');
-    if (!isCodeFile(rel)) return;
+    if (!routed(rel)) return;
     const prior = pending.get(rel);
     if (prior) clearTimeout(prior);
     pending.set(

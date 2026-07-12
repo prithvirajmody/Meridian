@@ -52,7 +52,8 @@ import/call graph) is ready with zero resolves.
 | Budget | Value | Rationale |
 |---|---|---|
 | File-size exclusion | > **10 MB** *or* > 50,000 LOC | roadmap generated-file case; contributes a `code:module` node flagged `code:excluded: 'oversize'`, cold + non-resolvable |
-| Generated-file exclusion | min.js, lockfiles, `@generated` sentinel, vendored dirs, include/exclude globs (§6) | `code:excluded: 'generated'` |
+| Generated-file exclusion | min.js, lockfiles, `@generated` sentinel, vendored dirs | `code:excluded: 'generated'` |
+| User include/exclude globs & language allowlist (§6) | CLI `--include`/`--exclude`/`--lang` | **not walked** — filtered files never enter the graph (*amended 7H*: like the built-in skip-dirs; `code:excluded` ghost nodes are reserved for budget/size exclusions of *walked* files, so an excluded tree does not spray thousands of ghost nodes) |
 | Lazy resolve latency | **< 150 ms p95** per function body | roadmap acceptance; one body parse, module tree cached |
 | Cold ingest | **< 30 s** for ~100k LOC, eager levels only | the constraint that *forces* laziness |
 
@@ -197,8 +198,13 @@ minor version (ADR-0010), noted for the P9 chafe report.
 
 ## Open questions for review
 
-1. **The numbers.** 150 ms / 10 MB / 50k LOC / 30 s — confirm as v1 gates
-   pending 7H's real reference-hardware measurements.
+1. **The numbers.** ~~150 ms / 10 MB / 50k LOC / 30 s — confirm as v1 gates
+   pending 7H's real reference-hardware measurements.~~ *Resolved 7H —
+   confirmed as v1 gates.* Measured on gate hardware: lazy resolve p95
+   **4.78 ms** (budget 150 ms), cold ingest of ~153k-LOC vue-core **2.79 s**
+   (budget 30 s; 7.44 s under parallel suite load — still 4× headroom), the
+   >10 MB exclusion fires as specified. Budgets kept as written: the headroom
+   absorbs slower hardware and larger bodies.
 2. **`code:calls` body-scan cap.** Should the eager call-site scan be
    budget-capped for a pathological huge function (e.g. a 5,000-line switch)?
    Proposed: no separate cap in v1 (bounded by the 10 MB file limit); flag.

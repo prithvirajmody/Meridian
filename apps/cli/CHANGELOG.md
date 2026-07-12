@@ -1,5 +1,16 @@
 # @meridian/cli
 
+## Unreleased — Phase 7H
+
+- **Adapter options (ROADMAP Phase 7 §6)** on `ingest <dir>` and `watch <dir>`:
+  `--include`/`--exclude` (comma-separated POSIX globs — `**`, `*`, `?` — over
+  repo-relative paths; exclude wins) and `--lang` (allowlist: `typescript`,
+  `python`). The CLI is the composition root: filtered files are never read
+  (ADR-0027 as amended — user globs filter the walk; `code:excluded` stays for
+  budget/size exclusions of walked files). The directory walk is symlink-safe
+  (realpath visited-set; symlinks not followed), so cycles neither hang nor
+  duplicate.
+
 ## Unreleased — Phase 7G
 
 - **`watch <repo/>`** now recognises a directory as a source repo and follows

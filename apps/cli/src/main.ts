@@ -21,7 +21,9 @@ import {
   type SourceRef,
   type SpaceStats,
 } from '@meridian/graph-core';
+import { isCodeLanguage, type CodeLanguage } from '@meridian/adapter-code';
 import { cmdCut } from './cut.js';
+import { splitCsv } from './globs.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
 import { cmdLayout } from './layout.js';
 import { cmdWatchRepo } from './watch-repo.js';
@@ -62,13 +64,16 @@ Usage:
                                              with --apply, replay scripts and
                                              exit — without, follow the file
                                              and apply semantic diffs live
-  meridian watch <repo/> [--edits <script.json>] [--json]
+  meridian watch <repo/> [--edits <script.json>]
+                  [--include <globs>] [--exclude <globs>] [--lang <langs>] [--json]
                                              watch a source directory: each file
                                              save becomes a minimal code delta
                                              (incremental re-parse, ADR-0028).
                                              --edits replays a recorded edit
                                              sequence and exits; without it,
-                                             follow the tree live
+                                             follow the tree live. --include/
+                                             --exclude/--lang filter the walk as
+                                             for ingest
   meridian cut <file> (--level <N> | --zoom <z>) [--focus <id>] [--json]
                                              resolve the visible cut of a
                                              GraphDocument at a base level
@@ -89,12 +94,19 @@ Usage:
                                              shape. --worker runs the provider
                                              off-thread in the ADR-0017 Comlink
                                              worker host (byte-identical output)
-  meridian ingest <source> [--adapter <domain>] [--out <file>] [--json]
+  meridian ingest <source> [--adapter <domain>] [--out <file>]
+                  [--include <globs>] [--exclude <globs>] [--lang <langs>] [--json]
                                              run a domain adapter over a source
-                                             file: sniff arbitration (or forced
-                                             --adapter), atomic ingest, IR gate
-                                             with the registered vocabulary;
-                                             --out writes the graph document
+                                             file or directory: sniff arbitration
+                                             (or forced --adapter), atomic ingest,
+                                             IR gate with the registered
+                                             vocabulary; --out writes the graph
+                                             document. For a code directory,
+                                             --include/--exclude take comma-
+                                             separated POSIX globs (** * ?) over
+                                             repo-relative paths and --lang a
+                                             comma-separated allowlist
+                                             (typescript, python)
   meridian plugins list [--json]             registered plugins: versions,
                                              capabilities, vocabulary
 
@@ -577,7 +589,7 @@ async function cmdWatch(
 
 // ---------------------------------------------------------------------- main
 
-const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider']);
+const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang']);
 const BOOL_FLAGS = new Set(['--worker']);
 
 interface Cli {
@@ -610,6 +622,30 @@ function parseCli(args: string[]): Cli {
     }
   }
   return { positional, json, values, flags };
+}
+
+/** Parse the shared code-adapter walk flags (ROADMAP Phase 7 §6): `--include`
+ * / `--exclude` (comma-separated globs) and `--lang` (comma-separated language
+ * allowlist). Empty when the flags are absent, so non-code ingests are
+ * unaffected. */
+function parseCodeWalkFlags(cli: Cli): {
+  include?: string[];
+  exclude?: string[];
+  langs?: Set<CodeLanguage>;
+} {
+  const include = splitCsv(cli.values.get('--include'));
+  const exclude = splitCsv(cli.values.get('--exclude'));
+  const langTokens = splitCsv(cli.values.get('--lang'));
+  const langs = new Set<CodeLanguage>();
+  for (const t of langTokens) {
+    if (!isCodeLanguage(t)) usageError(`--lang: unknown language "${t}" (known: typescript, python)`);
+    langs.add(t);
+  }
+  return {
+    ...(include.length > 0 ? { include } : {}),
+    ...(exclude.length > 0 ? { exclude } : {}),
+    ...(langs.size > 0 ? { langs } : {}),
+  };
 }
 
 function allowFlags(cli: Cli, command: string, allowed: string[]): void {
@@ -675,13 +711,14 @@ async function main(): Promise<void> {
         /* fall through to the file path, which reports the read error */
       }
       if (isDir) {
-        allowFlags(cli, command, ['--edits']);
+        allowFlags(cli, command, ['--edits', '--include', '--exclude', '--lang']);
         process.exit(
           await cmdWatchRepo(
             file,
             {
               json: cli.json,
               ...(cli.values.has('--edits') ? { edits: cli.values.get('--edits')! } : {}),
+              ...parseCodeWalkFlags(cli),
             },
             (change) => printChange(change, cli.json),
           ),
@@ -757,12 +794,13 @@ async function main(): Promise<void> {
       break;
     }
     case 'ingest': {
-      allowFlags(cli, command, ['--adapter', '--out']);
+      allowFlags(cli, command, ['--adapter', '--out', '--include', '--exclude', '--lang']);
       process.exit(
         await cmdIngest(file, {
           json: cli.json,
           ...(cli.values.has('--adapter') ? { adapter: cli.values.get('--adapter')! } : {}),
           ...(cli.values.has('--out') ? { out: cli.values.get('--out')! } : {}),
+          ...parseCodeWalkFlags(cli),
         }),
       );
       break;

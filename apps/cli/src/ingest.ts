@@ -5,7 +5,7 @@
  * and isolation, and holds the IR gate — decode with the host's registered
  * vocabulary (U8) — between parser output and anything downstream.
  */
-import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { markdownPlugin } from '@meridian/adapter-markdown';
 import {
@@ -13,10 +13,13 @@ import {
   createCodePlugin,
   createWorkerMapper,
   encodeProjectBundle,
+  languageForPath,
   ParseWorkerHost,
   type BundleFile,
+  type CodeLanguage,
   type CodeMapper,
 } from '@meridian/adapter-code';
+import { buildPathFilter } from './globs.js';
 import { codeWorkerFactory } from './code-worker.js';
 import {
   decode,
@@ -100,19 +103,54 @@ export function isCodeFile(name: string): boolean {
   return CODE_EXTENSIONS.test(name);
 }
 
+/**
+ * Adapter walk options (ROADMAP Phase 7 §6). The CLI owns the filesystem
+ * (ADR-0009), so include/exclude globs and the language allowlist filter the
+ * walk here — an excluded or non-allowed file is never read, and so never
+ * enters the graph (clean semantics; see the phase-07 checklist note vs
+ * ADR-0027's `code:excluded` ghost-node reading, which is reserved for the
+ * in-tree-but-unparseable oversize/generated cases).
+ */
+export interface CodeWalkOptions {
+  readonly include?: readonly string[];
+  readonly exclude?: readonly string[];
+  readonly langs?: ReadonlySet<CodeLanguage>;
+}
+
 /** Walk a directory into the project name + repo-relative code files
- * (composition root resolves I/O; the adapter only sees text — ADR-0009). */
-export async function readCodeFiles(dir: string): Promise<{ root: string; files: BundleFile[] }> {
+ * (composition root resolves I/O; the adapter only sees text — ADR-0009).
+ * Symlinks are not followed and a realpath visited-set guards against cycles,
+ * so a symlink loop at the root neither hangs nor duplicates content. */
+export async function readCodeFiles(
+  dir: string,
+  opts: CodeWalkOptions = {},
+): Promise<{ root: string; files: BundleFile[] }> {
   const files: BundleFile[] = [];
+  const filter = buildPathFilter({ include: opts.include, exclude: opts.exclude });
+  const langs = opts.langs;
+  const visited = new Set<string>(); // realpaths already walked — the cycle guard
   const walk = async (current: string): Promise<void> => {
+    let real: string;
+    try {
+      real = await realpath(current);
+    } catch {
+      return; // dangling symlink target or vanished directory
+    }
+    if (visited.has(real)) return; // a cycle would re-enter here: stop (no hang, no dup)
+    visited.add(real);
     for (const entry of await readdir(current, { withFileTypes: true })) {
+      if (entry.isSymbolicLink()) continue; // the composition root does not follow symlinks
       if (entry.name.startsWith('.') && entry.isDirectory()) continue;
       const full = join(current, entry.name);
       if (entry.isDirectory()) {
         if (!SKIP_DIRS.has(entry.name)) await walk(full);
       } else if (entry.isFile() && CODE_EXTENSIONS.test(entry.name)) {
+        const rel = relative(dir, full).split(sep).join('/');
+        const language = languageForPath(rel);
+        if (langs !== undefined && (language === undefined || !langs.has(language))) continue;
+        if (!filter.accepts(rel)) continue;
         const text = await readFile(full, 'utf8');
-        files.push({ path: relative(dir, full).split(sep).join('/'), text });
+        files.push({ path: rel, text });
       }
     }
   };
@@ -129,8 +167,8 @@ export function buildCodeMapper(): { mapper: CodeMapper; dispose: () => Promise<
   return { mapper, dispose: () => mapper.dispose() };
 }
 
-async function readCodeProject(dir: string): Promise<SourceDescriptor> {
-  const { root, files } = await readCodeFiles(dir);
+async function readCodeProject(dir: string, walk: CodeWalkOptions): Promise<SourceDescriptor> {
+  const { root, files } = await readCodeFiles(dir, walk);
   return {
     uri: dir,
     mediaType: CODE_PROJECT_MEDIA_TYPE,
@@ -138,9 +176,9 @@ async function readCodeProject(dir: string): Promise<SourceDescriptor> {
   };
 }
 
-async function readSource(path: string): Promise<SourceDescriptor> {
+async function readSource(path: string, walk: CodeWalkOptions): Promise<SourceDescriptor> {
   try {
-    if ((await stat(path)).isDirectory()) return await readCodeProject(path);
+    if ((await stat(path)).isDirectory()) return await readCodeProject(path, walk);
   } catch (e) {
     process.stderr.write(`cannot read ${path}: ${(e as Error).message}\n`);
     process.exit(2);
@@ -167,10 +205,16 @@ interface MaterializeResult {
   readonly producer: DocumentProducer;
 }
 
-export async function cmdIngest(
-  sourcePath: string,
-  opts: { json: boolean; adapter?: string; out?: string },
-): Promise<number> {
+export interface IngestOptions {
+  readonly json: boolean;
+  readonly adapter?: string;
+  readonly out?: string;
+  readonly include?: readonly string[];
+  readonly exclude?: readonly string[];
+  readonly langs?: ReadonlySet<CodeLanguage>;
+}
+
+export async function cmdIngest(sourcePath: string, opts: IngestOptions): Promise<number> {
   const built = buildHost();
   const { host } = built;
   try {
@@ -180,12 +224,13 @@ export async function cmdIngest(
   }
 }
 
-async function runIngest(
-  host: PluginHost,
-  sourcePath: string,
-  opts: { json: boolean; adapter?: string; out?: string },
-): Promise<number> {
-  const src = await readSource(sourcePath);
+async function runIngest(host: PluginHost, sourcePath: string, opts: IngestOptions): Promise<number> {
+  const walk: CodeWalkOptions = {
+    ...(opts.include !== undefined ? { include: opts.include } : {}),
+    ...(opts.exclude !== undefined ? { exclude: opts.exclude } : {}),
+    ...(opts.langs !== undefined ? { langs: opts.langs } : {}),
+  };
+  const src = await readSource(sourcePath, walk);
   const outcome = await host.ingest(src, {
     ...(opts.adapter !== undefined ? { parser: opts.adapter } : {}),
   });

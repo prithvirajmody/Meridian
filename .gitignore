@@ -31,3 +31,8 @@ test-results/
 # Regenerated golden-test inputs (ingested corpus docs produced by the CLI
 # cut-golden test itself; never committed — see apps/cli/test/cut-golden.test.ts)
 fixtures/.cut-inputs/
+
+# Pinned OSS scale-fixture clones (~100k LOC) — fetched outside the tree by
+# fixtures/oss/fetch.sh; only the compact summary golden is committed. See
+# fixtures/oss/README.md.
+fixtures/oss/clones/
