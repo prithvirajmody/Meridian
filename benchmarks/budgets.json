@@ -13,6 +13,7 @@
   "layout-elk-incremental-10-node-delta-ms": 100,
   "layout-force-10k-convergence-ms": 3000,
   "layout-stability-small-delta-min": 0.9,
+  "navigation-plan-5k-ms": 20,
   "renderer-frame-p95-ms": 18,
   "renderer-throughput-min-fps": 55,
   "renderer-first-render-ms": 1000,

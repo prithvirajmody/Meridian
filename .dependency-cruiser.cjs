@@ -156,6 +156,24 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
+      name: 'navigation-only-abstraction-and-view-model',
+      severity: 'error',
+      comment:
+        'ADR-0023/0024 · §20: navigation imports the abstraction engine and the view-model waist only — no layout, renderer, DOM, store, AI, or plugin edge. Pure planners (I6).',
+      from: { path: '^packages/navigation/src' },
+      to: {
+        pathNot: '^packages/navigation/src|^packages/abstraction|^packages/view-model',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'navigation-no-node-builtins',
+      severity: 'error',
+      comment: 'navigation stays isomorphic (browser + workers + Node): no node:* imports.',
+      from: { path: '^packages/navigation/src' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
       name: 'plugin-api-types-only',
       severity: 'error',
       comment:

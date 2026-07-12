@@ -60,6 +60,13 @@ targetless exits fade out in place. Labels do not tween independently; they
 follow their node and respect ADR-0020 tiers at the *target* camera, fading in
 during the final 30% so mid-flight text never pops.
 
+*(Amended during 6B: move entries displaced ≤ ε·Λ — "held" in ADR-0016's terms
+— are omitted from the plan entirely, consistent with the degrade predicate
+counting only displaced moves; an identical-cuts/identical-layouts change
+therefore yields a truly empty plan. `TransitionFrame` additionally carries an
+optional `hints?: LayoutHints` so Λ's spacing fallback is available when a
+layout emits no `edgeRoutes`.)*
+
 **One shared easing.** `easeInOutCubic` for every animated property — rects,
 alpha, and the camera path (ADR-0024). One curve is a feel decision: mixed
 easings read as jitter. It is a named constant in the 6E debug panel.
