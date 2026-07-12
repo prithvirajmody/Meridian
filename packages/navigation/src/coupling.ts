@@ -98,7 +98,12 @@ export function cameraScaleLimits(range: ScaleRange, overzoom: number = OVERZOOM
 export function deriveScaleRange(
   worldBounds: Rect,
   viewport: ViewportSize,
-  opts: { readonly readableLeafPx?: number; readonly leafWorldSize?: number } = {},
+  opts: {
+    readonly readableLeafPx?: number;
+    readonly leafWorldSize?: number;
+    /** 6E-tunable fit-margin fraction (default: frozen ADR-0025 `FRAME_MARGIN`). */
+    readonly frameMargin?: number;
+  } = {},
 ): ScaleRange {
   const readableLeafPx = opts.readableLeafPx ?? READABLE_LEAF_PX;
   const bw = worldBounds.width;
@@ -106,7 +111,7 @@ export function deriveScaleRange(
   if (!(bw > 0) || !(bh > 0) || !(viewport.width > 0) || !(viewport.height > 0)) {
     return { sMin: 1, sMax: 1 };
   }
-  const padded = 1 + 2 * FRAME_MARGIN;
+  const padded = 1 + 2 * (opts.frameMargin ?? FRAME_MARGIN);
   const sFit = Math.min(viewport.width / (bw * padded), viewport.height / (bh * padded));
   const leafWorldSize = opts.leafWorldSize ?? Math.min(bw, bh) / 20;
   const sLeaf = leafWorldSize > 0 ? readableLeafPx / leafWorldSize : sFit;

@@ -68,6 +68,12 @@ saturates at fit-all (with the same geometric slack) and **does not pop the
 context**. Scope changes are always explicit, in both directions. This is the
 debate the roadmap asks this ADR to end; the symmetric rule is the decision.
 
+*(Amended during 6E: because per-context scale ranges are memoized per graph
+(6D amendment above), the tunables that feed range derivation —
+`READABLE_LEAF_PX` and `FRAME_MARGIN` — take effect on the next **context**
+derivation, not the next transition; all other tunables apply from the next
+transition. The tuning panel states this next to those two controls.)*
+
 **Drill-in.** Precondition: the node has a detail graph (`frontier.expandable`
 per ADR-0012), hydrating a cold one through `DetailResolver` (ADR-0027) with
 a progress affordance. Effect, in order: push `{graphId, z, camera, focus,

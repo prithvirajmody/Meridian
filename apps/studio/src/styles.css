@@ -312,6 +312,82 @@ pre {
   color: #e4ecff;
 }
 
+/* 6E tunable-constants panel (debug flag only, alongside the HUD). */
+.tunables-panel {
+  position: absolute;
+  z-index: 4;
+  top: 16px;
+  right: 16px;
+  max-width: 300px;
+  border: 1px solid #3a496d;
+  border-radius: 9px;
+  background: rgb(4 8 16 / 92%);
+  color: #93a6cc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+}
+
+.tunables-panel summary {
+  padding: 8px 12px;
+  color: #e4ecff;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tunables-body {
+  display: grid;
+  gap: 5px;
+  max-height: 60vh;
+  padding: 4px 12px 10px;
+  overflow-y: auto;
+}
+
+.tunable-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 48px;
+  gap: 8px;
+  align-items: center;
+}
+
+.tunable-row em {
+  color: #f2c66d;
+  font-style: normal;
+}
+
+.tunable-row input {
+  padding: 2px 4px;
+  border: 1px solid #3a496d;
+  border-radius: 5px;
+  background: #0b1322;
+  color: #e4ecff;
+  font: inherit;
+}
+
+.tunable-unit {
+  color: #5d6f96;
+}
+
+.tunables-body button {
+  margin-top: 6px;
+  padding: 5px 8px;
+  border: 1px solid #3a496d;
+  border-radius: 6px;
+  background: #14203a;
+  color: #e4ecff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tunables-body button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tunables-note {
+  margin: 4px 0 0;
+  color: #5d6f96;
+}
+
 .diagnostic-strip {
   position: absolute;
   z-index: 3;

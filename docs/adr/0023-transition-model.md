@@ -85,6 +85,11 @@ clamped so plan computation + animation ≤ `MAX_TRANSITION_MS = 300`
 plan-to-settle (§16.1). Plan computation itself must run < 20ms on 5k-node cut
 diffs (roadmap §12) — the plan budget is part of the 300, not extra.
 
+*(Amended during 6E: "tunable" never outranks §16.1 — `BASE_TRANSITION_MS`
+and `CROSSFADE_MS` are clamped to `MAX_TRANSITION_MS = 300` both at plan time
+and in the tuning panel's input bounds; the budget is constitutional, so no
+tunable can exceed it.)*
+
 **Degrade-to-crossfade — plan-time (pure, primary).** `mode: 'crossfade'`
 (whole outgoing frame fades into incoming frame, no per-node tweens, duration
 `CROSSFADE_MS = 160`) when any of:

@@ -40,12 +40,15 @@ export interface AnchorSelection {
  *
  * `lambda` is ADR-0016's characteristic length `Λ`, supplied by the caller
  * (`characteristicLength(layout, hints)` from `@meridian/view-model`).
+ * `snapFactor` is the 6E-tunable `ANCHOR_SNAP` multiple of `Λ` (defaults to
+ * the frozen ADR-0024 value).
  */
 export function selectAnchorNode(
   cut: Cut,
   layout: LayoutResult,
   world: Point,
   lambda: number,
+  snapFactor: number = ANCHOR_SNAP_FACTOR,
 ): AnchorSelection {
   let best: NodeId | undefined;
   let bestArea = Infinity;
@@ -61,7 +64,7 @@ export function selectAnchorNode(
   if (best !== undefined) return { node: best, snapped: false };
 
   // No containing rect: snap to the nearest boundary within ANCHOR_SNAP.
-  const snapRadius = ANCHOR_SNAP_FACTOR * lambda;
+  const snapRadius = snapFactor * lambda;
   const snapRadiusSq = snapRadius * snapRadius;
   let nearest: NodeId | undefined;
   let nearestSq = Infinity;
@@ -144,6 +147,8 @@ export function solveAnchoredCamera(args: {
   readonly toLayout: LayoutResult;
   readonly refinement: RefinementMap;
   readonly lambda: number;
+  /** 6E-tunable `ANCHOR_SNAP` multiple of `Λ` (default: frozen ADR-0024 value). */
+  readonly anchorSnapFactor?: number;
 }): AnchorSolution {
   const { worldOut, anchorScreen, viewport, scaleIn, fromCut, fromLayout, toLayout, refinement, lambda } = args;
 
@@ -156,7 +161,7 @@ export function solveAnchoredCamera(args: {
     fallback,
   });
 
-  const selection = selectAnchorNode(fromCut, fromLayout, worldOut, lambda);
+  const selection = selectAnchorNode(fromCut, fromLayout, worldOut, lambda, args.anchorSnapFactor);
   if (selection.node === undefined) return geometric('empty-space');
 
   const rOut = fromLayout.positions.get(selection.node);

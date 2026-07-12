@@ -28,7 +28,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 3 | ✅ `3A`–`3E` — tag `phase-3` (M1 closed) | closed |
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
 | 5 | ✅ `5A`–`5C` · ⬜ `5D`–`5F` | current (visual track) |
-| 6 | ✅ `6A`–`6D` · ⬜ `6E` | current (visual track) |
+| 6 | ✅ `6A`–`6E` built | M2 review + human rows + tag pending |
 | 7 | ✅ `7A`–`7B` · ⬜ `7C`–`7H` | current (domain track) |
 | 8–12 | ⬜ not started | — |
 
@@ -310,7 +310,7 @@ replan (P1 subscription).
   transition p95 frame time ≤22ms; anchor pixel drift <8px per transition.
 - **Exit:** the book descent runs scripted, within budgets, anchor held.
 
-### 6E — Tuning & M2 gate
+### 6E — Tuning & M2 gate  ✅ BUILT (human rows + M2 review + `phase-6` tag pending — checklists/phase-06.md)
 Debug panel with tunable constants; manual tuning sessions (this is the
 human gate — DRIVING-OPUS.md §4); the "grandmother test"; constants frozen
 into defaults; full verification table, recorded demo, `docs/demos/m2.md`,

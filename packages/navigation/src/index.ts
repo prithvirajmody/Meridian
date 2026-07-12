@@ -35,6 +35,11 @@ export {
   URL_MAX,
 } from './constants.js';
 
+// 6E: the tunable-constants surface (the debug panel's session copy is
+// initialized from and reset to NAV_TUNABLE_DEFAULTS).
+export { NAV_TUNABLE_DEFAULTS } from './tunables.js';
+export type { ControllerTunables, NavTunables, TransitionTunables } from './tunables.js';
+
 export {
   affineRectMap,
   anchorMap,

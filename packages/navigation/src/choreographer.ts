@@ -30,13 +30,8 @@ import {
   type NodeId,
   type Rect,
 } from '@meridian/view-model';
-import {
-  BASE_TRANSITION_MS,
-  CROSSFADE_MS,
-  MAX_ANIMATED_NODES,
-  SOURCELESS_MAJORITY,
-  STABILITY_DEGRADE_FLOOR,
-} from './constants.js';
+import { MAX_TRANSITION_MS } from './constants.js';
+import { NAV_TUNABLE_DEFAULTS, type TransitionTunables } from './tunables.js';
 import { affineRectMap, boundingRect, rectCenter } from './geometry.js';
 import type { EnterEntry, ExitEntry, RefinementMap } from './refinement.js';
 
@@ -214,11 +209,16 @@ function buildExitAnim(
  * PRNG reads; identical inputs produce a deep-equal plan. Retargeting
  * mid-flight is the same call with the player's current interpolated
  * `{cut, layout}` as `from` — the choreographer holds no state.
+ *
+ * `tunables` (6E) defaults to the frozen ADR values; the Studio debug panel
+ * passes its session copy so an edit takes effect on the next plan. Durations
+ * clamp to `MAX_TRANSITION_MS` — the §16.1 budget is not tunable.
  */
 export function planTransition(
   from: TransitionFrame,
   to: TransitionFrame,
   refinement: RefinementMap,
+  tunables: TransitionTunables = NAV_TUNABLE_DEFAULTS,
 ): TransitionPlan {
   const fromHints = from.hints ?? NO_HINTS;
   const lambda = characteristicLength(from.layout, fromHints);
@@ -245,11 +245,11 @@ export function planTransition(
   const stability = stabilityScore(from.layout, to.layout, fromHints).stability;
 
   const triggers: DegradeTrigger[] = [];
-  if (animatedCount > MAX_ANIMATED_NODES) triggers.push('animated-node-budget');
-  if (enterExit > 0 && (sourceless + targetless) / enterExit > SOURCELESS_MAJORITY) {
+  if (animatedCount > tunables.maxAnimatedNodes) triggers.push('animated-node-budget');
+  if (enterExit > 0 && (sourceless + targetless) / enterExit > tunables.sourcelessMajority) {
     triggers.push('sourceless-majority');
   }
-  if (stability < STABILITY_DEGRADE_FLOOR) triggers.push('low-stability');
+  if (stability < tunables.stabilityDegradeFloor) triggers.push('low-stability');
 
   const counts: Record<string, number> = {
     enter: enterCount,
@@ -293,7 +293,7 @@ export function planTransition(
       enter: [],
       exit: [],
       move: [],
-      durationMs: CROSSFADE_MS,
+      durationMs: Math.min(tunables.crossfadeMs, MAX_TRANSITION_MS),
       diagnostics,
     };
   }
@@ -326,7 +326,14 @@ export function planTransition(
     move.push({ id, fromRect, toRect });
   }
 
-  return { mode: 'choreographed', enter, exit, move, durationMs: BASE_TRANSITION_MS, diagnostics };
+  return {
+    mode: 'choreographed',
+    enter,
+    exit,
+    move,
+    durationMs: Math.min(tunables.baseTransitionMs, MAX_TRANSITION_MS),
+    diagnostics,
+  };
 }
 
 /**
@@ -336,7 +343,12 @@ export function planTransition(
  * another call.
  */
 export class TransitionChoreographer {
-  plan(from: TransitionFrame, to: TransitionFrame, refinement: RefinementMap): TransitionPlan {
-    return planTransition(from, to, refinement);
+  plan(
+    from: TransitionFrame,
+    to: TransitionFrame,
+    refinement: RefinementMap,
+    tunables?: TransitionTunables,
+  ): TransitionPlan {
+    return planTransition(from, to, refinement, tunables);
   }
 }

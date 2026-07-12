@@ -7,6 +7,7 @@ import { DebugHud } from './components/DebugHud.js';
 import { Minimap } from './components/Minimap.js';
 import { SearchBox } from './components/SearchBox.js';
 import { SelectedPanel } from './components/SelectedPanel.js';
+import { TunablesPanel } from './components/TunablesPanel.js';
 import type { StudioRuntime } from './runtime.js';
 import { StudioStoreCommands } from './store.js';
 
@@ -114,6 +115,7 @@ export function App({ runtime }: AppProps) {
           <CanvasIsland runtime={runtime} />
           <Minimap runtime={runtime} />
           {debugEnabled ? <DebugHud stats={stats} metrics={metrics} /> : null}
+          {debugEnabled ? <TunablesPanel store={runtime.store} /> : null}
           {diagnostics.length > 0 ? (
             <div className="diagnostic-strip" role="status" data-testid="diagnostics">
               {diagnostics.at(-1)?.code}: {diagnostics.at(-1)?.message}

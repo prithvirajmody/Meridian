@@ -1,4 +1,5 @@
 import type { PickResult, RendererFault, RendererStats } from '@meridian/renderer';
+import { NAV_TUNABLE_DEFAULTS, type NavTunables } from '@meridian/navigation';
 import {
   createCameraState,
   EMPTY_SELECTION,
@@ -10,6 +11,7 @@ import {
   type SourceRef,
 } from '@meridian/view-model';
 import { createStore, type StoreApi } from 'zustand/vanilla';
+import { sanitizeTunable } from './tunable-specs.js';
 
 export type StudioPhase =
   | 'idle'
@@ -121,6 +123,14 @@ export interface StudioState {
   readonly rendererStats: RendererStats | null;
   readonly metrics: StudioMetrics;
   readonly debugEnabled: boolean;
+  /**
+   * The 6E session copy of the tunable navigation constants. Initialized from
+   * (and reset to) the canonical frozen `NAV_TUNABLE_DEFAULTS` — the shipped
+   * ADR values. The debug panel edits this copy; the navigator reads it at
+   * each verb/plan, so an edit takes effect on the next transition without
+   * reload and nothing ever mutates the defaults module.
+   */
+  readonly tunables: NavTunables;
   readonly nav: StudioNavState | null;
   /** Canvas viewport in CSS px (published by the bridge; minimap consumes). */
   readonly viewport: { readonly width: number; readonly height: number } | null;
@@ -152,6 +162,7 @@ export function initialStudioState(debugEnabled = false): StudioState {
     rendererStats: null,
     metrics: EMPTY_METRICS,
     debugEnabled,
+    tunables: NAV_TUNABLE_DEFAULTS,
     nav: null,
     viewport: null,
   };
@@ -267,6 +278,26 @@ export class StudioStoreCommands {
 
   setNav(nav: StudioNavState | null): void {
     this.store.setState({ nav });
+  }
+
+  /**
+   * Edit one 6E tunable in the session copy (the debug panel's write path).
+   * Values are sanitized against the panel spec window (`tunable-specs.ts`);
+   * a non-finite value is ignored. The change is visible to the navigator on
+   * its next read — i.e. the next transition — without reload.
+   */
+  setTunable(key: keyof NavTunables, value: number): void {
+    const sane = sanitizeTunable(key, value);
+    if (sane === undefined) return;
+    const current = this.store.getState().tunables;
+    if (current[key] === sane) return;
+    this.store.setState({ tunables: { ...current, [key]: sane } });
+  }
+
+  /** Reset the session copy to the canonical frozen ADR defaults (6E "reset
+   * to defaults" affordance). */
+  resetTunables(): void {
+    this.store.setState({ tunables: NAV_TUNABLE_DEFAULTS });
   }
 
   setViewport(viewport: { width: number; height: number } | null): void {
