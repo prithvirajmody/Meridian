@@ -73,13 +73,20 @@ describe('Python adapter — determinism & structure', () => {
     }
   });
 
-  it('containment is the detail relation: Python ingest emits zero edges', async () => {
+  it('containment stays the detail relation; 7E edges are code:calls/imports only', async () => {
+    // `scale = lambda c, k: Circle(c.r * k)` resolves to the module-level class
+    // `Circle` (tier 1) → one code:calls edge; every emitted edge is a 7E
+    // import/call edge carrying code:confidence (never a containment edge).
     const gate = decode(await ingestBundle('demo'), { vocabulary });
     expect(gate.ok).toBe(true);
     if (!gate.ok) return;
-    let edges = 0;
-    for (const g of gate.space.graphs.values()) edges += g.edges.size;
-    expect(edges).toBe(0);
+    const edges = [...gate.space.graphs.values()].flatMap((g) => [...g.edges.values()]);
+    expect(edges.length).toBeGreaterThan(0);
+    for (const e of edges) {
+      expect(['code:calls', 'code:imports']).toContain(e.kind);
+      expect(e.attrs['code:confidence']).toBe('syntactic');
+    }
+    expect(edges.some((e) => e.kind === 'code:calls')).toBe(true);
   });
 
   it('two ingests of the same Python project are byte-identical (I6)', async () => {

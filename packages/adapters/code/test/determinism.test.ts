@@ -63,7 +63,10 @@ describe('code adapter — determinism & structure', () => {
     expect(kinds).toContain('code:method');
   });
 
-  it('containment is the detail relation: 7C emits zero edges', async () => {
+  it('containment is the detail relation, never an edge (no calls/imports → no edges)', async () => {
+    // This bundle has no call-expressions (only `new`) and no cross-module
+    // imports, so 7E emits zero edges — proving containment is never realized
+    // as an edge object. Import/call edges are covered by the 7E edge tests.
     const gate = decode(await ingestBundle('demo'), { vocabulary });
     expect(gate.ok).toBe(true);
     if (!gate.ok) return;

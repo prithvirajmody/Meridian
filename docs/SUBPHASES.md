@@ -29,7 +29,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 4 | ✅ `4A`–`4E` — tag `phase-4` | closed (human SVG review pending) |
 | 5 | ✅ `5A`–`5C` · ⬜ `5D`–`5F` | current (visual track) |
 | 6 | ⬜ not started | — |
-| 7 | ✅ `7A`–`7D` · ⬜ `7E`–`7H` | current (domain track) |
+| 7 | ✅ `7A`–`7E` · ⬜ `7F`–`7H` | current (domain track) |
 | 8–12 | ⬜ not started | — |
 
 ---
@@ -358,7 +358,7 @@ level-chain spec).
 - **Exit:** both languages green on conformance; shared mapping machinery
   factored only where it actually repeats (no speculative abstraction).
 
-### 7E — Import graph & call graph
+### 7E — Import graph & call graph  ✅ DONE
 `code:imports` edges (module level) and syntactic `code:calls`
 (same-file/same-module resolution, explicitly not type-aware, per
 ADR-0026); edges carry `confidence: 'syntactic'`.

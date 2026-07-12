@@ -26,7 +26,28 @@ export type {
 export type { MapRequest, MapResponse } from './worker/worker-api.js';
 
 // 7C — TypeScript mapping (eager levels). 7D — Python mapping (eager levels).
-export type { RawDecl, RawDeclKind, RawModule, RawSignature } from './map/raw.js';
+export type {
+  CallReceiver,
+  RawCallSite,
+  RawDecl,
+  RawDeclKind,
+  RawImport,
+  RawImportBinding,
+  RawModule,
+  RawSignature,
+} from './map/raw.js';
+// 7E — import/call resolution (pure).
+export { resolveEdges } from './map/resolve.js';
+export type {
+  Address,
+  DeclRef,
+  EdgeToEmit,
+  FunctionCounters,
+  FunctionCtx,
+  ModuleCtx,
+  ResolveInput,
+  ResolveOutput,
+} from './map/resolve.js';
 export { mapTypeScriptModule } from './map/typescript.js';
 export { mapPythonModule } from './map/python.js';
 export { mapModuleTree } from './map/map-module.js';

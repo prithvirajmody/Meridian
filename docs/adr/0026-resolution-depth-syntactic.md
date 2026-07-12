@@ -67,6 +67,26 @@ a genuinely-needed future case.
 `'syntactic'` (declared in the adapter manifest `attrSchemas`). `'typed'` is
 reserved for a future type-aware pass.
 
+**Edge placement (amended 7E).** The model forbids cross-graph edges, and two
+modules (or caller/callee functions) never share a graph. Import/call links
+follow the constitution's **portal rule** (ARCHITECTURE §4.3 / ADR-A6), exactly
+as the markdown adapter places `doc:links-to`: the base edge lives at the
+**lowest common graph** of the two containment paths, between the two ancestors
+that are siblings there. Same-package module links are genuine module→module
+base edges; cross-package links are package→package base edges; P3 aggregation
+induces them at any cut. A resolved link whose LCG rebase collapses to a
+self-link (e.g. a method calling its own class) emits **no edge object** but
+still increments `code:calls-resolved` — same rule as markdown's ancestor
+self-links and ADR-0013's "internal edges excluded". Deep-endpoint (`via`)
+metadata on portal edges is deferred. Additions to the surface: modules also
+carry `code:imports-external` (count of import statements binding outside the
+ingested set — the import-side analogue of the call counters); call edges carry
+up to 3 sampled call-site spans in `code:call-sites`, one string attr of
+`"start-end,…"` index pairs (attrs are scalars/homogeneous arrays; one string
+keeps it one key). Tier-2 strict reading: Python `import x.y` / `from . import
+mod` bind *module objects*, so calls through them (`mod.f()`) are member calls
+on values — honestly unresolved without type inference.
+
 **Determinism.** Resolution is a pure function of (parse trees, ingested file
 set, import table): no network, no `tsconfig` type magic. A name with > 1
 candidate binding is **unresolved** (counted), never arbitrarily picked —

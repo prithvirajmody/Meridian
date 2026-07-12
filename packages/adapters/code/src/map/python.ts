@@ -32,8 +32,41 @@
  */
 import type { Node as SyntaxNode, Tree } from 'web-tree-sitter';
 import { summarizeTree } from '../parse.js';
-import type { RawDecl, RawModule, RawSignature } from './raw.js';
+import type { RawCallSite, RawDecl, RawImport, RawImportBinding, RawModule, RawSignature } from './raw.js';
+import { collectCalls, type CallGrammar } from './scan.js';
 import { hasTokenChild, nameOf, normalizeWs, signatureHash } from './signature.js';
+
+/** Nodes that open a new function/class scope (their calls are not the
+ * enclosing decl's — ADR-0027 innermost-enclosing attribution). */
+const PY_SCOPES = new Set(['function_definition', 'lambda', 'class_definition']);
+
+/** The Python call grammar for the transient body scan (7E). `self`/`cls`
+ * receivers are the tier-1 own-class case; every other attribute call is a
+ * call on a value of unknown type → tier 3 (ADR-0026 does not infer types). */
+const PY_CALLS: CallGrammar = {
+  isFunctionScope: (n) => PY_SCOPES.has(n.type),
+  isCall: (n) => n.type === 'call',
+  classify: (call): RawCallSite => {
+    const span: [number, number] = [call.startIndex, call.endIndex];
+    const fn = call.childForFieldName('function');
+    if (fn === null) return { receiver: 'dynamic', span };
+    if (fn.type === 'identifier') return { callee: fn.text, receiver: 'plain', span };
+    if (fn.type === 'attribute') {
+      const object = fn.childForFieldName('object');
+      const attribute = fn.childForFieldName('attribute');
+      if (attribute === null) return { receiver: 'dynamic', span };
+      const isSelf =
+        object !== null && object.type === 'identifier' && (object.text === 'self' || object.text === 'cls');
+      return { callee: attribute.text, receiver: isSelf ? 'self' : 'member', span };
+    }
+    return { receiver: 'dynamic', span };
+  },
+};
+
+/** Scan a `function_definition` / `lambda` body for call-sites (7E). */
+function callsOf(node: SyntaxNode): RawCallSite[] {
+  return collectCalls(node.childForFieldName('body'), PY_CALLS);
+}
 
 /** The declaration kind for members of a scope: module/nested-in-class. */
 type MemberKind = 'function' | 'method';
@@ -140,6 +173,7 @@ function makeFunction(fn: SyntaxNode, memberKind: MemberKind, decorators: readon
       signature,
       sigHash: signatureHash(signature),
       children: [],
+      calls: callsOf(fn),
     },
   ];
 }
@@ -182,6 +216,8 @@ function mapAssignment(assignment: SyntaxNode, memberKind: MemberKind): RawDecl[
       signature,
       sigHash: signatureHash(signature),
       children: [],
+      // The body is the lambda's expression, scanned for its own calls.
+      calls: callsOf(right),
     },
   ];
 }
@@ -227,6 +263,72 @@ function mapBody(body: SyntaxNode | null, memberKind: MemberKind): RawDecl[] {
   return out;
 }
 
+/** One imported name in a `from … import …` (name / `name as alias` / `*`). */
+function fromBinding(node: SyntaxNode): RawImportBinding | undefined {
+  if (node.type === 'wildcard_import') return { local: '*', imported: '*' };
+  if (node.type === 'aliased_import') {
+    const name = node.childForFieldName('name');
+    if (name === null) return undefined;
+    const alias = node.childForFieldName('alias');
+    return { local: alias?.text ?? name.text, imported: name.text };
+  }
+  if (node.type === 'dotted_name' || node.type === 'identifier') {
+    return { local: node.text, imported: node.text };
+  }
+  return undefined;
+}
+
+/** One imported module in a plain `import a.b[, c] [as x]` statement. */
+function importModule(node: SyntaxNode): RawImport | undefined {
+  const span: [number, number] = [node.startIndex, node.endIndex];
+  if (node.type === 'aliased_import') {
+    const name = node.childForFieldName('name');
+    if (name === null) return undefined;
+    const alias = node.childForFieldName('alias');
+    const local = alias?.text ?? name.text.split('.')[0]!;
+    return { specifier: name.text, span, bindings: [{ local, imported: '' }], fromImport: false };
+  }
+  if (node.type === 'dotted_name') {
+    return {
+      specifier: node.text,
+      span,
+      bindings: [{ local: node.text.split('.')[0]!, imported: '' }],
+      fromImport: false,
+    };
+  }
+  return undefined;
+}
+
+/** Top-level `import …` / `from … import …` statements → the import table. */
+function extractPyImports(root: SyntaxNode): RawImport[] {
+  const imports: RawImport[] = [];
+  for (let i = 0; i < root.namedChildCount; i++) {
+    const stmt = root.namedChild(i);
+    if (stmt === null) continue;
+    if (stmt.type === 'import_statement') {
+      for (let j = 0; j < stmt.namedChildCount; j++) {
+        const child = stmt.namedChild(j);
+        if (child === null) continue;
+        const im = importModule(child);
+        if (im !== undefined) imports.push(im);
+      }
+    } else if (stmt.type === 'import_from_statement') {
+      const moduleName = stmt.childForFieldName('module_name');
+      if (moduleName === null) continue;
+      const span: [number, number] = [stmt.startIndex, stmt.endIndex];
+      const bindings: RawImportBinding[] = [];
+      for (let j = 0; j < stmt.namedChildCount; j++) {
+        const child = stmt.namedChild(j);
+        if (child === null || child.id === moduleName.id) continue;
+        const b = fromBinding(child);
+        if (b !== undefined) bindings.push(b);
+      }
+      imports.push({ specifier: normalizeWs(moduleName.text), span, bindings, fromImport: true });
+    }
+  }
+  return imports;
+}
+
 /**
  * Map a parsed Python file into its {@link RawModule} skeleton. `source` is the
  * repository-relative POSIX path (the ADR-0028 `source` coordinate) and `label`
@@ -246,6 +348,7 @@ export function mapPythonModule(
     label: opts.label,
     span: [0, root.endIndex],
     decls: mapBody(root, 'function'),
+    imports: extractPyImports(root),
     hasErrors: outcome.hasErrors,
     errorCount: outcome.errorCount,
   };

@@ -49,6 +49,8 @@ export const manifest: PluginManifest = {
     'code:function',
     'code:method',
     'code:namespace',
+    'code:imports',
+    'code:calls',
   ],
   attrSchemas: {
     'code:language': { type: 'string', description: 'source language of a module (e.g. typescript)' },
@@ -70,6 +72,13 @@ export const manifest: PluginManifest = {
     'code:excluded': { type: 'string', description: 'module excluded by policy: oversize|generated (ADR-0027)' },
     'code:parse-error': { type: 'boolean', description: 'the module had syntax errors; the graph is partial' },
     'code:error-count': { type: 'number', description: 'number of recovered syntax errors in the module' },
+    // 7E — import/call edges and honest counters (ADR-0026).
+    'code:confidence': { type: 'string', description: "edge resolution confidence: 'syntactic' (v1) | 'typed' (reserved)" },
+    'code:call-sites': { type: 'string', description: 'up to 3 sampled call-site byte spans of a code:calls edge (start-end, comma-joined)' },
+    'code:calls-resolved': { type: 'number', description: 'outbound call-sites that produced a code:calls edge (ADR-0026)' },
+    'code:calls-unresolved': { type: 'number', description: 'outbound in-repo call-sites that did not resolve (ADR-0026)' },
+    'code:calls-external': { type: 'number', description: 'outbound call-sites import-bound to a module outside the ingested set (ADR-0026)' },
+    'code:imports-external': { type: 'number', description: 'import statements whose specifier resolved to no ingested file (external)' },
   },
 };
 
@@ -154,6 +163,7 @@ export function createCodePlugin(deps: { readonly mapper: CodeMapper }): Meridia
                   label,
                   span: [0, file.text.length],
                   decls: [],
+                  imports: [],
                   hasErrors: false,
                   errorCount: 0,
                   excluded,

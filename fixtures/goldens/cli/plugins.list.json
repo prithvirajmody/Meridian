@@ -61,7 +61,9 @@
         "code:class",
         "code:function",
         "code:method",
-        "code:namespace"
+        "code:namespace",
+        "code:imports",
+        "code:calls"
       ],
       "attrSchemas": {
         "code:language": {
@@ -139,6 +141,30 @@
         "code:error-count": {
           "type": "number",
           "description": "number of recovered syntax errors in the module"
+        },
+        "code:confidence": {
+          "type": "string",
+          "description": "edge resolution confidence: 'syntactic' (v1) | 'typed' (reserved)"
+        },
+        "code:call-sites": {
+          "type": "string",
+          "description": "up to 3 sampled call-site byte spans of a code:calls edge (start-end, comma-joined)"
+        },
+        "code:calls-resolved": {
+          "type": "number",
+          "description": "outbound call-sites that produced a code:calls edge (ADR-0026)"
+        },
+        "code:calls-unresolved": {
+          "type": "number",
+          "description": "outbound in-repo call-sites that did not resolve (ADR-0026)"
+        },
+        "code:calls-external": {
+          "type": "number",
+          "description": "outbound call-sites import-bound to a module outside the ingested set (ADR-0026)"
+        },
+        "code:imports-external": {
+          "type": "number",
+          "description": "import statements whose specifier resolved to no ingested file (external)"
         }
       }
     }

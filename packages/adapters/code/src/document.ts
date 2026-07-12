@@ -1,11 +1,18 @@
 /**
- * Assembled project tree → `GraphDocument` (7C, host-side). Containment is the
- * **detail-graph** relation (ARCHITECTURE §1: a node's `detail` is the graph of
- * its children; P3 builds cuts by walking it), exactly as the markdown adapter
- * does — so `code:contains` is *realized as* the detail structure, not as edge
- * objects (a parent→child edge is impossible in the model: its endpoints live
- * in different graphs, which validation forbids). 7C therefore emits **no**
- * edges; imports/calls are 7E. See the report's deviations note.
+ * Assembled project tree → `GraphDocument` (7C containment, 7E edges; host-side).
+ * Containment is the **detail-graph** relation (ARCHITECTURE §1: a node's
+ * `detail` is the graph of its children; P3 builds cuts by walking it), so
+ * `code:contains` is *realized as* the detail structure, not as edge objects
+ * (a parent→child edge is impossible in the model: its endpoints live in
+ * different graphs, which validation forbids).
+ *
+ * 7E adds the two edge families — `code:imports` (module→module) and
+ * `code:calls` (function→callee), both `code:confidence: 'syntactic'` — plus
+ * the per-function counters. Because a `SemanticEdge` may only join two nodes
+ * of the *same* graph, every link is recorded by the **portal rule** at its
+ * lowest common graph (see `map/resolve.ts`). This walk threads each element's
+ * ancestor chain so the resolver can re-base; resolution itself is a pure
+ * function there.
  *
  * IDs come from `ctx.ids` (ADR-0002/0028): coordinate `source` is the
  * repo-relative POSIX path (project name for the root, dir path for a package,
@@ -16,13 +23,32 @@
 import type { GraphDocument, PluginContext } from '@meridian/plugin-api';
 import type { RawDir } from './map/assemble.js';
 import type { RawDecl, RawModule } from './map/raw.js';
+import {
+  resolveEdges,
+  type Address,
+  type DeclRef,
+  type FunctionCtx,
+  type ModuleCtx,
+} from './map/resolve.js';
 
 export const DOMAIN = 'code';
 
 type WireGraph = GraphDocument['graphs'][number];
 type WireNode = WireGraph['nodes'][number];
+type WireEdge = WireGraph['edges'][number];
 type Provenance = WireNode['provenance'];
-type Attrs = WireNode['attrs'];
+
+/** Mutable accumulator for one module's resolution context, filled by the walk. */
+interface ModuleAcc {
+  readonly source: string;
+  readonly language: ModuleCtx['language'];
+  readonly nodeId: string;
+  readonly addr: Address;
+  readonly imports: ModuleCtx['imports'];
+  readonly localDecls: Map<string, DeclRef[]>;
+  readonly exportMap: Map<string, DeclRef[]>;
+  readonly functions: FunctionCtx[];
+}
 
 /** One sibling declaration with its ADR-0028 scope segment and duplicate flag. */
 interface SegmentedDecl {
@@ -79,6 +105,7 @@ export function buildCodeDocument(
   producerVersion: string,
 ): GraphDocument {
   const graphs: WireGraph[] = [];
+  const edgesByGraph = new Map<string, WireEdge[]>();
   const coords = (source: string, path: readonly string[]) => ({ domain: DOMAIN, source, path: [...path] });
   const prov = (uri: string, span?: readonly [number, number]): Provenance => ({
     origin: 'source',
@@ -86,8 +113,19 @@ export function buildCodeDocument(
     ...(span !== undefined ? { span: [span[0], span[1]] as [number, number] } : {}),
   });
   const addGraph = (id: string, label: string, provenance: Provenance, nodes: WireNode[]): void => {
-    graphs.push({ id, meta: { label, domain: DOMAIN, provenance }, nodes, edges: [] });
+    const edges: WireEdge[] = [];
+    graphs.push({ id, meta: { label, domain: DOMAIN, provenance }, nodes, edges });
+    edgesByGraph.set(id, edges);
   };
+
+  // Resolution accumulators (7E). The walk fills these; `resolveEdges` consumes
+  // them purely; then counters/edges are written back.
+  const modules: ModuleAcc[] = [];
+  const files = new Set<string>();
+  /** function/method node id → its (mutable) attrs, for post-resolution counters. */
+  const fnAttrs = new Map<string, Record<string, string | number | boolean>>();
+  /** module node id → its (mutable) attrs, for the external-imports counter. */
+  const moduleAttrById = new Map<string, Record<string, string | number | boolean>>();
 
   // --- declaration graphs (module bodies, class member lists, namespaces) ---
   const buildDeclGraph = (
@@ -97,58 +135,123 @@ export function buildCodeDocument(
     source: string,
     parentPath: readonly string[],
     ownerSpan: readonly [number, number],
+    graphChain: readonly string[],
+    nodeChain: readonly string[],
+    mod: ModuleAcc,
+    topLevel: boolean,
   ): void => {
-    const nodes: WireNode[] = [];
-    for (const { decl, segment, duplicate } of assignSegments(decls)) {
+    const segmented = assignSegments(decls);
+    // First compute each sibling's id/address so a `self`/`this` call can be
+    // resolved against the member set before nodes are built.
+    const entries = segmented.map(({ decl, segment, duplicate }) => {
       const path = [...parentPath, segment];
       const coord = coords(source, path);
-      const hasChildren = decl.children.length > 0;
-      const detailId = hasChildren ? ctx.ids.graphId(coord) : undefined;
+      const nodeId = ctx.ids.nodeId(coord);
+      const addr: Address = { graphs: [...graphChain, graphId], address: [...nodeChain, nodeId] };
+      const ref: DeclRef = { nodeId, addr, kind: decl.kind };
+      return { decl, duplicate, path, coord, nodeId, addr, ref };
+    });
+
+    const memberMap = new Map<string, DeclRef[]>();
+    for (const e of entries) (memberMap.get(e.decl.name) ?? memberMap.set(e.decl.name, []).get(e.decl.name)!).push(e.ref);
+
+    if (topLevel) {
+      for (const e of entries) {
+        (mod.localDecls.get(e.decl.name) ?? mod.localDecls.set(e.decl.name, []).get(e.decl.name)!).push(e.ref);
+        // TypeScript: only exports are importable (default keyed `default`);
+        // Python has no export syntax — every top-level decl is importable.
+        if (mod.language === 'python') {
+          (mod.exportMap.get(e.decl.name) ?? mod.exportMap.set(e.decl.name, []).get(e.decl.name)!).push(e.ref);
+        } else if (e.decl.defaultExport) {
+          (mod.exportMap.get('default') ?? mod.exportMap.set('default', []).get('default')!).push(e.ref);
+        } else if (e.decl.exported) {
+          (mod.exportMap.get(e.decl.name) ?? mod.exportMap.set(e.decl.name, []).get(e.decl.name)!).push(e.ref);
+        }
+      }
+    }
+
+    const nodes: WireNode[] = [];
+    for (const e of entries) {
+      const hasChildren = e.decl.children.length > 0;
+      const detailId = hasChildren ? ctx.ids.graphId(e.coord) : undefined;
+      const attrs = declAttrs(e.decl, e.duplicate);
       nodes.push({
-        id: ctx.ids.nodeId(coord),
-        kind: `${DOMAIN}:${decl.kind}`,
-        label: decl.name,
+        id: e.nodeId,
+        kind: `${DOMAIN}:${e.decl.kind}`,
+        label: e.decl.name,
         ...(detailId !== undefined ? { detail: { graph: detailId } } : {}),
-        attrs: declAttrs(decl, duplicate),
-        provenance: prov(source, decl.span),
+        attrs,
+        provenance: prov(source, e.decl.span),
       });
+      if (e.decl.kind === 'function' || e.decl.kind === 'method') {
+        fnAttrs.set(e.nodeId, attrs);
+        mod.functions.push({
+          ref: e.ref,
+          calls: e.decl.calls ?? [],
+          // `self`/`this` (tier 1) resolves against the enclosing class's
+          // members — a `method` is exactly a class member.
+          ...(e.decl.kind === 'method' ? { classMembers: memberMap } : {}),
+        });
+      }
       if (detailId !== undefined) {
-        buildDeclGraph(decl.children, detailId, decl.name, source, path, decl.span);
+        buildDeclGraph(e.decl.children, detailId, e.decl.name, source, e.path, e.decl.span, e.addr.graphs, e.addr.address, mod, false);
       }
     }
     addGraph(graphId, label, prov(source, ownerSpan), nodes);
   };
 
   // --- directory graphs (the project's + each package's contents) ---
-  const buildDirGraph = (dir: RawDir, graphId: string, label: string): void => {
+  const buildDirGraph = (
+    dir: RawDir,
+    graphId: string,
+    label: string,
+    graphChain: readonly string[],
+    nodeChain: readonly string[],
+  ): void => {
     const nodes: WireNode[] = [];
     for (const child of dir.dirs) {
       const coord = coords(child.source, []);
       const detailId = ctx.ids.graphId(coord);
+      const nodeId = ctx.ids.nodeId(coord);
       nodes.push({
-        id: ctx.ids.nodeId(coord),
+        id: nodeId,
         kind: `${DOMAIN}:package`,
         label: child.name,
         detail: { graph: detailId },
         attrs: {},
         provenance: prov(child.source),
       });
-      buildDirGraph(child, detailId, child.name);
+      buildDirGraph(child, detailId, child.name, [...graphChain, graphId], [...nodeChain, nodeId]);
     }
     for (const module of dir.modules) {
       const coord = coords(module.source, []);
       const hasDecls = module.decls.length > 0;
       const detailId = hasDecls ? ctx.ids.graphId(coord) : undefined;
+      const nodeId = ctx.ids.nodeId(coord);
+      const attrs = moduleAttrs(module);
       nodes.push({
-        id: ctx.ids.nodeId(coord),
+        id: nodeId,
         kind: `${DOMAIN}:module`,
         label: module.label,
         ...(detailId !== undefined ? { detail: { graph: detailId } } : {}),
-        attrs: moduleAttrs(module),
+        attrs,
         provenance: prov(module.source, module.span),
       });
+      files.add(module.source);
+      moduleAttrById.set(nodeId, attrs);
+      const mod: ModuleAcc = {
+        source: module.source,
+        language: module.language,
+        nodeId,
+        addr: { graphs: [...graphChain, graphId], address: [...nodeChain, nodeId] },
+        imports: module.imports,
+        localDecls: new Map(),
+        exportMap: new Map(),
+        functions: [],
+      };
+      modules.push(mod);
       if (detailId !== undefined) {
-        buildDeclGraph(module.decls, detailId, module.label, module.source, [], module.span);
+        buildDeclGraph(module.decls, detailId, module.label, module.source, [], module.span, mod.addr.graphs, mod.addr.address, mod, true);
       }
     }
     addGraph(graphId, label, prov(dir.source), nodes);
@@ -159,9 +262,10 @@ export function buildCodeDocument(
   const rootGraphId = ctx.ids.graphId(coords(root.source, []));
   const projectCoord = coords(root.source, [projectName]);
   const projectDetailId = ctx.ids.graphId(projectCoord);
+  const projectNodeId = ctx.ids.nodeId(projectCoord);
   addGraph(rootGraphId, projectName, prov(root.source), [
     {
-      id: ctx.ids.nodeId(projectCoord),
+      id: projectNodeId,
       kind: `${DOMAIN}:project`,
       label: projectName,
       detail: { graph: projectDetailId },
@@ -169,7 +273,36 @@ export function buildCodeDocument(
       provenance: prov(root.source),
     },
   ]);
-  buildDirGraph(root, projectDetailId, projectName);
+  buildDirGraph(root, projectDetailId, projectName, [rootGraphId], [projectNodeId]);
+
+  // --- resolve imports & calls, then write back edges + counters (7E) ---
+  const resolution = resolveEdges({ modules, files });
+  for (const e of resolution.edges) {
+    const attrs: Record<string, string | number | boolean> = { 'code:confidence': 'syntactic' };
+    if (e.kind === 'code:calls' && e.spans.length > 0) {
+      attrs['code:call-sites'] = e.spans.map(([s, en]) => `${s}-${en}`).join(',');
+    }
+    edgesByGraph.get(e.graph)!.push({
+      id: ctx.ids.edgeId({ graph: e.graph, kind: e.kind, src: e.src, dst: e.dst }),
+      src: e.src,
+      dst: e.dst,
+      kind: e.kind,
+      weight: e.weight,
+      attrs,
+      provenance: prov(e.provenanceUri, e.provenanceSpan),
+    });
+  }
+  // Counters are honest and always present on every function/method (ADR-0026).
+  for (const [nodeId, attrs] of fnAttrs) {
+    const c = resolution.counters.get(nodeId) ?? { resolved: 0, unresolved: 0, external: 0 };
+    attrs['code:calls-resolved'] = c.resolved;
+    attrs['code:calls-unresolved'] = c.unresolved;
+    attrs['code:calls-external'] = c.external;
+  }
+  for (const [nodeId, count] of resolution.moduleExternalImports) {
+    const attrs = moduleAttrById.get(nodeId);
+    if (attrs !== undefined) attrs['code:imports-external'] = count;
+  }
 
   return {
     formatVersion: 1,
@@ -179,7 +312,7 @@ export function buildCodeDocument(
   };
 }
 
-function moduleAttrs(module: RawModule): Attrs {
+function moduleAttrs(module: RawModule): Record<string, string | number | boolean> {
   const attrs: Record<string, string | number | boolean> = {
     'code:language': module.language,
   };
@@ -188,10 +321,10 @@ function moduleAttrs(module: RawModule): Attrs {
     attrs['code:parse-error'] = true;
     attrs['code:error-count'] = module.errorCount;
   }
-  return attrs as Attrs;
+  return attrs;
 }
 
-function declAttrs(decl: RawDecl, duplicate: boolean): Attrs {
+function declAttrs(decl: RawDecl, duplicate: boolean): Record<string, string | number | boolean> {
   const attrs: Record<string, string | number | boolean> = {};
   const sig = decl.signature;
   if (sig !== undefined) {
@@ -214,5 +347,5 @@ function declAttrs(decl: RawDecl, duplicate: boolean): Attrs {
     attrs['code:decorators'] = decl.decorators.join(', ');
   }
   if (duplicate) attrs['code:duplicate'] = true;
-  return attrs as Attrs;
+  return attrs;
 }

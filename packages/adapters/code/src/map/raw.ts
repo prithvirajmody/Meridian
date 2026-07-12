@@ -20,6 +20,62 @@ import type { CodeLanguage } from '../languages.js';
  * container (ADR-0028's `['ns','Type','member']`); `method` covers class members. */
 export type RawDeclKind = 'class' | 'function' | 'method' | 'namespace';
 
+/**
+ * How a call-site's callee is written (7E) — this, not any type, is what the
+ * ADR-0026 tiers can key on:
+ * - `plain`   — `foo(…)`: an identifier. Tier 1 (local decl) / tier 2 (import).
+ * - `self`    — `this.m(…)` / `self.m(…)` / `cls.m(…)`: a method on the own
+ *               instance. Tier 1 within the enclosing class only.
+ * - `member`  — `x.m(…)` on anything else: a call on a value of unknown type.
+ *               Always tier 3 (unresolved) — ADR-0026 does not infer types.
+ * - `dynamic` — `getFn()()`, `arr[0]()`, `(a||b)()`: callee is not an
+ *               identifier. Higher-order / dynamic dispatch → always tier 3.
+ */
+export type CallReceiver = 'plain' | 'self' | 'member' | 'dynamic';
+
+/** One call-site found by the transient body scan (ADR-0027: bodies are read,
+ * never persisted as nodes — a `RawCallSite` is edge/counter input only). */
+export interface RawCallSite {
+  /** Callee identifier: the whole name for `plain`, the property for
+   * `self`/`member`. Absent for `dynamic`. */
+  readonly callee?: string;
+  readonly receiver: CallReceiver;
+  /** `[startIndex, endIndex]` byte span of the whole call expression. */
+  readonly span: readonly [number, number];
+}
+
+/** One name a single import statement binds into the importing module (7E). */
+export interface RawImportBinding {
+  /** Local name introduced into the importing module's scope. */
+  readonly local: string;
+  /** Name as exported by the target: a declaration name, `default`, or the
+   * sentinel `*` (a namespace/`import *`/`from x import *` — never a single
+   * callable decl). */
+  readonly imported: string;
+}
+
+/**
+ * One import statement, language-normalized for host-side resolution (7E,
+ * ADR-0026). Path resolution — never type resolution — happens host-side in
+ * `resolveImports`, which is why only the *written* specifier and bindings
+ * live here.
+ */
+export interface RawImport {
+  /** Module reference as written. TypeScript: the string-literal specifier
+   * (`'./x'`, `'react'`). Python: the module path including any leading dots —
+   * `'.'`, `'.mod'`, `'..pkg.sub'`, or a dotted absolute `'a.b'`. */
+  readonly specifier: string;
+  /** `[startIndex, endIndex]` byte span of the import statement (provenance). */
+  readonly span: readonly [number, number];
+  /** Named/default/namespace bindings introduced (empty for a side-effect or
+   * bare re-export import — which still contributes a `code:imports` edge). */
+  readonly bindings: readonly RawImportBinding[];
+  /** Python `from <spec> import a, b` — each imported name may name a
+   * *submodule* of `<spec>` when `<spec>` resolves to a package (resolved
+   * host-side). False for TypeScript and for Python `import a.b`. */
+  readonly fromImport: boolean;
+}
+
 /** Signature attributes captured on a declaration (ADR-0027 "signature attrs"). */
 export interface RawSignature {
   /** Parameter arity (count of formal parameters). */
@@ -72,6 +128,11 @@ export interface RawDecl {
   /** Eager children: methods of a class, members of a namespace. Functions and
    * methods have **no** eager children (bodies are lazy, ADR-0027). */
   readonly children: readonly RawDecl[];
+  /** Call-sites found by the transient body scan (7E) — present for
+   * `function`/`method`, absent for `class`/`namespace` (they have members,
+   * not a body). Innermost-enclosing attribution: calls inside a nested
+   * closure belong to that closure (a lazy 7F node), not to this decl. */
+  readonly calls?: readonly RawCallSite[];
 }
 
 /** One source file mapped to its module skeleton (top-level declarations only). */
@@ -84,6 +145,9 @@ export interface RawModule {
   /** `[0, byteLength]` span of the whole file. */
   readonly span: readonly [number, number];
   readonly decls: readonly RawDecl[];
+  /** Top-level import statements (7E), in source order — the import table
+   * `resolveImports` resolves lexically against the ingested file set. */
+  readonly imports: readonly RawImport[];
   /** True iff tree-sitter recovered from syntax errors (partial parse). */
   readonly hasErrors: boolean;
   readonly errorCount: number;
