@@ -21,6 +21,10 @@ export const provenanceArb: fc.Arbitrary<SourceRef> = fc
     {
       origin: fc.constantFrom<'source' | 'derived' | 'ai'>('source', 'derived', 'ai'),
       uri: fc.constantFrom('test://a', 'file:///tmp/x.md', 'https://example.com/p'),
+      providerId: fc.constantFrom('anthropic', 'openai', 'mock'),
+      model: fc.constantFrom('claude-opus-4-8', 'gpt-4o', 'mock-model'),
+      promptVersion: fc.constantFrom('1', '2', '1.0.0'),
+      inputHash: fc.constantFrom('deadbeef', '0badf00d', 'cafef00dbaaad'),
       confidence: fc.double({ min: 0, max: 1, noNaN: true, noDefaultInfinity: true }),
       span: fc
         .tuple(fc.nat(1000), fc.nat(1000))

@@ -38,7 +38,7 @@ input {
 
 .topbar {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -188,6 +188,14 @@ h1 {
   white-space: nowrap;
 }
 
+.canvas-stack {
+  position: relative;
+  grid-row: 3;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .canvas-island,
 .canvas-island canvas {
   display: block;
@@ -199,7 +207,6 @@ h1 {
 
 .canvas-island {
   position: relative;
-  grid-row: 3;
   overflow: hidden;
   background:
     linear-gradient(rgb(255 255 255 / 1.4%) 1px, transparent 1px),
@@ -560,4 +567,193 @@ pre {
   fill: rgb(120 160 255 / 12%);
   stroke: #7fa3ff;
   stroke-width: 1;
+}
+
+/* --------------------------------------------------- 8F AI human-trust surface */
+
+.ai-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #b98bff;
+  box-shadow: 0 0 8px rgb(185 139 255 / 70%);
+  vertical-align: middle;
+}
+
+/* Provenance filter (topbar) */
+.provenance-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.ai-origin-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid #3a2f5c;
+  border-radius: 999px;
+  color: #cdbcff;
+  font-size: 11px;
+}
+
+.provenance-toggle {
+  padding: 5px 10px;
+  border: 1px solid #27314a;
+  border-radius: 999px;
+  background: #131a2b;
+  color: #aebcda;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.provenance-toggle.is-evidence-only {
+  border-color: #3a2f5c;
+  background: #241b3d;
+  color: #d9ccff;
+}
+
+/* On-graph AI-origin badges (DOM overlay over the canvas) */
+.ai-origin-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.ai-origin-badge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 1px 5px;
+  border: 1px solid #b98bff;
+  border-radius: 6px;
+  background: rgb(46 27 74 / 85%);
+  color: #e6dcff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+
+/* Selection inspector AI-origin flag */
+.ai-origin-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 5px 9px;
+  border: 1px solid #3a2f5c;
+  border-radius: 8px;
+  background: #201933;
+  color: #d9ccff;
+  font-size: 11px;
+}
+
+/* Side column: inspector + proposal inbox */
+.side-column {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.ai-proposals {
+  padding: 14px 16px;
+  border-top: 1px solid #181e2e;
+}
+
+.ai-proposals .eyebrow {
+  margin-bottom: 8px;
+}
+
+.auto-accept {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: #aebcda;
+  font-size: 11px;
+}
+
+.proposal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proposal {
+  padding: 9px 10px;
+  border: 1px solid #27314a;
+  border-radius: 9px;
+  background: #101627;
+}
+
+.proposal[data-status='accepting'] {
+  border-color: #3a2f5c;
+  opacity: 0.75;
+}
+
+.proposal[data-status='failed'] {
+  border-color: #5c2f3a;
+}
+
+.proposal-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.proposal-service {
+  padding: 1px 6px;
+  border: 1px solid #3a2f5c;
+  border-radius: 999px;
+  color: #cdbcff;
+}
+
+.proposal-title {
+  color: #d7e2fb;
+}
+
+.proposal-confidence {
+  margin-left: auto;
+  color: #8795b4;
+}
+
+.proposal-errors {
+  margin: 6px 0 0;
+  color: #ff9db0;
+  font-size: 11px;
+}
+
+.proposal-actions {
+  display: flex;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.proposal-actions button {
+  padding: 4px 10px;
+  border: 1px solid #27314a;
+  border-radius: 7px;
+  background: #161d30;
+  color: #cdd8f2;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.proposal-actions button.accept {
+  border-color: #2f5c4a;
+  color: #b6f0d6;
+}
+
+.proposal-actions button.reject {
+  border-color: #5c2f3a;
+  color: #ffbccb;
 }

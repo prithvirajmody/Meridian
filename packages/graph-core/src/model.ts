@@ -5,12 +5,25 @@
 import type { AttrBag } from './attrs.js';
 import type { EdgeId, GraphId, NodeId } from './ids.js';
 
-/** Where an element came from. "Unknown" is not a valid origin (U7). */
+/**
+ * Where an element came from. "Unknown" is not a valid origin (U7). The AI
+ * provenance quartet (`providerId`, `model`, `promptVersion`, `inputHash`) is
+ * the ADR-0030 replay key: for `origin:'ai'` elements it names the exact,
+ * reproducible call that produced them (ADR-0031). All four are optional and
+ * additive — pre-P8 records without them stay valid, and provenance never
+ * participates in node identity (ADR-0002).
+ */
 export interface SourceRef {
   readonly origin: 'source' | 'derived' | 'ai';
   readonly uri?: string;
   readonly span?: readonly [number, number];
+  /** The routed AI provider adapter id (ADR-0029/0030). */
+  readonly providerId?: string;
   readonly model?: string;
+  /** The `PromptSpec` version this output was generated under (ADR-0030). */
+  readonly promptVersion?: string;
+  /** Canonical hash of the rendered request payload (ADR-0030 replay key). */
+  readonly inputHash?: string;
   readonly confidence?: number;
 }
 

@@ -1,0 +1,13 @@
+{
+  "uuid": "single-conv",
+  "name": "Quick question",
+  "created_at": "2026-06-01T08:30:00Z",
+  "chat_messages": [
+    {
+      "uuid": "only",
+      "sender": "human",
+      "text": "Hello there — is anyone home?",
+      "created_at": "2026-06-01T08:30:01Z"
+    }
+  ]
+}

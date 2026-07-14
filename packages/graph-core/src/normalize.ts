@@ -35,12 +35,18 @@ export function canonProvenance(p: SourceRef): SourceRef {
     origin: SourceRef['origin'];
     uri?: string;
     span?: readonly [number, number];
+    providerId?: string;
     model?: string;
+    promptVersion?: string;
+    inputHash?: string;
     confidence?: number;
   } = { origin: p.origin };
   if (p.uri !== undefined) out.uri = nfc(p.uri);
   if (p.span !== undefined) out.span = [p.span[0], p.span[1]];
+  if (p.providerId !== undefined) out.providerId = nfc(p.providerId);
   if (p.model !== undefined) out.model = nfc(p.model);
+  if (p.promptVersion !== undefined) out.promptVersion = nfc(p.promptVersion);
+  if (p.inputHash !== undefined) out.inputHash = nfc(p.inputHash);
   if (p.confidence !== undefined) out.confidence = canonNumber(p.confidence);
   return out;
 }

@@ -65,6 +65,78 @@ export interface StudioHover {
   readonly receivedAtMs: number;
 }
 
+// -------------------------------------------------------- AI trust surface (8F)
+
+/**
+ * The provenance view predicate (ADR-0031 §8.1.3). `all` shows every element;
+ * `evidence-only` hides all AI-origin (`origin:'ai'`) structure. It is a *view*
+ * operation — nothing leaves the store, so the toggle is lossless and reversible.
+ */
+export type ProvenanceView = 'all' | 'evidence-only';
+
+/** How many AI-origin elements the current cut carries (drives the badge count). */
+export interface AiOriginSummary {
+  /** AI-origin nodes present in the current (unfiltered) render model. */
+  readonly aiNodeCount: number;
+  /** Their ids, in render-model order — the overlay projects these. */
+  readonly aiNodeIds: readonly string[];
+}
+
+export const EMPTY_AI_ORIGIN_SUMMARY: AiOriginSummary = { aiNodeCount: 0, aiNodeIds: [] };
+
+export type ProposalStatus =
+  | 'pending'
+  | 'accepting'
+  | 'accepted'
+  | 'rejected'
+  | 'failed';
+
+/**
+ * A serializable descriptor of one queued AI proposal (ADR-0031). The full
+ * `AbstractionProposal` (with its group members) lives in the `AiTrustController`
+ * service, keyed by `id`; the store holds only display/audit values so it stays
+ * ADR-0022-serializable. `origin`/`model`/`confidence` mirror the eventual
+ * `SourceRef` the accepted structure will carry.
+ */
+export interface PendingProposal {
+  readonly id: string;
+  /** Which AI service emitted it (e.g. `summarizer`, `clusterer`). */
+  readonly service: string;
+  readonly title: string;
+  /** Number of groups (rollup nodes) this proposal would add. */
+  readonly groupCount: number;
+  /** Lowest per-group confidence in the proposal, if any group carries one. */
+  readonly minConfidence: number | null;
+  readonly status: ProposalStatus;
+  /** Located rejection reasons when `status === 'failed'`. */
+  readonly errors: readonly string[];
+  readonly receivedAtMs: number;
+}
+
+/**
+ * Per-service auto-accept opt-in (ADR-0031: never a default, never global). When
+ * `enabled`, incoming proposals from that service are accepted without a human
+ * click — optionally only when every group's confidence clears `minConfidence`.
+ */
+export interface AutoAcceptRule {
+  readonly enabled: boolean;
+  readonly minConfidence?: number;
+}
+
+export interface AiTrustState {
+  readonly provenanceView: ProvenanceView;
+  readonly summary: AiOriginSummary;
+  readonly proposals: readonly PendingProposal[];
+  readonly autoAccept: Readonly<Record<string, AutoAcceptRule>>;
+}
+
+export const INITIAL_AI_TRUST_STATE: AiTrustState = {
+  provenanceView: 'all',
+  summary: EMPTY_AI_ORIGIN_SUMMARY,
+  proposals: [],
+  autoAccept: {},
+};
+
 /** One breadcrumb as shown in the bar (derived upstream, ADR-0025). */
 export interface StudioBreadcrumb {
   readonly graphId: string;
@@ -134,6 +206,8 @@ export interface StudioState {
   readonly nav: StudioNavState | null;
   /** Canvas viewport in CSS px (published by the bridge; minimap consumes). */
   readonly viewport: { readonly width: number; readonly height: number } | null;
+  /** The AI human-trust surface: provenance view, AI-origin summary, proposals. */
+  readonly ai: AiTrustState;
 }
 
 export type StudioStore = StoreApi<StudioState>;
@@ -165,6 +239,7 @@ export function initialStudioState(debugEnabled = false): StudioState {
     tunables: NAV_TUNABLE_DEFAULTS,
     nav: null,
     viewport: null,
+    ai: INITIAL_AI_TRUST_STATE,
   };
 }
 
@@ -197,6 +272,9 @@ export class StudioStoreCommands {
   constructor(readonly store: StudioStore) {}
 
   beginOpen(source: OpenSourceState): void {
+    // Per-corpus AI state resets (summary, proposal inbox); the user's
+    // provenance-view and per-service auto-accept preferences persist across opens.
+    const currentAi = this.store.getState().ai;
     this.store.setState({
       phase: 'reading',
       message: `Reading ${source.name}…`,
@@ -213,6 +291,7 @@ export class StudioStoreCommands {
       rendererStats: null,
       metrics: EMPTY_METRICS,
       nav: null,
+      ai: { ...currentAi, summary: EMPTY_AI_ORIGIN_SUMMARY, proposals: [] },
     });
   }
 
@@ -381,5 +460,58 @@ export class StudioStoreCommands {
   sampleHeap(bytes: number | null): void {
     const current = this.store.getState();
     this.store.setState({ metrics: { ...current.metrics, heapBytes: bytes } });
+  }
+
+  // ---------------------------------------------------- AI trust surface (8F)
+
+  private patchAi(patch: Partial<AiTrustState>): void {
+    const current = this.store.getState().ai;
+    this.store.setState({ ai: { ...current, ...patch } });
+  }
+
+  /** Toggle the provenance view predicate (ADR-0031). The session republishes a
+   * filtered/unfiltered model in response; this only records the choice. */
+  setProvenanceView(view: ProvenanceView): void {
+    if (this.store.getState().ai.provenanceView === view) return;
+    this.patchAi({ provenanceView: view });
+  }
+
+  /** Publish the AI-origin summary for the current cut (session-computed). */
+  setAiOriginSummary(summary: AiOriginSummary): void {
+    this.patchAi({ summary });
+  }
+
+  /** Add or replace a proposal descriptor in the inbox (keyed by id). */
+  upsertProposal(proposal: PendingProposal): void {
+    const current = this.store.getState().ai.proposals;
+    const index = current.findIndex((item) => item.id === proposal.id);
+    const proposals =
+      index === -1
+        ? [...current, proposal]
+        : current.map((item) => (item.id === proposal.id ? proposal : item));
+    this.patchAi({ proposals });
+  }
+
+  /** Patch one proposal's status/errors (accept/reject lifecycle). */
+  setProposalStatus(id: string, status: ProposalStatus, errors: readonly string[] = []): void {
+    const current = this.store.getState().ai.proposals;
+    if (!current.some((item) => item.id === id)) return;
+    this.patchAi({
+      proposals: current.map((item) => (item.id === id ? { ...item, status, errors } : item)),
+    });
+  }
+
+  /** Drop a proposal from the inbox (after accept commits or reject dismisses). */
+  removeProposal(id: string): void {
+    const current = this.store.getState().ai.proposals;
+    const proposals = current.filter((item) => item.id !== id);
+    if (proposals.length === current.length) return;
+    this.patchAi({ proposals });
+  }
+
+  /** Set the per-service auto-accept opt-in (ADR-0031 — explicit, never global). */
+  setAutoAccept(service: string, rule: AutoAcceptRule): void {
+    const current = this.store.getState().ai.autoAccept;
+    this.patchAi({ autoAccept: { ...current, [service]: rule } });
   }
 }

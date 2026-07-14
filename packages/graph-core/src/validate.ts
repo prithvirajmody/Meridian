@@ -152,7 +152,13 @@ function checkProvenance(
     }
   }
   if (p.uri !== undefined) checkNfcString(c, p.uri, `${what}: provenance uri`, where);
+  if (p.providerId !== undefined)
+    checkNfcString(c, p.providerId, `${what}: provenance providerId`, where);
   if (p.model !== undefined) checkNfcString(c, p.model, `${what}: provenance model`, where);
+  if (p.promptVersion !== undefined)
+    checkNfcString(c, p.promptVersion, `${what}: provenance promptVersion`, where);
+  if (p.inputHash !== undefined)
+    checkNfcString(c, p.inputHash, `${what}: provenance inputHash`, where);
 }
 
 function checkKind(

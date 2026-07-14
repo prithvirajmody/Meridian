@@ -21,17 +21,25 @@
  *   components (its own edge structure is the containment signal).
  * - **degree/size collapse** gathers low-degree satellites around their hub.
  */
-import { deriveNodeId, type GraphDocument } from '@meridian/graph-core';
+import { deriveNodeId, type AttrValue, type GraphDocument } from '@meridian/graph-core';
 
 // ---------------------------------------------- structural twins of plugin-api
 
-/** Structural twin of plugin-api's `ProposedGroup`. */
+/** Structural twin of plugin-api's `ProposedGroup`. The optional fields after
+ * `confidence` are additive AI carriers (P8, ADR-0031); deterministic
+ * providers omit them all. */
 export interface ProposedGroup {
   readonly id: string;
   readonly label: string;
   readonly members: readonly string[];
   readonly rationale: string;
   readonly confidence?: number;
+  readonly summary?: string;
+  readonly attrs?: Readonly<Record<string, AttrValue>>;
+  readonly providerId?: string;
+  readonly model?: string;
+  readonly promptVersion?: string;
+  readonly inputHash?: string;
 }
 
 /** Structural twin of plugin-api's `AbstractionProposal`. */

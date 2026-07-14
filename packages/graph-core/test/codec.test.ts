@@ -210,6 +210,51 @@ describe('encode: deterministic canonical form (I6)', () => {
   });
 });
 
+describe('AI provenance quartet (ADR-0031)', () => {
+  it('round-trips providerId, model, promptVersion, inputHash, confidence', () => {
+    const doc = minimalDoc();
+    doc.graphs[0]!.nodes[0]!.provenance = {
+      origin: 'ai',
+      providerId: 'anthropic',
+      model: 'claude-opus-4-8',
+      promptVersion: '2',
+      inputHash: 'deadbeef',
+      confidence: 0.87,
+    } as never;
+    const r = decode(doc);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const node = r.space.graphs.get(gid('g1'))!.nodes.get(nid('n1'))!;
+      expect(node.provenance).toEqual({
+        origin: 'ai',
+        providerId: 'anthropic',
+        model: 'claude-opus-4-8',
+        promptVersion: '2',
+        inputHash: 'deadbeef',
+        confidence: 0.87,
+      });
+      // Survives a full encode → decode cycle byte-identically.
+      const again = decode(encodeCanonical(r.space));
+      expect(again.ok).toBe(true);
+      if (again.ok) expect(encodeCanonical(again.space)).toBe(encodeCanonical(r.space));
+    }
+  });
+
+  it('omits absent AI provenance fields from the wire form', () => {
+    const doc = minimalDoc();
+    doc.graphs[0]!.nodes[0]!.provenance = { origin: 'ai', model: 'gpt-4o' } as never;
+    const r = decode(doc);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const encoded = encode(r.space);
+      const wire = encoded.graphs[0]!.nodes[0]!.provenance as Record<string, unknown>;
+      expect(wire).toEqual({ origin: 'ai', model: 'gpt-4o' });
+      expect('providerId' in wire).toBe(false);
+      expect('inputHash' in wire).toBe(false);
+    }
+  });
+});
+
 describe('round-trip (I3)', () => {
   it('decode(encode(space)) is the same space', () => {
     const s = demoSpace();

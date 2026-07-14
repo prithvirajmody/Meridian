@@ -1,0 +1,32 @@
+{
+  "name": "@meridian/ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI gateway (ROADMAP Phase 8, ARCHITECTURE §8). Vendor-neutral AiProvider abstraction + AiSession pipeline (cache/replay → budget → provider → zod validate → one repair → typed rejection). First-class AnthropicProvider and OpenAiProvider adapters; MockProvider for offline tests. Vendor SDK imports are confined to src/providers/*-client.ts (§20). Keys enter only from env/config edges, never graph documents.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "openai": "^6.9.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "fast-check": "^4.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

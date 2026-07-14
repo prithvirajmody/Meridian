@@ -1,0 +1,122 @@
+[
+  {
+    "id": "mod:graph-core-codec",
+    "name": "Function group",
+    "summary": "Groups 4 related function items including decode, encode, canonicalJson and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:graph-core-validate",
+    "name": "Function group",
+    "summary": "Groups 4 related function items including validateSpace, validateNode, validateEdge and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:graph-store-engine",
+    "name": "Method group",
+    "summary": "Groups 4 related method items including createStore, apply, snapshot and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:abstraction-induced-edges",
+    "name": "Method group",
+    "summary": "Groups 4 related method items including InducedEdgeCache, resolve, applyChange and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:abstraction-apply-proposal",
+    "name": "Type group",
+    "summary": "Groups 3 related items: applyProposal, AbstractionProposal, ProposedGroup.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:layout-force",
+    "name": "Class group",
+    "summary": "Groups 3 related items: ForceLayoutProvider, compute, converge.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:layout-elk",
+    "name": "Class group",
+    "summary": "Groups 3 related items: ElkLayoutProvider, compute, toElkGraph.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:navigation-transition",
+    "name": "Function group",
+    "summary": "Groups 3 related items: planTransition, deriveRefinementMap, TransitionPlan.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:navigation-controller",
+    "name": "Method group",
+    "summary": "Groups 4 related method items including NavigationController, drillIn, drillOut and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:renderer-scene",
+    "name": "Class group",
+    "summary": "Groups 4 related class items including Renderer, drawFrame, SceneBridge and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:view-model-projection",
+    "name": "Function group",
+    "summary": "Groups 3 related items: buildRenderModel, worldToScreen, RenderModel.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:plugin-api-contract",
+    "name": "Type group",
+    "summary": "Groups 4 related type items including SourcePlugin, AbstractionProvider, DetailResolver and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:plugin-host-registry",
+    "name": "Method group",
+    "summary": "Groups 4 related method items including createPluginHost, register, ingest and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:adapter-markdown",
+    "name": "Function group",
+    "summary": "Groups 3 related items: markdownPlugin:, parseHeadings, linkResolver.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:ai-session",
+    "name": "Method group",
+    "summary": "Groups 4 related method items including AiSession, createAiSession, call and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:ai-budget",
+    "name": "Method group",
+    "summary": "Groups 4 related method items including BudgetGuard, precheck, commit and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:ai-mock-provider",
+    "name": "Field group",
+    "summary": "Groups 4 related field items including MockProvider, fromOutcomes, onComplete and 1 more.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:ai-services-cluster",
+    "name": "Function group",
+    "summary": "Groups 3 related items: clusterNodes, clustersToProposal, kMeans.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:ai-services-summarize",
+    "name": "Constant group",
+    "summary": "Groups 3 related items: summarizeCut, RollupInput, SUMMARIZE_ROLLUP_PROMPT.",
+    "confidence": 0.72
+  },
+  {
+    "id": "mod:studio-session",
+    "name": "Class group",
+    "summary": "Groups 4 related class items including StudioSession, openText, setProvenanceView and 1 more.",
+    "confidence": 0.72
+  }
+]

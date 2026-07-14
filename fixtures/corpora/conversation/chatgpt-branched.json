@@ -1,0 +1,39 @@
+{
+  "title": "Branched answers",
+  "conversation_id": "branch-conv",
+  "create_time": 1714600000,
+  "current_node": "a2",
+  "mapping": {
+    "root": { "id": "root", "message": null, "parent": null, "children": ["u1"] },
+    "u1": {
+      "id": "u1",
+      "message": {
+        "id": "mu1",
+        "author": { "role": "user" },
+        "content": { "content_type": "text", "parts": ["Give me a slogan for running shoes"] }
+      },
+      "parent": "root",
+      "children": ["a1", "a2"]
+    },
+    "a1": {
+      "id": "a1",
+      "message": {
+        "id": "ma1",
+        "author": { "role": "assistant" },
+        "content": { "content_type": "text", "parts": ["Just do it."] }
+      },
+      "parent": "u1",
+      "children": []
+    },
+    "a2": {
+      "id": "a2",
+      "message": {
+        "id": "ma2",
+        "author": { "role": "assistant" },
+        "content": { "content_type": "text", "parts": ["Think with your feet."] }
+      },
+      "parent": "u1",
+      "children": []
+    }
+  }
+}

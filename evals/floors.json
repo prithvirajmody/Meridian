@@ -1,0 +1,7 @@
+{
+  "$comment": "Regression floors for the eval harness (ROADMAP Phase 8 §9c: 'small human-rated golden sets with rubric, trend-tracked, not gate-blocking except for regressions below a floor'). Floors are minimums (value must be >= floor). Objective floors gate the offline/replay run; summary-human-mean-min gates ONLY when evals/ratings/module-summaries.ratings.json exists (human ratings are never fabricated). Floors ratchet up, never down.",
+  "cluster-purity-min": 0.95,
+  "cluster-ari-min": 0.9,
+  "summary-structural-valid-min": 1.0,
+  "summary-human-mean-min": 3.5
+}

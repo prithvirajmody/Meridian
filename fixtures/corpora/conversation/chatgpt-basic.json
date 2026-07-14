@@ -1,0 +1,55 @@
+[
+  {
+    "title": "Explaining recursion",
+    "conversation_id": "conv-abc-123",
+    "create_time": 1714557600.123,
+    "current_node": "node-4",
+    "mapping": {
+      "root": { "id": "root", "message": null, "parent": null, "children": ["node-1"] },
+      "node-1": {
+        "id": "node-1",
+        "message": {
+          "id": "msg-1",
+          "author": { "role": "user" },
+          "create_time": 1714557601,
+          "content": { "content_type": "text", "parts": ["What is recursion?"] }
+        },
+        "parent": "root",
+        "children": ["node-2"]
+      },
+      "node-2": {
+        "id": "node-2",
+        "message": {
+          "id": "msg-2",
+          "author": { "role": "assistant" },
+          "create_time": 1714557605,
+          "content": { "content_type": "text", "parts": ["Recursion is when a function calls itself to solve a smaller version of the same problem."] }
+        },
+        "parent": "node-1",
+        "children": ["node-3"]
+      },
+      "node-3": {
+        "id": "node-3",
+        "message": {
+          "id": "msg-3",
+          "author": { "role": "user" },
+          "create_time": 1714557630,
+          "content": { "content_type": "text", "parts": ["Can you give an example?"] }
+        },
+        "parent": "node-2",
+        "children": ["node-4"]
+      },
+      "node-4": {
+        "id": "node-4",
+        "message": {
+          "id": "msg-4",
+          "author": { "role": "assistant" },
+          "create_time": 1714557640,
+          "content": { "content_type": "text", "parts": ["factorial(n) returns 1 when n is 0, otherwise n * factorial(n - 1)."] }
+        },
+        "parent": "node-3",
+        "children": []
+      }
+    }
+  }
+]

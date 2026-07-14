@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Hand-edited log",
+    "chat_messages": [
+      { "sender": "human", "text": "first" },
+      { "sender": "assistant", "text": "second" },
+      { "sender": "human", "text": "third" }
+    ]
+  }
+]

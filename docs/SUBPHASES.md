@@ -13,7 +13,7 @@ Phases 1–2 are built in the working tree (ADR-0005…0011, `graph-store`,
 `plugin-api`/`plugin-host`/`conformance-kit`, `adapters/markdown`, checklists
 and demos for both) but **uncommitted** — see subphase 2Z below.
 
-**Build progress (updated 2026-07-11).** Committed & tagged through
+**Build progress (updated 2026-07-14).** Committed & tagged through
 **Phase 4** (`phase-4`): 4A `f2b5f77`, 4B `9c845b2`, 4C `5d2897a`,
 4D `58298db`, 4E gate. The two human-judgment rows of the Phase 4 table
 (SVG quality review; pathology eyeball) are marked UNVERIFIED — HUMAN in
@@ -30,7 +30,9 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 5 | ✅ `5A`–`5F` built | human row + `phase-5` tag pending |
 | 6 | ✅ `6A`–`6E` built | M2 review + human rows + tag pending |
 | 7 | ✅ `7A`–`7H` — gate walked, tag `phase-7` awaits user | closing (domain track) |
-| 8–12 | ⬜ not started | — |
+| 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
+| 9 | ✅ `9A`–`9B` built | intentionally stopped after `9B`; `9C` next |
+| 10–12 | ⬜ not started | — |
 
 ---
 
@@ -407,9 +409,15 @@ Everything must run green with zero network before any live call exists.
 Roadmap refs: Phase 8 §1–13.
 
 ### 8A — ADR beat
-Draft ADR-0029 (provider/models/structured outputs), ADR-0030 (record/replay
-determinism), ADR-0031 (trust & provenance), ADR-0032 (budget policy). Stop
-for approval.
+Draft ADR-0029 (provider-agnostic gateway: one `AiProvider` seam, Anthropic
+**and** OpenAI as first-class built-in adapters, provider/model routing is
+configuration, SDK imports confined to per-adapter modules, structured
+outputs/usage/stop-reasons/errors normalized behind adapters, embeddings route
+independently), ADR-0030 (record/replay determinism — replay key
+`(providerId, model, promptVersion, inputHash)`, zero-network CI replay,
+consent-gated live calls), ADR-0031 (trust & provenance — provenance additively
+carries `promptVersion` + `inputHash`), ADR-0032 (budget policy — hard-stop
+preserving valid partial graph state). Stop for approval.
 
 ### 8B — Gateway core with MockProvider
 `@meridian/ai`: `AiProvider` interface + `ai-provider` plugin capability;
@@ -418,30 +426,43 @@ zod validate, one repair attempt → reject); content-hash response cache
 (durable — doubles as the record/replay fixture store); `BudgetGuard`
 (ceilings, hard-stop semantics per ADR-0032); `PromptSpec` — prompts are
 versioned files, never string literals.
-- **Tests:** cache keying (promptVersion + inputHash); BudgetGuard state
-  machine; zod rejection paths; PromptSpec rendering; budget trip mid-run
-  leaves valid partial state. All against MockProvider — zero network.
+- **Tests:** cache keying (`providerId` + `model` + `promptVersion` +
+  `inputHash`, per ADR-0030); BudgetGuard state machine; zod rejection paths;
+  PromptSpec rendering; budget trip mid-run leaves valid partial state. All
+  against MockProvider — zero network.
 - **Exit:** the entire AI discipline exists and is tested before the first
   real API call.
 
-### 8C — Anthropic provider & record/replay
-Anthropic implementation (`claude-opus-4-8` extraction/summarization,
-`claude-haiku-4-5` bulk labels; structured outputs via
-`output_config.format` + zod; prompt caching for shared graph-context
-prefix; Batches path for corpus jobs); 429/529 backoff; refusal
-stop-reason handling; record mode (local/nightly) vs replay mode (CI —
-cache miss is a test failure, per ADR-0030). Env-based key config.
-- **Tests:** record a small fixture set live (needs your key — human step),
-  then prove CI green with network disabled; failure-mode suite (429,
-  refusal, schema-invalid → repair → reject, network loss mid-batch).
-- **Exit:** CI runs all AI paths with zero network, proven by running with
-  network disabled.
+### 8C — Cloud-provider adapters & record/replay
+The **two first-class built-in provider adapters** behind the ADR-0029
+`AiProvider` seam — an **Anthropic** adapter and an **OpenAI** adapter — each
+normalizing structured output, usage, stop reasons, and errors into the
+gateway's neutral vocabulary; provider/model selection and task-role routing
+are configuration, not adapter logic; embeddings route independently. Vendor
+mechanisms are adapter examples only, never commitments — e.g. Anthropic
+`output_config.format`, prompt caching for the shared graph-context prefix,
+and the Batches path for corpus jobs, and the equivalent OpenAI structured-
+output/prompt-caching/batch mechanisms. Normalized 429/529/overloaded backoff
+and refusal stop-reason handling; record mode (local/nightly) vs replay mode
+(CI — cache miss is a test failure, per ADR-0030); each vendor's SDK import
+confined to its own adapter module under `packages/ai` (depcruise-gated).
+Env-based key config per provider.
+- **Tests:** record a small fixture set live for **each** provider (needs your
+  keys — human step), then prove CI green with network disabled — replayed per
+  `(providerId, model, promptVersion, inputHash)`; failure-mode suite against
+  both adapters (429, refusal, schema-invalid → repair → reject, network loss
+  mid-batch); depcruise proves each vendor SDK is imported only by its own
+  adapter.
+- **Exit:** CI runs all AI paths for both providers with zero network, proven
+  by running with network disabled; a provider swap is a config change, not a
+  code change.
 
 ### 8D — SummarizingAbstractionProvider
 First real service: names + summaries for rollup nodes, implementing the
 existing P3 `AbstractionProvider` seam; emits `AbstractionProposal`s →
-ordinary tagged deltas (`origin:'ai'`, model, promptVersion, inputHash,
-confidence); CLI `meridian ai summarize --budget 2.00`; recorded fixtures
+ordinary tagged deltas (`origin:'ai'`, providerId, model, promptVersion,
+inputHash, confidence — ADR-0031); CLI `meridian ai summarize --budget 2.00`;
+recorded fixtures
 over the P7 repo.
 - **Tests:** replay end-to-end over the fixture repo; proposals → store →
   cut pipeline; provenance populated and filterable; replay overhead
@@ -469,17 +490,20 @@ tag `phase-8`.
 
 ---
 
-## Phase 9 — Conversations & arguments (closes M3)
+## Phase 9 — Conversations & arguments (closes M3)  🔨 PAUSED AFTER 9B
 
 One adapter per pair of sessions, then the freeze — the freeze is its own
 session because it's an audit, not a build. Roadmap refs: Phase 9 §1–13.
 
-### 9A — ADR beat
+Work stopped intentionally after the completed 9B skeleton on 2026-07-14.
+Subphases 9C–9E have not started.
+
+### 9A — ADR beat  ✅ DONE (ADR-0034 Accepted; ADR-0033 Proposed for 9E)
 Draft ADR-0034 (hybrid adapter pattern: deterministic skeleton + cacheable
 AI enrichment passes). ADR-0033 (1.0 scope) is *drafted* now but finalized
 in 9E after the chafe report. Stop for approval.
 
-### 9B — Conversation adapter: skeleton
+### 9B — Conversation adapter: skeleton  ✅ DONE
 `adapters/conversation`: per-format parsers (Claude JSON, ChatGPT JSON —
 tiny, isolated, own fixtures) → deterministic message/thread/exchange
 skeleton; level-chain spec registered via manifest; conformance.

@@ -1,0 +1,12 @@
+{
+  "$comment": "TEMPLATE — copy to module-summaries.ratings.json and fill with REAL human ratings of REAL recorded summaries (see RUBRIC.md). Never commit fabricated ratings. `provider`/`model`/`recordedAt` identify what was rated. `rating` is 1–5 per RUBRIC.md; `flags` is any of hallucination|filler|mislabel. When this file is present under its real name, the harness enforces summary-human-mean-min.",
+  "provider": "anthropic",
+  "model": "claude-opus-4-8",
+  "promptVersion": "1",
+  "recordedAt": "REPLACE-with-ISO-date-of-the-live-recording",
+  "rater": "REPLACE-with-name",
+  "scores": {
+    "mod:graph-core-codec": { "rating": 0, "flags": [], "note": "REPLACE — 0 is a placeholder, not a real score" },
+    "mod:ai-session": { "rating": 0, "flags": [], "note": "REPLACE" }
+  }
+}

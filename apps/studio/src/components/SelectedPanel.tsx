@@ -42,6 +42,15 @@ export function SelectedPanel({
     >
       <p className="eyebrow">Selected {panel.kind}</p>
       <h2>{panel.label}</h2>
+      {panel.provenance.origin === 'ai' ? (
+        <p className="ai-origin-flag" data-testid="ai-provenance-badge">
+          <span className="ai-dot" aria-hidden="true" /> AI-derived
+          {panel.provenance.model ? ` · ${panel.provenance.model}` : ''}
+          {panel.provenance.confidence !== undefined
+            ? ` · conf ${panel.provenance.confidence.toFixed(2)}`
+            : ''}
+        </p>
+      ) : null}
       <dl className="facts">
         <div>
           <dt>ID</dt>

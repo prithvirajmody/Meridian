@@ -242,12 +242,12 @@ module.exports = {
       name: 'cli-sees-only-core-packages',
       severity: 'error',
       comment:
-        'apps depend downward; cli is the composition root: graph-core, graph-store, abstraction, layout, plugin-api, plugin-host, and built-in adapters (Phase 2/3/4/7).',
+        'apps depend downward; cli is the composition root: graph-core, graph-store, abstraction, layout, plugin-api, plugin-host, built-in adapters (Phase 2/3/4/7), and the AI gateway + services (Phase 8).',
       from: { path: '^apps/cli/src' },
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|abstraction|layout|plugin-api|plugin-host|adapters/markdown|adapters/code)',
+          '^packages/(graph-core|graph-store|abstraction|layout|plugin-api|plugin-host|adapters/markdown|adapters/code|ai-services|ai)(/|$)',
       },
     },
     {
@@ -276,6 +276,46 @@ module.exports = {
       comment: 'Studio is an application composition root; no package or sibling app depends upward on it (§20).',
       from: { pathNot: '^apps/studio/' },
       to: { path: '^apps/studio/' },
+    },
+    {
+      name: 'ai-only-approved-deps',
+      severity: 'error',
+      comment:
+        'packages/ai (the AI gateway) imports only itself, zod, and the two vendor AI SDKs (SDKs further confined below). No graph-core/graph-store/abstraction/domain/DOM/plugin edges — the gateway speaks its own vendor-neutral vocabulary (§20; §8).',
+      from: { path: '^packages/ai/src' },
+      to: {
+        pathNot:
+          '^packages/ai/src|^node_modules/(\\.pnpm/)?zod|^node_modules/(\\.pnpm/)?(@anthropic-ai\\+sdk|openai)(@|/)',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'sdk-imports-confined-to-ai-adapters',
+      severity: 'error',
+      comment:
+        'Only the two provider client factories (packages/ai/src/providers/{anthropic,openai}-client.ts) may import a vendor AI SDK; everything else consumes the vendor-neutral provider interfaces (§20; §8.2). Proves "only packages/ai adapters import SDKs".',
+      from: { pathNot: '^packages/ai/(src|dist)/providers/(anthropic|openai)-client\\.(ts|js)$' },
+      to: { path: '^node_modules/(\\.pnpm/)?(@anthropic-ai\\+sdk|openai)(@|/)' },
+    },
+    {
+      name: 'ai-services-only-gateway-and-core-seams',
+      severity: 'error',
+      comment:
+        'packages/ai-services imports only itself, the @meridian/ai gateway, the core IR (graph-core), the plugin contract (plugin-api), and zod. No graph-store/abstraction/domain/DOM edges and never a vendor AI SDK — services speak the gateway and the core seams only (§20; §8.4). AI enters the graph as proposals through the one write path, so ai-services needs no store dependency.',
+      from: { path: '^packages/ai-services/src' },
+      to: {
+        pathNot:
+          '^packages/ai-services/src|^packages/ai(/|$)|^packages/graph-core|^packages/plugin-api|^node_modules/(\\.pnpm/)?zod',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'ai-services-no-node-builtins',
+      severity: 'error',
+      comment:
+        'ai-services is pure: no I/O, no node builtins. Keys and files live at the CLI/Studio edge, not in the services (§8.4).',
+      from: { path: '^packages/ai-services/src' },
+      to: { dependencyTypes: ['core'] },
     },
     {
       name: 'src-never-imports-tests',

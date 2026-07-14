@@ -1,5 +1,7 @@
 import { keyToNavCommand } from '@meridian/navigation';
+import type { AbstractionProposal } from '@meridian/abstraction';
 import type { NodeId } from '@meridian/view-model';
+import type { AutoAcceptRule, PendingProposal, ProvenanceView } from './store.js';
 import { BrowserStudioLayoutService } from './browser-layout-worker.js';
 import type { StudioNavigator, TransitionRecord } from './navigation/studio-navigator.js';
 import {
@@ -28,6 +30,14 @@ export interface StudioTestState {
   readonly nodeIds: readonly string[];
   readonly edgeKeys: readonly string[];
   readonly debugEnabled: boolean;
+}
+
+export interface StudioAiTestState {
+  readonly provenanceView: ProvenanceView;
+  readonly aiNodeCount: number;
+  readonly aiNodeIds: readonly string[];
+  readonly proposals: readonly PendingProposal[];
+  readonly autoAccept: Readonly<Record<string, AutoAcceptRule>>;
 }
 
 export interface MeridianStudioTestApi {
@@ -66,6 +76,26 @@ export interface MeridianStudioTestApi {
   /** Manual clock only: advance the injected clock and tick the player. */
   clockAdvance(ms: number): void;
   clockIsManual(): boolean;
+  // ---- 8F AI human-trust surface ----
+  /** Submit an AI proposal (stands in for an AI service until 8D/8E wire in). */
+  aiSubmitProposal(input: {
+    readonly service: string;
+    readonly title?: string;
+    readonly proposal: AbstractionProposal;
+  }): string;
+  aiAccept(id: string): Promise<{ readonly ok: boolean; readonly errors: readonly string[] }>;
+  /** Accept under a caller-supplied `AbortSignal` (test seam for deterministic
+   * cancellation coverage — the panel's Cancel button uses the same signal path,
+   * but its in-flight window is a single microtask and so not clickable from a
+   * driver). Aborting before the pre-write yield leaves the graph untouched. */
+  aiAcceptSignalled(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<{ readonly ok: boolean; readonly errors: readonly string[] }>;
+  aiReject(id: string): void;
+  aiSetAutoAccept(service: string, rule: AutoAcceptRule): void;
+  aiSetProvenanceView(view: ProvenanceView): void;
+  aiState(): StudioAiTestState;
 }
 
 export class StudioRuntime {
@@ -217,6 +247,22 @@ export class StudioRuntime {
         this.navigator()?.tick();
       },
       clockIsManual: () => this.clock.manual,
+      aiSubmitProposal: (input) => this.session.aiTrust.submit(input),
+      aiAccept: (id) => this.session.aiTrust.accept(id),
+      aiAcceptSignalled: (id, signal) => this.session.aiTrust.accept(id, signal),
+      aiReject: (id) => this.session.aiTrust.reject(id),
+      aiSetAutoAccept: (service, rule) => this.session.aiTrust.setAutoAccept(service, rule),
+      aiSetProvenanceView: (view) => this.session.setProvenanceView(view),
+      aiState: () => {
+        const ai = this.store.getState().ai;
+        return {
+          provenanceView: ai.provenanceView,
+          aiNodeCount: ai.summary.aiNodeCount,
+          aiNodeIds: ai.summary.aiNodeIds,
+          proposals: ai.proposals,
+          autoAccept: ai.autoAccept,
+        };
+      },
     };
   }
 

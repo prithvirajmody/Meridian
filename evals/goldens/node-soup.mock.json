@@ -1,0 +1,47 @@
+{
+  "clusterCount": 8,
+  "purity": 1,
+  "ari": 1,
+  "labels": [
+    {
+      "label": "Cluster of 63 (code:class)",
+      "size": 63,
+      "confidence": 0.982
+    },
+    {
+      "label": "Cluster of 63 (doc:section)",
+      "size": 63,
+      "confidence": 0.9833
+    },
+    {
+      "label": "Cluster of 63 (code:function)",
+      "size": 63,
+      "confidence": 0.9825
+    },
+    {
+      "label": "Cluster of 63 (conv:message)",
+      "size": 63,
+      "confidence": 0.9827
+    },
+    {
+      "label": "Cluster of 62 (code:class)",
+      "size": 62,
+      "confidence": 0.9825
+    },
+    {
+      "label": "Cluster of 62 (doc:section)",
+      "size": 62,
+      "confidence": 0.983
+    },
+    {
+      "label": "Cluster of 62 (doc:section)",
+      "size": 62,
+      "confidence": 0.9829
+    },
+    {
+      "label": "Cluster of 62 (conv:message)",
+      "size": 62,
+      "confidence": 0.9828
+    }
+  ]
+}

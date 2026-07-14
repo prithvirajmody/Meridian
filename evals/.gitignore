@@ -1,0 +1,4 @@
+# Rateable live summaries written by `--record`; not a committed artifact.
+out/
+# Real human ratings are committed under their real name; keep only the template
+# out of accidental churn is unnecessary — the real file SHOULD be committed.

@@ -1,0 +1,19 @@
+[
+  {
+    "uuid": "unicode-conv",
+    "name": "Café ☕ and code",
+    "chat_messages": [
+      {
+        "uuid": "u1",
+        "sender": "human",
+        "text": "Show me a hello world in Python 🐍 that prints some non-ASCII text."
+      },
+      {
+        "uuid": "a1",
+        "parent_message_uuid": "u1",
+        "sender": "assistant",
+        "text": "```python\nprint('Héllo, 世界! 🌍')\n```"
+      }
+    ]
+  }
+]

@@ -13,18 +13,38 @@
  * ordinary provenance-tagged deltas through the one write path (P2, §8.1),
  * never a second write channel.
  */
-import type { GraphDocument } from '@meridian/graph-core';
+import type { AttrValue, GraphDocument } from '@meridian/graph-core';
 import type { PluginLogger } from './context.js';
 
 /** One proposed group node and the members to be placed under its detail
  * graph. `id` is a deterministic group-node id (ADR-0002); `confidence` is
- * set by AI providers (§8.1), omitted by deterministic ones. */
+ * set by AI providers (§8.1), omitted by deterministic ones.
+ *
+ * The optional fields below are additive carriers for AI-backed providers
+ * (P8, ADR-0031); deterministic providers omit them, so their proposals are
+ * byte-identical to before. `summary` is the rollup node's generated prose;
+ * `attrs` are extra namespaced attributes to stamp on the group node (e.g.
+ * `ai:*`); the provenance quartet (`providerId`, `model`, `promptVersion`,
+ * `inputHash`) is the ADR-0030 replay key that {@link applyProposal} records
+ * on the group node's `SourceRef` so it names the reproducible call. */
 export interface ProposedGroup {
   readonly id: string;
   readonly label: string;
   readonly members: readonly string[];
   readonly rationale: string;
   readonly confidence?: number;
+  /** AI-generated one-line summary for the rollup node (§8.4). */
+  readonly summary?: string;
+  /** Extra namespaced attributes to attach to the group node (e.g. `ai:*`). */
+  readonly attrs?: Readonly<Record<string, AttrValue>>;
+  /** Routed provider adapter id — AI provenance replay key (ADR-0030/0031). */
+  readonly providerId?: string;
+  /** Routed model id — AI provenance replay key. */
+  readonly model?: string;
+  /** `PromptSpec` version — AI provenance replay key. */
+  readonly promptVersion?: string;
+  /** Canonical hash of the rendered request — AI provenance replay key. */
+  readonly inputHash?: string;
 }
 
 /** A provider's output: a set of proposed groupings, nothing applied yet. */

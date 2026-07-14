@@ -30,12 +30,20 @@ import {
 import { BUILTIN_LAYOUT_PROVIDERS, type LayoutInput, type LayoutResult } from '@meridian/layout';
 import type { IdFacade, SourceDescriptor } from '@meridian/plugin-api';
 import { createPluginHost, type PluginHost } from '@meridian/plugin-host';
-import type { RenderModel, SelectionState, ViewportSize } from '@meridian/view-model';
+import type { NodeId as ViewNodeId, RenderModel, SelectionState, ViewportSize } from '@meridian/view-model';
+import { AiTrustController } from './ai/ai-trust-controller.js';
+import {
+  aiOriginNodesInModel,
+  collectAiOriginNodeIds,
+  filterRenderModelNodes,
+} from './ai/provenance.js';
 import { StudioNavigator } from './navigation/studio-navigator.js';
 import type { StudioLayoutService } from './pipeline/layout-cut.js';
 import { realClock, type StudioClock } from './transition/clock.js';
 import {
+  EMPTY_AI_ORIGIN_SUMMARY,
   StudioStoreCommands,
+  type ProvenanceView,
   type SelectedElementPanel,
   type StudioStore,
 } from './store.js';
@@ -145,8 +153,22 @@ export class StudioSession {
   private artifacts: PipelineArtifacts | null = null;
   private navigator: StudioNavigator | null = null;
   private readonly unsubscribeSelection: () => void;
+  private readonly unsubscribeModel: () => void;
   private unsubscribeGraphStore: (() => void) | null = null;
   private disposed = false;
+
+  /**
+   * The AI human-trust controller (8F). Owns proposal→delta acceptance through
+   * the one write path; lives outside Zustand (ADR-0022) like the navigator.
+   */
+  readonly aiTrust: AiTrustController;
+
+  // Provenance-filter view state (8F). The pipeline always publishes the *full*
+  // model; the filter is a view transform applied on top.
+  private fullModel: RenderModel | null = null;
+  private filteredModelRef: RenderModel | null = null;
+  private aiOriginSet: ReadonlySet<ViewNodeId> = new Set();
+  private aiSpaceRef: GraphSpace | null = null;
 
   constructor(
     readonly store: StudioStore,
@@ -156,9 +178,79 @@ export class StudioSession {
     this.host = buildHost();
     this.options = options;
     this.layoutService = options.layoutService ?? new DirectStudioLayoutService();
+    this.aiTrust = new AiTrustController(store, () => this.artifacts?.store ?? null);
     this.unsubscribeSelection = store.subscribe((state, previous) => {
       if (state.selection !== previous.selection) this.selectionChanged(state.selection);
     });
+    // The provenance-filter view runs off the published render model (8F): recompute
+    // the AI-origin summary and re-apply the filter whenever the full model changes.
+    this.unsubscribeModel = store.subscribe((state, previous) => {
+      if (state.renderModel !== previous.renderModel) this.onRenderModelChanged(state.renderModel);
+    });
+  }
+
+  // --------------------------------------------------- AI trust: provenance view
+
+  /** Toggle the provenance view predicate (ADR-0031) and republish accordingly. */
+  setProvenanceView(view: ProvenanceView): void {
+    this.commands.setProvenanceView(view);
+    this.applyView();
+  }
+
+  /** AI-origin node ids present in a given full model, using a per-snapshot cache. */
+  private aiIdsInModel(model: RenderModel): Set<ViewNodeId> {
+    const space = this.artifacts?.space;
+    if (space === undefined) return new Set();
+    if (this.aiSpaceRef !== space) {
+      this.aiOriginSet = collectAiOriginNodeIds(space);
+      this.aiSpaceRef = space;
+    }
+    return new Set(aiOriginNodesInModel(model, this.aiOriginSet));
+  }
+
+  private onRenderModelChanged(model: RenderModel | null): void {
+    if (model === null) {
+      this.fullModel = null;
+      this.filteredModelRef = null;
+      this.commands.setAiOriginSummary(EMPTY_AI_ORIGIN_SUMMARY);
+      return;
+    }
+    // Ignore the echo of our own filtered publish — no loop, no summary churn.
+    if (model === this.filteredModelRef) return;
+    this.fullModel = model;
+    const aiIds = this.aiIdsInModel(model);
+    this.commands.setAiOriginSummary({ aiNodeCount: aiIds.size, aiNodeIds: [...aiIds] });
+    if (this.store.getState().ai.provenanceView === 'evidence-only' && aiIds.size > 0) {
+      const filtered = filterRenderModelNodes(model, aiIds);
+      this.filteredModelRef = filtered;
+      this.commands.replaceModelAfterSelection(filtered);
+    } else {
+      this.filteredModelRef = null;
+    }
+  }
+
+  private applyView(): void {
+    const full = this.fullModel;
+    if (full === null) return;
+    const view = this.store.getState().ai.provenanceView;
+    if (view === 'all') {
+      if (this.filteredModelRef !== null) {
+        this.filteredModelRef = null;
+        this.commands.replaceModelAfterSelection(full);
+      }
+      return;
+    }
+    const aiIds = this.aiIdsInModel(full);
+    if (aiIds.size === 0) {
+      if (this.filteredModelRef !== null) {
+        this.filteredModelRef = null;
+        this.commands.replaceModelAfterSelection(full);
+      }
+      return;
+    }
+    const filtered = filterRenderModelNodes(full, aiIds);
+    this.filteredModelRef = filtered;
+    this.commands.replaceModelAfterSelection(filtered);
   }
 
   /** The 6D choreography driver for the currently open corpus, if any. */
@@ -196,6 +288,12 @@ export class StudioSession {
     this.navigator?.destroy();
     this.navigator = null;
     this.artifacts = null;
+    // AI trust view resets per corpus (the store slice is reset by beginOpen).
+    this.aiTrust.clear();
+    this.fullModel = null;
+    this.filteredModelRef = null;
+    this.aiOriginSet = new Set();
+    this.aiSpaceRef = null;
   }
 
   private async openTextInternal(generation: number, name: string, text: string): Promise<void> {
@@ -391,6 +489,7 @@ export class StudioSession {
     this.disposed = true;
     this.generation++;
     this.unsubscribeSelection();
+    this.unsubscribeModel();
     this.resetPipeline();
     await this.layoutService.dispose();
   }

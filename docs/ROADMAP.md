@@ -278,7 +278,7 @@ phase fills in the same table rather than reinventing process:
 | Rendering | **pixi.js v8** (WebGL2, WebGPU-ready) with instanced node quads + SDF/BitmapText labels; React never touches the canvas | 10k+ nodes rules out SVG/DOM. Building raw regl/WebGL is a rendering-engine project of its own; pixi v8 gives batching, texture atlases, and a maintained WebGPU path while we keep a thin `SceneAdapter` so it stays replaceable. sigma.js rejected: too opinionated about being *the* graph model. |
 | App shell | **React 18 + Vite + zustand** | React for chrome (panels, search, breadcrumbs) only; the canvas is an imperative island receiving a view-model. zustand over Redux: minimal ceremony, store lives outside React (workers/canvas need it too). |
 | Parsing (code domain) | **web-tree-sitter (WASM)** grammars | Incremental, error-tolerant, runs in browser and Node identically, one API across languages. Compiler-grade type resolution deliberately out of scope until proven necessary. |
-| AI | **Claude API via `@anthropic-ai/sdk`**, behind our own `AiProvider` interface. Default model `claude-opus-4-8` for extraction/summarization; `claude-haiku-4-5` for bulk short labels; **structured outputs** (`output_config.format` + zod) for every graph-shaped response; **Batches API** for whole-corpus ingestion (50% cost); **prompt caching** for shared graph context; embeddings via a pluggable provider (e.g. Voyage) since the core only needs vectors | The provider interface — not the vendor — is the architectural commitment. Structured outputs eliminate an entire class of "AI returned malformed graph" failures; record/replay caching (Phase 8) makes AI paths deterministic in CI. |
+| AI | Our own **`AiProvider` interface** with **two first-class built-in adapters — Anthropic (`@anthropic-ai/sdk`) and OpenAI (`openai`)** — each confined to its own adapter module; provider and model are **configuration** (default completion split `claude-opus-4-8`/GPT-class for extraction/summarization, an economy model for bulk short labels), resolved by a task-role policy table with per-project overrides. Every graph-shaped response uses **structured outputs** validated by the same zod schema (each adapter maps its vendor mechanism); **batch** endpoints for whole-corpus jobs and **prompt caching** for the shared graph-context prefix are adapter features, not commitments; embeddings route independently via a pluggable provider (e.g. Voyage) since the core only needs vectors | The provider interface — not the vendor — is the architectural commitment (ADR-0029); two built-in adapters prove it by construction rather than assertion. Structured outputs eliminate an entire class of "AI returned malformed graph" failures; record/replay caching keyed by `(providerId, model, promptVersion, inputHash)` (Phase 8, ADR-0030) makes AI paths deterministic in CI. |
 | Persistence | **JSON graph documents** (Phases 0–10) → **SQLite** (wa-sqlite/OPFS in browser, better-sqlite3 in Node) with lazy per-graph hydration (Phase 11) | Start with dumb, diffable, git-friendly files; adopt a real store only when scale demands, behind the same `GraphStore` interface. |
 | Collaboration | **Deferred decision** (ADR in Phase 12): server-authoritative op-log sequencer (recommended) vs CRDT (Yjs) | Phase 1's op-based deltas keep both doors open. Recommendation recorded now: op-log + server sequencing is dramatically simpler and sufficient unless offline editing becomes a requirement — the ADR must revisit with real requirements. |
 | Testing | **Vitest, fast-check, Playwright, tinybench, dependency-cruiser, api-extractor** | See §5.2. |
@@ -1169,14 +1169,20 @@ and AI output enters the graph only through ordinary P1 deltas tagged
 before AI-dependent domains (P9) can amplify any sloppiness.
 
 **3. Deliverables.**
-- `ai`: `AiProvider` interface; Anthropic implementation
-  (`claude-opus-4-8` default for extraction/summarization,
-  `claude-haiku-4-5` for bulk short labels; structured outputs via
-  `output_config.format` with zod schemas; prompt caching for the shared
-  graph-context prefix; Batches API path for whole-corpus jobs);
-  content-hash response cache (durable, doubles as the record/replay
-  fixture store for CI); `BudgetGuard` (per-session token/dollar ceilings,
-  hard-fail behavior); rate-limit/backoff handling via SDK.
+- `ai`: `AiProvider` interface; **two first-class built-in provider adapters,
+  Anthropic and OpenAI** (ADR-0029), each confined to its own adapter module
+  and normalizing structured output, usage, stop reasons, and errors into the
+  gateway's neutral vocabulary; provider and model are **configuration**
+  resolved by a task-role policy table (default completion split
+  `claude-opus-4-8`/GPT-class for extraction/summarization, an economy model
+  for bulk short labels; embeddings route independently), never hard-coded in
+  services; structured outputs validated by zod (each adapter maps its vendor's
+  mechanism); prompt caching for the shared graph-context prefix and batch
+  endpoints for whole-corpus jobs are adapter features; content-hash response
+  cache (durable, doubles as the record/replay fixture store for CI, keyed by
+  `(providerId, model, promptVersion, inputHash)`); `BudgetGuard` (per-session
+  and per-project token/dollar ceilings, hard-stop preserving valid partial
+  state); normalized rate-limit/backoff handling.
 - `ai-services`: the three services above, each emitting `AbstractionProposal`s
   / `GraphDelta`s with confidence + rationale attrs.
 - `evals/`: offline eval harness — scored fixtures (e.g. human-rated module
@@ -1214,13 +1220,20 @@ persisted into graph documents.
 versioned files, not string literals, so evals can pin them); `AiResult<T>`
 (`{ value: T; usage; cached: boolean; model; promptVersion }`);
 AI provenance on every derived node/edge:
-`SourceRef { origin: 'ai', model, promptVersion, inputHash, confidence }` —
-already modeled in P0, populated for real now; `BudgetState`.
+`SourceRef { origin: 'ai', providerId, model, promptVersion, inputHash, confidence }`
+— already modeled in P0, populated for real now (the `providerId`/`promptVersion`/
+`inputHash` fields are additive and mirror the ADR-0030 replay key, per ADR-0031);
+`BudgetState`.
 
 **8. Technical decisions that must be finalized (ADRs).**
-- **ADR-0029 Provider + models:** Anthropic default with the model split
-  above; every graph-shaped output uses structured outputs; Batches for
-  corpus jobs; the `AiProvider` seam is the commitment, the vendor is config.
+- **ADR-0029 Provider-agnostic gateway:** the `AiProvider` seam is the sole
+  commitment; **Anthropic and OpenAI ship as two first-class built-in
+  adapters**; provider selection and task-role routing are configuration and
+  model ids are configurable, not service logic; embeddings route
+  independently; structured output, usage, stop reasons, and errors normalize
+  behind adapters; vendor SDK imports are confined to per-adapter modules under
+  `packages/ai`; vendor mechanisms (structured-output, batch, prompt-caching)
+  are adapter examples, never architectural commitments.
 - **ADR-0030 Determinism strategy:** CI never calls the network — the
   content-hash cache is committed as fixtures (record locally/nightly,
   replay in CI); a cache miss in CI is a *test failure*, not a live call.
@@ -1237,8 +1250,10 @@ repair-then-reject; malformed-output fuzz tests. (b) Cost surprises —
 BudgetGuard is not optional; Batches + Haiku for bulk; prompt caching for
 the big shared context. (c) Eval subjectivity — small human-rated golden
 sets with rubric, trend-tracked, not gate-blocking except for regressions
-below a floor. (d) Vendor coupling — the capability seam + a `MockProvider`
-that every test can run against.
+below a floor. (d) Vendor coupling — the `AiProvider` seam, a `MockProvider`
+every test can run against, and **two** first-class built-in adapters
+(Anthropic + OpenAI) that exercise the seam in-tree so vendor assumptions
+cannot leak in as conveniences (ADR-0029).
 
 **10. Intentionally deferred.** Fine-tuning, local models (a future
 `ai-provider` plugin), agentic multi-step extraction loops, AI-driven layout
@@ -1258,7 +1273,7 @@ floor; budget trip mid-run leaves a valid, partially-enriched graph.
 | Integration | Record/replay end-to-end: `meridian ai summarize` over the fixture repo replayed in CI; proposals → store → cut pipeline |
 | Performance | Replay-mode overhead < 5ms/call; embedding + clustering of 5k nodes < 10s (live, nightly); UI never blocks on AI (all async, cancellable) |
 | UI verification | Playwright: AI badge rendering, filter toggle, accept/reject flow |
-| Architecture | Only `ai` imports the Anthropic SDK (depcruise); `ai-services` depends on `ai` + core seams only |
+| Architecture | Each vendor SDK (`@anthropic-ai/sdk`, `openai`) is imported only by its own provider adapter module under `packages/ai` (depcruise); the gateway core and every other package import no vendor SDK; `ai-services` depends on `ai` + core seams only |
 | Manual exploratory | Read 20 AI module summaries against the actual code; rate them; file prompt issues |
 | Failure cases | Provider 429/529 (backoff, then budget-aware give-up), refusal stop-reason, schema-invalid response (one repair attempt → reject + mark node), network loss mid-batch, budget exhaustion |
 | Regression | All prior; recorded AI fixtures locked with prompt versions |

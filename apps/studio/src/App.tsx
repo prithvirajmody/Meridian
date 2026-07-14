@@ -1,10 +1,13 @@
 import { useCallback, useEffect } from 'react';
 import { useStore } from 'zustand';
 import { keyToNavCommand } from '@meridian/navigation';
+import { AiOriginOverlay } from './components/AiOriginOverlay.js';
+import { AiProposalsPanel } from './components/AiProposalsPanel.js';
 import { BreadcrumbBar } from './components/BreadcrumbBar.js';
 import { CanvasIsland } from './components/CanvasIsland.js';
 import { DebugHud } from './components/DebugHud.js';
 import { Minimap } from './components/Minimap.js';
+import { ProvenanceControls } from './components/ProvenanceControls.js';
 import { SearchBox } from './components/SearchBox.js';
 import { SelectedPanel } from './components/SelectedPanel.js';
 import { TunablesPanel } from './components/TunablesPanel.js';
@@ -72,6 +75,7 @@ export function App({ runtime }: AppProps) {
           </div>
         </div>
         <SearchBox runtime={runtime} />
+        <ProvenanceControls runtime={runtime} />
         <label className="file-button">
           <span>Open corpus</span>
           <input
@@ -112,7 +116,10 @@ export function App({ runtime }: AppProps) {
             </div>
           </div>
           <BreadcrumbBar runtime={runtime} />
-          <CanvasIsland runtime={runtime} />
+          <div className="canvas-stack">
+            <CanvasIsland runtime={runtime} />
+            <AiOriginOverlay runtime={runtime} />
+          </div>
           <Minimap runtime={runtime} />
           {debugEnabled ? <DebugHud stats={stats} metrics={metrics} /> : null}
           {debugEnabled ? <TunablesPanel store={runtime.store} /> : null}
@@ -123,11 +130,14 @@ export function App({ runtime }: AppProps) {
           ) : null}
         </section>
 
-        <SelectedPanel
-          panel={panel}
-          selectionStartedAtMs={selectionStartedAtMs}
-          onCommitted={commitSelection}
-        />
+        <div className="side-column">
+          <SelectedPanel
+            panel={panel}
+            selectionStartedAtMs={selectionStartedAtMs}
+            onCommitted={commitSelection}
+          />
+          <AiProposalsPanel runtime={runtime} />
+        </div>
       </section>
     </main>
   );

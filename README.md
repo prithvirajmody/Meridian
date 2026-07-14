@@ -10,6 +10,9 @@ single Universal Semantic Graph. See the governing documents:
   per-phase specs, verification tables, Definitions of Done)
 - [docs/DRIVING-OPUS.md](docs/DRIVING-OPUS.md) — operator's guide for
   implementing the roadmap with Claude Opus 4.8 in Claude Code
+- [docs/CODEX-OPUS-ORCHESTRATION.md](docs/CODEX-OPUS-ORCHESTRATION.md) —
+  orchestrating the local Claude Code CLI (Opus) from a coordinating agent
+  (Codex); the plan→review→execute→gate pattern used for Phase 8
 
 ## Status
 
@@ -27,7 +30,7 @@ first domain adapter, `@meridian/adapter-markdown`; the `meridian` CLI
 ```
 pnpm install
 pnpm test                # unit + property + failure + golden + conformance suites
-pnpm run ci              # lint · typecheck · depcruise · string audit · build · test · bench
+pnpm run ci              # lint · typecheck · depcruise · string audit · build · test · evals · e2e · bench
 pnpm meridian ingest fixtures/corpora/markdown/links.md
 ```
 

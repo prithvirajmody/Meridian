@@ -39,6 +39,76 @@ function flatSpace(nodes: readonly string[], edges: readonly [string, string, st
   return s;
 }
 
+describe('applyProposal — AI provenance & attrs threading (ADR-0031)', () => {
+  it('stamps the AI provenance quartet + confidence on the cluster node and its detail graph', () => {
+    const store = createStore(flatSpace(['n1', 'n2']));
+    const r = applyProposal(store, {
+      groups: [
+        {
+          id: 'g',
+          label: 'Auth',
+          members: ['n1', 'n2'],
+          rationale: 'topical',
+          confidence: 0.8,
+          providerId: 'anthropic',
+          model: 'claude-opus-4-8',
+          promptVersion: '3',
+          inputHash: 'abc123',
+        },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    const space = store.snapshot();
+    const clusterNode = space.graphs.get(asGraphId('r'))!.nodes.get(asNodeId('g'))!;
+    expect(clusterNode.provenance).toEqual({
+      origin: 'ai',
+      providerId: 'anthropic',
+      model: 'claude-opus-4-8',
+      promptVersion: '3',
+      inputHash: 'abc123',
+      confidence: 0.8,
+    });
+    // The detail graph carries the same AI provenance.
+    const detail = detailGraphOf(space, clusterNode)!;
+    expect(detail.meta.provenance.origin).toBe('ai');
+    expect(detail.meta.provenance.providerId).toBe('anthropic');
+  });
+
+  it('maps summary → ai:summary and passes through provider attrs', () => {
+    const store = createStore(flatSpace(['n1', 'n2']));
+    const r = applyProposal(store, {
+      groups: [
+        {
+          id: 'g',
+          label: 'Auth',
+          members: ['n1', 'n2'],
+          rationale: '',
+          confidence: 0.6,
+          summary: 'Authentication and session code.',
+          attrs: { 'ai:evidence': 'n1,n2' },
+        },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    const clusterNode = store.snapshot().graphs.get(asGraphId('r'))!.nodes.get(asNodeId('g'))!;
+    expect(clusterNode.attrs).toEqual({
+      'ai:summary': 'Authentication and session code.',
+      'ai:evidence': 'n1,n2',
+    });
+  });
+
+  it('a deterministic proposal (no AI fields) stays origin:derived with empty attrs', () => {
+    const store = createStore(flatSpace(['n1', 'n2']));
+    const r = applyProposal(store, {
+      groups: [{ id: 'g', label: 'g', members: ['n1', 'n2'], rationale: '' }],
+    });
+    expect(r.ok).toBe(true);
+    const clusterNode = store.snapshot().graphs.get(asGraphId('r'))!.nodes.get(asNodeId('g'))!;
+    expect(clusterNode.provenance).toEqual({ origin: 'derived' });
+    expect(clusterNode.attrs).toEqual({});
+  });
+});
+
 describe('applyProposal — round-trip through a real GraphStore', () => {
   it('groups two nodes (with an internal edge); the new containment shows in a later cut', () => {
     const store = createStore(flatSpace(['n1', 'n2', 'n3'], [['e0', 'n1', 'n2']]));

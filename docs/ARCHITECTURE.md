@@ -953,13 +953,19 @@ completion model; bulk short labeling → the configured economy model;
 embeddings → the embedding provider — with per-project overrides. Multiple
 providers coexist; routing is configuration, not code.
 
-*Reference configuration* (v1 default, not an architectural commitment):
-Anthropic Claude — `claude-opus-4-8` for extraction and summarization,
-`claude-haiku-4-5` for bulk labels — with structured outputs validated
-against the same schemas the IR gate uses, batch endpoints for
-whole-corpus enrichment, and prompt caching for the shared graph-context
-prefix. A local-model provider is an expected early third-party plugin; the
-architecture must never assume network presence (P9).
+*Built-in adapters* (v1 ships two, on equal footing; the vendors are examples,
+not architectural commitments — ADR-0029): an **Anthropic** adapter and an
+**OpenAI** adapter, each confined to its own module and normalizing structured
+output, usage, stop reasons, and errors into the gateway's neutral vocabulary.
+The reference completion split is a configured primary model
+(e.g. `claude-opus-4-8` or a GPT-class model) for extraction and summarization
+and an economy model for bulk labels — with structured outputs validated
+against the same schemas the IR gate uses, batch endpoints for whole-corpus
+enrichment, and prompt caching for the shared graph-context prefix where the
+vendor offers them. Shipping *two* built-in adapters keeps the seam honest;
+which provider and model serve a task role, and the embedding provider, are
+configuration (§8.2 policy table). A local-model provider is an expected early
+third-party plugin; the architecture must never assume network presence (P9).
 
 ### 8.3 The gateway's non-negotiable services
 

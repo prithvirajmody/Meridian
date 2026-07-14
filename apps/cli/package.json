@@ -16,6 +16,8 @@
     "@meridian/abstraction": "workspace:*",
     "@meridian/adapter-code": "workspace:*",
     "@meridian/adapter-markdown": "workspace:*",
+    "@meridian/ai": "workspace:*",
+    "@meridian/ai-services": "workspace:*",
     "@meridian/graph-core": "workspace:*",
     "@meridian/graph-store": "workspace:*",
     "@meridian/layout": "workspace:*",

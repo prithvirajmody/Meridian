@@ -22,6 +22,7 @@ import {
   type SpaceStats,
 } from '@meridian/graph-core';
 import { isCodeLanguage, type CodeLanguage } from '@meridian/adapter-code';
+import { cmdAiCluster, cmdAiSummarize, type AiCommandOptions } from './ai.js';
 import { cmdCut } from './cut.js';
 import { splitCsv } from './globs.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
@@ -109,6 +110,23 @@ Usage:
                                              (typescript, python)
   meridian plugins list [--json]             registered plugins: versions,
                                              capabilities, vocabulary
+  meridian ai summarize <file> [--ai-mode <mock|replay|live>]
+                  [--ai-provider <id>] [--ai-model <id>] [--budget <dollars>]
+                  [--ai-consent] [--json]
+                                             AI-name + summarize a document's
+                                             deterministic rollup groups through
+                                             the Phase 8 gateway, reporting the
+                                             enriched/floored boundary and budget
+                                             spend (proposals only — nothing is
+                                             written)
+  meridian ai cluster <file> [--ai-mode <mock|replay|live>]
+                  [--ai-provider <id>] [--ai-model <id>] [--budget <dollars>]
+                  [--ai-consent] [--json]
+                                             cluster a document's node soup from
+                                             pluggable embeddings into labeled
+                                             groups. --ai-mode mock (default) and
+                                             replay are zero-network; live needs
+                                             --ai-consent and a key from the env
 
 Exit codes: 0 ok · 1 invalid input or rejected delta · 2 usage or I/O error
 `;
@@ -589,8 +607,8 @@ async function cmdWatch(
 
 // ---------------------------------------------------------------------- main
 
-const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang']);
-const BOOL_FLAGS = new Set(['--worker']);
+const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang', '--budget', '--ai-provider', '--ai-model', '--ai-mode']);
+const BOOL_FLAGS = new Set(['--worker', '--ai-consent']);
 
 interface Cli {
   readonly positional: string[];
@@ -809,6 +827,37 @@ async function main(): Promise<void> {
       allowFlags(cli, command, []);
       if (file !== 'list') usageError(`plugins: unknown subcommand "${file}" (expected: list)`);
       process.exit(cmdPlugins(cli.json));
+      break;
+    }
+    case 'ai': {
+      allowFlags(cli, command, ['--budget', '--ai-provider', '--ai-model', '--ai-mode', '--ai-consent']);
+      const sub = file; // 'summarize' | 'cluster'
+      if (extra === undefined) usageError(`ai ${sub}: missing <file> argument`);
+      let budgetDollars: number | undefined;
+      if (cli.values.has('--budget')) {
+        const raw = cli.values.get('--budget')!;
+        const n = Number(raw);
+        if (!Number.isFinite(n) || n < 0) usageError(`ai: --budget must be a non-negative number, got "${raw}"`);
+        budgetDollars = n;
+      }
+      const aiOpts: AiCommandOptions = {
+        json: cli.json,
+        consent: cli.flags.has('--ai-consent'),
+        ...(budgetDollars !== undefined ? { budgetDollars } : {}),
+        ...(cli.values.has('--ai-provider') ? { provider: cli.values.get('--ai-provider')! } : {}),
+        ...(cli.values.has('--ai-model') ? { model: cli.values.get('--ai-model')! } : {}),
+        ...(cli.values.has('--ai-mode') ? { mode: cli.values.get('--ai-mode')! } : {}),
+      };
+      switch (sub) {
+        case 'summarize':
+          process.exit(await cmdAiSummarize(extra, await readDocument(extra), aiOpts));
+          break;
+        case 'cluster':
+          process.exit(await cmdAiCluster(extra, await readDocument(extra), aiOpts));
+          break;
+        default:
+          usageError(`ai: unknown subcommand "${sub}" (expected: summarize | cluster)`);
+      }
       break;
     }
     default:

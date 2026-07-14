@@ -87,6 +87,12 @@ so the decision history stays legible.
 | [0026](0026-resolution-depth-syntactic.md) | Resolution depth: syntactic + import-graph only, no type checker; unresolved calls omitted with counters | Accepted | §7.1–7.3, §3.1, §8.1 | 7 |
 | [0027](0027-laziness-policy-thresholds.md) | Laziness policy: eager to function signatures, lazy bodies via DetailResolver; byte-identical eager/lazy IDs | Accepted | §4.7, §5.5, §7.2, §14.1 | 7 |
 | [0028](0028-id-stability-under-edits.md) | ID stability under edits: (path, qualifiedName, overloadHash); whitespace edit ⇒ empty delta; rename = remove+add, alias table reserved | Accepted | §3.1, §3.2 (U4), §7.4; ADR-0002 | 7 |
+| [0029](0029-provider-agnostic-ai-gateway.md) | Provider-agnostic AI gateway: one `AiProvider` seam, Anthropic + OpenAI as first-class built-in adapters, provider/model routing is configuration, SDKs confined to per-adapter modules | Accepted | §8.1–8.4, §20, ADR-A5 | 8 |
+| [0030](0030-record-replay-determinism.md) | Record/replay determinism: content-hash cache keyed by (providerId, model, promptVersion, inputHash), zero-network CI replay, live calls gated by consent | Accepted | §8.3.1–8.3.2, §19.3, ADR-A5 | 8 |
+| [0031](0031-ai-trust-provenance.md) | AI trust & provenance: proposals-only writes, provenance additively carries promptVersion + inputHash, always filterable, auto-accept opt-in | Accepted | §8.1, §3.1, §14.1, ADR-A5 | 8 |
+| [0032](0032-budget-policy.md) | Budget policy: per-project/per-session ceilings, hard-stop preserving valid partial graph state, provider-neutral accounting | Proposed | §8.3.3, §8.1, ADR-A5 | 8 |
+| [0033](0033-plugin-api-1-0-scope.md) | plugin-api 1.0 scope: `plugin-api` exports (incl. re-exported graph-core wire types) freeze, additive-only until 2.0, deprecation policy; provisional pending the 9E chafe audit | Proposed | §3.3, §14.2, P12; ADR-0010 | 9 |
+| [0034](0034-hybrid-adapter-pattern.md) | Hybrid adapter pattern: deterministic AI-free skeleton `DomainParser` + separately-cacheable composition-root AI enrichment emitting proposals only | Accepted | §7.2, §8.1, ADR-A5 | 9 |
 
 Later phases extend this registry (ADR-0009+ at Phase 2, and so on). The
 constitution's `ADR-A5…A12` are pre-recorded there and become numbered ADRs in

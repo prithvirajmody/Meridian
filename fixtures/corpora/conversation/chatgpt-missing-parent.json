@@ -1,0 +1,27 @@
+{
+  "title": "Trimmed export",
+  "conversation_id": "trimmed-conv",
+  "current_node": "c2",
+  "mapping": {
+    "c1": {
+      "id": "c1",
+      "message": {
+        "id": "mc1",
+        "author": { "role": "user" },
+        "content": { "content_type": "text", "parts": ["Continue from where we left off"] }
+      },
+      "parent": "missing-ancestor",
+      "children": ["c2"]
+    },
+    "c2": {
+      "id": "c2",
+      "message": {
+        "id": "mc2",
+        "author": { "role": "assistant" },
+        "content": { "content_type": "text", "parts": ["Sure — continuing the earlier thread."] }
+      },
+      "parent": "c1",
+      "children": []
+    }
+  }
+}

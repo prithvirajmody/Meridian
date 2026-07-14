@@ -1,0 +1,258 @@
+{
+  "$comment": "Phase 8F module-summary eval set (ROADMAP §11, §13; SUBPHASES 8F: 'Read 20 module summaries against real code and rate them'). Each entry is a RollupInput for @meridian/ai-services summarizeCut, standing for one real Meridian module. `reference` is a human-authored anchor of what a faithful name/summary looks like — used by the RUBRIC for human rating. It is NOT a model output and NOT a rating. Member ids/labels mirror real exported symbols so a human rater can open the code and judge grounding.",
+  "domain": "code",
+  "modules": [
+    {
+      "id": "mod:graph-core-codec",
+      "members": ["decode", "encode", "canonicalJson", "formatVersion"],
+      "digest": [
+        { "kind": "code:function", "label": "decode(json, opts): DecodeResult" },
+        { "kind": "code:function", "label": "encode(space): string" },
+        { "kind": "code:function", "label": "canonicalJson(value): string" },
+        { "kind": "code:constant", "label": "FORMAT_VERSION" }
+      ],
+      "fallbackName": "graph-core/codec",
+      "fallbackSummary": "4 items in graph-core/codec.",
+      "reference": { "name": "Graph document codec", "summary": "Decodes and encodes the canonical GraphDocument wire format, validating structure on the way in." }
+    },
+    {
+      "id": "mod:graph-core-validate",
+      "members": ["validateSpace", "validateNode", "validateEdge", "vocabularyGate"],
+      "digest": [
+        { "kind": "code:function", "label": "validateSpace(space, vocab)" },
+        { "kind": "code:function", "label": "validateNode(node)" },
+        { "kind": "code:function", "label": "validateEdge(edge)" },
+        { "kind": "code:function", "label": "vocabularyGate(kind)" }
+      ],
+      "fallbackName": "graph-core/validate",
+      "fallbackSummary": "4 items in graph-core/validate.",
+      "reference": { "name": "Graph validation", "summary": "Enforces the IR invariants and vocabulary grammar on nodes, edges, and spaces before they enter the store." }
+    },
+    {
+      "id": "mod:graph-store-engine",
+      "members": ["createStore", "apply", "snapshot", "subscribe"],
+      "digest": [
+        { "kind": "code:function", "label": "createStore(space): GraphStore" },
+        { "kind": "code:method", "label": "apply(delta): ApplyResult" },
+        { "kind": "code:method", "label": "snapshot(): GraphSpace" },
+        { "kind": "code:method", "label": "subscribe(fn)" }
+      ],
+      "fallbackName": "graph-store/engine",
+      "fallbackSummary": "4 items in graph-store/engine.",
+      "reference": { "name": "Op-based graph store", "summary": "The single write path: applies op-based deltas transactionally and publishes O(1) structural-sharing snapshots." }
+    },
+    {
+      "id": "mod:abstraction-induced-edges",
+      "members": ["InducedEdgeCache", "resolve", "applyChange", "buildCover"],
+      "digest": [
+        { "kind": "code:class", "label": "InducedEdgeCache" },
+        { "kind": "code:method", "label": "resolve(): InducedEdge[]" },
+        { "kind": "code:method", "label": "applyChange(changes, snapshot)" },
+        { "kind": "code:function", "label": "buildCover(space, cut)" }
+      ],
+      "fallbackName": "abstraction/induced-edges",
+      "fallbackSummary": "4 items in abstraction/induced-edges.",
+      "reference": { "name": "Induced-edge resolution", "summary": "Aggregates leaf edges into the edges implied by a cut, incrementally absorbing changes so a warm re-resolve is cheap." }
+    },
+    {
+      "id": "mod:abstraction-apply-proposal",
+      "members": ["applyProposal", "ProposedGroup", "AbstractionProposal"],
+      "digest": [
+        { "kind": "code:function", "label": "applyProposal(store, proposal, opts): ApplyResult" },
+        { "kind": "code:type", "label": "AbstractionProposal" },
+        { "kind": "code:type", "label": "ProposedGroup" }
+      ],
+      "fallbackName": "abstraction/apply-proposal",
+      "fallbackSummary": "3 items in abstraction/apply-proposal.",
+      "reference": { "name": "Proposal application", "summary": "Commits an abstraction proposal as ordinary tagged deltas, the sole route AI-derived grouping enters the graph." }
+    },
+    {
+      "id": "mod:layout-force",
+      "members": ["ForceLayoutProvider", "compute", "converge"],
+      "digest": [
+        { "kind": "code:class", "label": "ForceLayoutProvider implements LayoutProvider" },
+        { "kind": "code:method", "label": "compute(input): Promise<LayoutResult>" },
+        { "kind": "code:function", "label": "converge(sim, iterations)" }
+      ],
+      "fallbackName": "layout/force",
+      "fallbackSummary": "3 items in layout/force.",
+      "reference": { "name": "Force-directed layout", "summary": "Positions nodes by simulating attraction/repulsion to convergence, one of the pluggable layout providers." }
+    },
+    {
+      "id": "mod:layout-elk",
+      "members": ["ElkLayoutProvider", "compute", "toElkGraph"],
+      "digest": [
+        { "kind": "code:class", "label": "ElkLayoutProvider" },
+        { "kind": "code:method", "label": "compute(input)" },
+        { "kind": "code:function", "label": "toElkGraph(cut, edges)" }
+      ],
+      "fallbackName": "layout/elk",
+      "fallbackSummary": "3 items in layout/elk.",
+      "reference": { "name": "ELK layered layout", "summary": "Adapts the cut to ELK's layered algorithm for compound, hierarchy-aware node placement." }
+    },
+    {
+      "id": "mod:navigation-transition",
+      "members": ["planTransition", "deriveRefinementMap", "TransitionPlan"],
+      "digest": [
+        { "kind": "code:function", "label": "planTransition(from, to, refinement): TransitionPlan" },
+        { "kind": "code:function", "label": "deriveRefinementMap(cutA, cutB, space)" },
+        { "kind": "code:type", "label": "TransitionPlan" }
+      ],
+      "fallbackName": "navigation/transition",
+      "fallbackSummary": "3 items in navigation/transition.",
+      "reference": { "name": "Transition planning", "summary": "Diffs two cuts into enter/exit/move sets and a choreography mode for animated semantic-zoom transitions." }
+    },
+    {
+      "id": "mod:navigation-controller",
+      "members": ["NavigationController", "drillIn", "drillOut", "zoomBy"],
+      "digest": [
+        { "kind": "code:class", "label": "NavigationController" },
+        { "kind": "code:method", "label": "drillIn(nodeId)" },
+        { "kind": "code:method", "label": "drillOut()" },
+        { "kind": "code:method", "label": "zoomBy(factor, x, y)" }
+      ],
+      "fallbackName": "navigation/controller",
+      "fallbackSummary": "4 items in navigation/controller.",
+      "reference": { "name": "Navigation controller", "summary": "Owns the drill stack and zoom hysteresis, turning gestures into scoped view transitions with exact URL restoration." }
+    },
+    {
+      "id": "mod:renderer-scene",
+      "members": ["Renderer", "drawFrame", "SceneBridge", "uploadModel"],
+      "digest": [
+        { "kind": "code:class", "label": "Renderer" },
+        { "kind": "code:method", "label": "drawFrame(camera)" },
+        { "kind": "code:class", "label": "SceneBridge" },
+        { "kind": "code:method", "label": "uploadModel(renderModel)" }
+      ],
+      "fallbackName": "renderer/scene",
+      "fallbackSummary": "4 items in renderer/scene.",
+      "reference": { "name": "WebGL scene renderer", "summary": "Uploads the render model to GPU buffers and draws frames, recovering transparently from context loss." }
+    },
+    {
+      "id": "mod:view-model-projection",
+      "members": ["buildRenderModel", "worldToScreen", "RenderModel"],
+      "digest": [
+        { "kind": "code:function", "label": "buildRenderModel(cut, layout): RenderModel" },
+        { "kind": "code:function", "label": "worldToScreen(point, camera, viewport)" },
+        { "kind": "code:type", "label": "RenderModel" }
+      ],
+      "fallbackName": "view-model/projection",
+      "fallbackSummary": "3 items in view-model/projection.",
+      "reference": { "name": "Render-model projection", "summary": "Flattens a laid-out cut into the presentation-neutral, typed-array RenderModel the renderer and minimap consume." }
+    },
+    {
+      "id": "mod:plugin-api-contract",
+      "members": ["SourcePlugin", "AbstractionProvider", "DetailResolver", "DomainHints"],
+      "digest": [
+        { "kind": "code:type", "label": "SourcePlugin" },
+        { "kind": "code:type", "label": "AbstractionProvider" },
+        { "kind": "code:type", "label": "DetailResolver" },
+        { "kind": "code:type", "label": "DomainHints" }
+      ],
+      "fallbackName": "plugin-api/contract",
+      "fallbackSummary": "4 items in plugin-api/contract.",
+      "reference": { "name": "Plugin contract", "summary": "The versioned interface surface every adapter implements: ingest, abstraction, and detail-resolution seams plus domain hints." }
+    },
+    {
+      "id": "mod:plugin-host-registry",
+      "members": ["createPluginHost", "register", "ingest", "vocabulary"],
+      "digest": [
+        { "kind": "code:function", "label": "createPluginHost(opts): PluginHost" },
+        { "kind": "code:method", "label": "register(plugin): RegisterResult" },
+        { "kind": "code:method", "label": "ingest(source): Promise<IngestOutcome>" },
+        { "kind": "code:method", "label": "vocabulary(): Vocabulary" }
+      ],
+      "fallbackName": "plugin-host/registry",
+      "fallbackSummary": "4 items in plugin-host/registry.",
+      "reference": { "name": "Plugin host", "summary": "Registers plugins, aggregates their vocabulary, and routes a source through the owning adapter to produce graph documents." }
+    },
+    {
+      "id": "mod:adapter-markdown",
+      "members": ["markdownPlugin", "parseHeadings", "linkResolver"],
+      "digest": [
+        { "kind": "code:constant", "label": "markdownPlugin: SourcePlugin" },
+        { "kind": "code:function", "label": "parseHeadings(ast)" },
+        { "kind": "code:function", "label": "linkResolver(doc)" }
+      ],
+      "fallbackName": "adapter-markdown",
+      "fallbackSummary": "3 items in adapter-markdown.",
+      "reference": { "name": "Markdown adapter", "summary": "Turns a markdown document into a heading-nested graph with resolved cross-links, the first domain adapter." }
+    },
+    {
+      "id": "mod:ai-session",
+      "members": ["AiSession", "createAiSession", "call", "embed"],
+      "digest": [
+        { "kind": "code:class", "label": "AiSession" },
+        { "kind": "code:function", "label": "createAiSession(options)" },
+        { "kind": "code:method", "label": "call(spec, input): Promise<AiCallResult>" },
+        { "kind": "code:method", "label": "embed(texts): Promise<AiEmbedResult>" }
+      ],
+      "fallbackName": "ai/session",
+      "fallbackSummary": "4 items in ai/session.",
+      "reference": { "name": "AI gateway session", "summary": "The cache→budget→provider→validate pipeline services call; enforces record/replay determinism and one repair attempt." }
+    },
+    {
+      "id": "mod:ai-budget",
+      "members": ["BudgetGuard", "precheck", "commit", "costOf"],
+      "digest": [
+        { "kind": "code:class", "label": "BudgetGuard" },
+        { "kind": "code:method", "label": "precheck(ctx)" },
+        { "kind": "code:method", "label": "commit(usage, dollars)" },
+        { "kind": "code:function", "label": "costOf(usage, pricing)" }
+      ],
+      "fallbackName": "ai/budget",
+      "fallbackSummary": "4 items in ai/budget.",
+      "reference": { "name": "Budget guard", "summary": "Enforces per-session token/dollar ceilings with a hard stop that leaves a valid, partially-enriched graph." }
+    },
+    {
+      "id": "mod:ai-mock-provider",
+      "members": ["MockProvider", "fromOutcomes", "onComplete", "onEmbed"],
+      "digest": [
+        { "kind": "code:class", "label": "MockProvider implements AiProvider" },
+        { "kind": "code:method", "label": "fromOutcomes(outcomes)" },
+        { "kind": "code:field", "label": "onComplete handler" },
+        { "kind": "code:field", "label": "onEmbed handler" }
+      ],
+      "fallbackName": "ai/mock-provider",
+      "fallbackSummary": "4 items in ai/mock-provider.",
+      "reference": { "name": "Mock AI provider", "summary": "An in-process provider that returns canned outcomes so every AI path runs offline with zero network." }
+    },
+    {
+      "id": "mod:ai-services-cluster",
+      "members": ["clusterNodes", "clustersToProposal", "kMeans"],
+      "digest": [
+        { "kind": "code:function", "label": "clusterNodes(session, nodes, opts): Promise<ClusterResult>" },
+        { "kind": "code:function", "label": "clustersToProposal(clusters)" },
+        { "kind": "code:function", "label": "kMeans(vectors, k)" }
+      ],
+      "fallbackName": "ai-services/cluster",
+      "fallbackSummary": "3 items in ai-services/cluster.",
+      "reference": { "name": "Embedding clusterer", "summary": "Embeds a flat node soup and groups it with deterministic k-means, emitting labeled clusters as a proposal." }
+    },
+    {
+      "id": "mod:ai-services-summarize",
+      "members": ["summarizeCut", "RollupInput", "SUMMARIZE_ROLLUP_PROMPT"],
+      "digest": [
+        { "kind": "code:function", "label": "summarizeCut(session, rollups, opts)" },
+        { "kind": "code:type", "label": "RollupInput" },
+        { "kind": "code:constant", "label": "SUMMARIZE_ROLLUP_PROMPT" }
+      ],
+      "fallbackName": "ai-services/summarize",
+      "fallbackSummary": "3 items in ai-services/summarize.",
+      "reference": { "name": "Rollup summarizer", "summary": "Names and summarizes each rollup node through the gateway, flooring cleanly to deterministic names on a budget stop." }
+    },
+    {
+      "id": "mod:studio-session",
+      "members": ["StudioSession", "openText", "setProvenanceView", "AiTrustController"],
+      "digest": [
+        { "kind": "code:class", "label": "StudioSession" },
+        { "kind": "code:method", "label": "openText(name, text)" },
+        { "kind": "code:method", "label": "setProvenanceView(view)" },
+        { "kind": "code:class", "label": "AiTrustController" }
+      ],
+      "fallbackName": "studio/session",
+      "fallbackSummary": "4 items in studio/session.",
+      "reference": { "name": "Studio session", "summary": "Drives ingest→layout→render for the open corpus and owns the AI trust surface: proposals, provenance filter, badges." }
+    }
+  ]
+}

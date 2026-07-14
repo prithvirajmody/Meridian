@@ -1,0 +1,31 @@
+{
+  "name": "@meridian/adapter-conversation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Meridian's conversation domain adapter (ROADMAP Phase 9): LLM chat exports (Claude/ChatGPT JSON) → a deterministic session → exchange → message skeleton. Deterministic, AI-free, isomorphic. Imports @meridian/plugin-api and nothing else of Meridian; no external parser (JSON is native).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/plugin-api": "workspace:*"
+  },
+  "devDependencies": {
+    "@meridian/conformance-kit": "workspace:*",
+    "@meridian/graph-core": "workspace:*",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

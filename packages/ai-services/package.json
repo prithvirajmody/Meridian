@@ -1,0 +1,35 @@
+{
+  "name": "@meridian/ai-services",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Meridian AI services (ROADMAP Phase 8D/8E): SummarizingAbstractionProvider, EmbeddingClusterer, and StructureExtractor. Turns AI output into provenance-tagged proposals (AbstractionProposal / GraphProposal) through the @meridian/ai gateway — never a direct graph write (ADR-0031). Depends on the gateway and the core IR/contract seams only (§20).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/ai": "workspace:*",
+    "@meridian/graph-core": "workspace:*",
+    "@meridian/plugin-api": "workspace:*",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@meridian/abstraction": "workspace:*",
+    "@meridian/graph-store": "workspace:*",
+    "@types/node": "^24.0.0",
+    "fast-check": "^4.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

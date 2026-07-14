@@ -23,5 +23,8 @@
   "studio-heap-retained-growth-bytes": 16777216,
   "transition-frame-p95-ms": 22,
   "transition-anchor-drift-px": 8,
-  "transition-max-plan-to-settle-ms": 300
+  "transition-max-plan-to-settle-ms": 300,
+  "ai-replay-overhead-p50-ms": 5,
+  "ai-replay-overhead-p95-ms": 5,
+  "ai-cluster-5k-compute-ms": 2000
 }

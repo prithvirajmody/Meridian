@@ -1,0 +1,4 @@
+{
+  "kind": "not-a-conversation",
+  "records": [{ "a": 1 }, { "b": 2 }]
+}

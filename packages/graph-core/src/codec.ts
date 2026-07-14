@@ -41,7 +41,10 @@ const provenanceSchema = z.object({
   origin: z.enum(['source', 'derived', 'ai']),
   uri: z.string().optional(),
   span: z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]).optional(),
+  providerId: z.string().optional(),
   model: z.string().optional(),
+  promptVersion: z.string().optional(),
+  inputHash: z.string().optional(),
   confidence: z.number().min(0).max(1).optional(),
 });
 
@@ -309,7 +312,10 @@ function encodeProvenance(p: SourceRef): GraphDocument['graphs'][number]['meta']
     origin: c.origin,
     ...(c.uri !== undefined ? { uri: c.uri } : {}),
     ...(c.span !== undefined ? { span: [c.span[0], c.span[1]] as [number, number] } : {}),
+    ...(c.providerId !== undefined ? { providerId: c.providerId } : {}),
     ...(c.model !== undefined ? { model: c.model } : {}),
+    ...(c.promptVersion !== undefined ? { promptVersion: c.promptVersion } : {}),
+    ...(c.inputHash !== undefined ? { inputHash: c.inputHash } : {}),
     ...(c.confidence !== undefined ? { confidence: c.confidence } : {}),
   };
 }

@@ -8,6 +8,12 @@ Claude Code, one roadmap phase at a time. The two governing documents are:
 
 The model implements; the documents govern; you gate.
 
+This guide covers **direct human-to-Opus** operation in the Claude Code UI.
+For the other mode — an outer **coordinating agent (Codex) orchestrating the
+local Claude Code CLI** as a worker pool (the plan→review→execute→gate pattern
+used for Phase 8) — see
+[CODEX-OPUS-ORCHESTRATION.md](CODEX-OPUS-ORCHESTRATION.md).
+
 ---
 
 ## 1. Repo setup (once, before Phase 0)
