@@ -31,7 +31,14 @@ import {
 import { BUILTIN_LAYOUT_PROVIDERS, type LayoutInput, type LayoutResult } from '@meridian/layout';
 import type { IdFacade, SourceDescriptor } from '@meridian/plugin-api';
 import { createPluginHost, type PluginHost } from '@meridian/plugin-host';
-import type { NodeId as ViewNodeId, RenderModel, SelectionState, ViewportSize } from '@meridian/view-model';
+import {
+  createFocusState,
+  type NodeId as ViewNodeId,
+  type ProjectionModel,
+  type RenderModel,
+  type SelectionState,
+  type ViewportSize,
+} from '@meridian/view-model';
 import { AiTrustController } from './ai/ai-trust-controller.js';
 import {
   aiOriginNodesInModel,
@@ -235,10 +242,15 @@ export class StudioSession {
       this.fullModel = null;
       this.filteredModelRef = null;
       this.commands.setAiOriginSummary(EMPTY_AI_ORIGIN_SUMMARY);
+      this.commands.setProjectionModel(null);
       return;
     }
-    // Ignore the echo of our own filtered publish — no loop, no summary churn.
-    if (model === this.filteredModelRef) return;
+    // The echo of our filtered publish is the final visible working set. It
+    // still needs a ProjectionModel, but must not churn the summary or loop.
+    if (model === this.filteredModelRef) {
+      this.commands.setProjectionModel(this.projectionForRenderModel(model));
+      return;
+    }
     this.fullModel = model;
     const aiIds = this.aiIdsInModel(model);
     this.commands.setAiOriginSummary({ aiNodeCount: aiIds.size, aiNodeIds: [...aiIds] });
@@ -246,9 +258,104 @@ export class StudioSession {
       const filtered = filterRenderModelNodes(model, aiIds);
       this.filteredModelRef = filtered;
       this.commands.replaceModelAfterSelection(filtered);
+      return;
     } else {
       this.filteredModelRef = null;
     }
+    this.commands.setProjectionModel(this.projectionForRenderModel(model));
+  }
+
+  /** Build the semantic projection waist for the exact already-published map
+   * value. The map field is deliberately replaced with `model` by reference so
+   * the extraction cannot perturb bytes, ordering, revisions, or typed lanes. */
+  private projectionForRenderModel(model: RenderModel): ProjectionModel {
+    const selection = this.store.getState().selection;
+    const navigator = this.nav();
+    const base = navigator?.projectionModel(selection) ?? this.fixtureProjectionModel(model);
+    const visibleNodes = new Set(model.nodeIds);
+    const visibleEdges = new Set(model.edgeKeys);
+    const nodes = base.nodes.filter((node) => visibleNodes.has(node.id));
+    const inducedEdges = base.inducedEdges.filter((edge) =>
+      visibleEdges.has(edgeKey(edge.src as NodeId, edge.dst as NodeId, edge.kind)),
+    );
+    const focus = createFocusState(navigator?.context().focus);
+
+    const layout =
+      base.layout === undefined
+        ? undefined
+        : {
+            ...base.layout,
+            positions: new Map(
+              [...base.layout.positions].filter(([id]) => visibleNodes.has(id)),
+            ),
+            ...(base.layout.edgeRoutes === undefined
+              ? {}
+              : {
+                  edgeRoutes: new Map(
+                    [...base.layout.edgeRoutes].filter(([key]) => visibleEdges.has(key)),
+                  ),
+                }),
+          };
+
+    return {
+      ...base,
+      nodes,
+      inducedEdges,
+      selection,
+      focus,
+      ...(layout === undefined ? {} : { layout }),
+      renderModel: model,
+    };
+  }
+
+  /** Renderer-only fixtures still cross the same projection contract. Their
+   * semantic rows are reconstructed from the RenderModel's identity tables. */
+  private fixtureProjectionModel(model: RenderModel): ProjectionModel {
+    const positions = new Map<ViewNodeId, { x: number; y: number; width: number; height: number }>();
+    const nodes = model.nodeIds.map((id, index) => {
+      const lane = index * 4;
+      positions.set(id, {
+        x: model.nodeRects[lane]!,
+        y: model.nodeRects[lane + 1]!,
+        width: model.nodeRects[lane + 2]!,
+        height: model.nodeRects[lane + 3]!,
+      });
+      return {
+        id,
+        label: model.labelTable[model.labelRefs[index]!] ?? id,
+        kind: model.nodeColorKeys[model.nodeColorIds[index]!] ?? '',
+        attrs: {},
+        graphId: null,
+        parentId: null,
+        detailGraphId: null,
+        depth: null,
+        cutReason: null,
+        coveredLeaves: model.nodeCoveredLeaves[index] ?? 1,
+        orderPath: [index],
+      };
+    });
+    const inducedEdges = model.edgeKeys.map((_, index) => {
+      const src = model.nodeIds[model.edgeIndices[index * 2]!]!;
+      const dst = model.nodeIds[model.edgeIndices[index * 2 + 1]!]!;
+      return {
+        src,
+        dst,
+        kind: model.edgeColorKeys[model.edgeColorIds[index]!] ?? '',
+        weight: model.edgeWeights[index] ?? 1,
+        multiplicity: model.edgeMultiplicities[index] ?? 1,
+        samples: [],
+      };
+    });
+    return {
+      cutLevel: 0,
+      nodes,
+      inducedEdges,
+      selection: this.store.getState().selection,
+      focus: createFocusState(),
+      domainMeta: { domain: 'test-fixture', label: 'Renderer fixture' },
+      layout: { positions, bounds: { ...model.bounds }, stability: 1 },
+      renderModel: model,
+    };
   }
 
   private applyView(): void {

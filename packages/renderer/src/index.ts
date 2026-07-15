@@ -8,6 +8,24 @@ export type {
 
 export { createScene } from './create-scene.js';
 export {
+  computeNearestScrollTop,
+  computeVirtualWindow,
+  mountOutlineVirtualList,
+  OUTLINE_OVERSCAN,
+  OUTLINE_ROW_HEIGHT,
+} from './outline-virtual-list.js';
+export type {
+  OutlineVirtualFocus,
+  OutlineVirtualFrame,
+  OutlineVirtualKey,
+  OutlineVirtualListInput,
+  OutlineVirtualListSurface,
+  OutlineVirtualListViewState,
+  OutlineVirtualRow,
+  OutlineVirtualSelection,
+  VirtualWindow,
+} from './outline-virtual-list.js';
+export {
   buildQuadtree,
   queryQuadtree,
   queryQuadtreeWithStats,

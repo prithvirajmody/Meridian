@@ -23,6 +23,7 @@
     "@meridian/navigation": "workspace:*",
     "@meridian/plugin-api": "workspace:*",
     "@meridian/plugin-host": "workspace:*",
+    "@meridian/projections": "workspace:*",
     "@meridian/renderer": "workspace:*",
     "@meridian/view-model": "workspace:*",
     "comlink": "^4.4.2",

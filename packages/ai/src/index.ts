@@ -101,8 +101,24 @@ export type {
 export { createOpenAiClient } from './providers/openai-client.js';
 export type { OpenAiClientOptions } from './providers/openai-client.js';
 
+// CLI-session adapters (ADR-0035) — headless Claude Code / Codex subprocesses
+export { ClaudeCliProvider, normalizeClaudeCliError } from './providers/claude-cli.js';
+export type { ClaudeCliEnvelope, ClaudeCliProviderOptions } from './providers/claude-cli.js';
+export { CodexCliProvider, normalizeCodexCliError } from './providers/codex-cli.js';
+export type { CodexCliEvent, CodexCliProviderOptions } from './providers/codex-cli.js';
+export {
+  flattenMessages,
+  parseStructuredText,
+  schemaInstruction,
+} from './providers/cli-runner.js';
+export type { CliRunner, CliRunRequest, CliRunResult } from './providers/cli-runner.js';
+export { createProcessCliRunner } from './providers/cli-runner-client.js';
+export type { ProcessCliRunnerOptions } from './providers/cli-runner-client.js';
+
 // Reference catalogs
 export {
   ANTHROPIC_REFERENCE_CAPABILITIES,
+  CLAUDE_CLI_REFERENCE_CAPABILITIES,
+  CODEX_CLI_REFERENCE_CAPABILITIES,
   OPENAI_REFERENCE_CAPABILITIES,
 } from './catalogs.js';

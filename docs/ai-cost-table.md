@@ -98,6 +98,16 @@ multiplier, **not** a measured cost. The measured ¢/1k columns are what a live
 
 (Anthropic ships completion-only in the reference catalog — no embedding row.)
 
+### CLI-session providers (`claude-cli`, `codex-cli`) — notional pricing
+
+The CLI-session providers (ADR-0035) bill the user's subscription, so their
+marginal dollar cost is $0 and no measured row applies. Their catalogs in
+`packages/ai/src/catalogs.ts` carry the vendors' reference API prices so that
+`BudgetGuard` ceilings stay binding: the "spend" they meter is **notional** —
+what the run *would* cost at API rates from the real token usage the CLIs
+report. The CLI-reported `total_cost_usd` (Claude Code) is retained in the raw
+response for diagnostics only.
+
 ## How to fill this in
 
 1. Run the relevant `--record` command above with a real key for each row (and

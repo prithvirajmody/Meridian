@@ -1214,7 +1214,10 @@ interface StructureExtractor { extract(text: string, domainHints: DomainHints): 
 **6. Public APIs.** `createAiSession(config)`, `summarizeCut(store, cut)`,
 `clusterNodes(store, graphId, opts)`, `extractStructure(text, hints)`; CLI
 `meridian ai summarize|cluster --budget 2.00`; env-based key config, never
-persisted into graph documents.
+persisted into graph documents. *(Amended by ADR-0035: the default live
+completion route is the keyless `claude-cli` session provider — a locally
+authenticated Claude Code/Codex subprocess spawned per call; env keys remain
+only for the SDK adapters and the embedding route.)*
 
 **7. Data structures.** `PromptSpec` (template id + params — prompts are
 versioned files, not string literals, so evals can pin them); `AiResult<T>`
@@ -1413,22 +1416,30 @@ interface ProjectionInstance {
 ```
 
 **6. Public APIs.** Projection registration via plugin-api; Studio
-`switchProjection(id)`; shared `Selection`/`Focus` model formalized (it was
-implicit in zustand until now — this phase names it).
+`switchProjection(id)`; the existing view-model `SelectionState` remains the
+shared selection contract, while navigation-owned focus is formalized as the
+single `Focus` identity projections consume.
 
 **7. Data structures.** `ProjectionModel` (cut + induced edges + attrs +
 level context + optional layout — layout becomes *optional* input, since
-outline/matrix don't need it); `Selection { nodes: Set<NodeId>, anchor?: NodeId }`
-shared across all projections.
+outline/matrix don't need it); the existing structured-cloneable
+`SelectionState` (node + edge identities and an optional node/edge anchor) is
+formalized as the shared selection model rather than narrowed to a map-only
+shape.
 
 **8. Technical decisions that must be finalized (ADRs).**
-- **ADR-0035 What survives a mode switch:** selection + focus node always;
+- **ADR-0036 What survives a mode switch:** selection + focus node always;
   camera only where geometrically meaningful (map↔map); scroll position maps
   to focus-node visibility elsewhere. Written down so every future
   projection has a rule to follow.
-- **ADR-0036 Projections own their medium** (canvas vs DOM) behind
+- **ADR-0037 Projections own their medium** (canvas vs DOM) behind
   `ProjectionHost`; the host provides the container, input plumbing, and the
-  store — nothing else.
+  narrow view/session-state facade — never `GraphStore`, zustand, or a
+  renderer object. Nothing else.
+
+  *Numbering note:* accepted Phase-8 amendment ADR-0035 occupies the next
+  sequential number, so the originally reserved Phase-10…12 numbers move
+  forward by one (0036…0044).
 
 **9. Risks.** (a) The map refactor regresses feel — mitigated: it is gated
 by the *entire* existing P5/P6 golden + FPS suite passing unchanged.
@@ -1442,7 +1453,7 @@ projection-specific plugins beyond the four built-ins.
 
 **11. Acceptance criteria.** All four projections work on all three domains
 (where applicable — timeline requires temporal attrs and must *degrade with
-a message*, not crash); switching preserves state per ADR-0035 (property
+a message*, not crash); switching preserves state per ADR-0036 (property
 test over random switch sequences); map goldens byte-identical post-refactor.
 
 **12. Verification required before Phase 11.**
@@ -1453,7 +1464,7 @@ test over random switch sequences); map goldens byte-identical post-refactor.
 | Integration | Mode-switch matrix (4 projections × 3 domains) via Playwright; selection-survival property scripts |
 | Performance | Outline virtualized to 100k rows scrolls at 60fps; matrix 2k×2k renders < 500ms; switch itself < 200ms |
 | UI verification | Screenshot baselines per projection × domain; keyboard nav in outline |
-| Architecture | Projections import `view-model`/`abstraction`, never `graph-store` write paths; map projection passes pre-refactor goldens |
+| Architecture | Projections import `view-model`/`layout`, never `graph-store` write paths; map projection passes pre-refactor goldens |
 | Manual exploratory | Real tasks in wrong-looking modes ("find the dense module in matrix", "skim the argument in outline") — friction notes |
 | Failure cases | Switch mid-transition; projection instance throwing on mount (host contains, falls back to map); timeline on atemporal domain |
 | Regression | Entire prior suite — especially P5/P6 goldens unchanged |
@@ -1515,12 +1526,12 @@ benchmark manifest (`benchmarks/budgets.json` — the single file where every
 performance promise in this roadmap lives, reviewed like code).
 
 **8. Technical decisions that must be finalized (ADRs).**
-- **ADR-0037 SQLite as the embedded store** (vs LMDB/IndexedDB-raw/custom);
+- **ADR-0038 SQLite as the embedded store** (vs LMDB/IndexedDB-raw/custom);
   OPFS strategy in browser; single-writer assumption documented (multi-writer
   is P12's server, not the embedded store).
-- **ADR-0038 Hydration & eviction policy** (what triggers load, what may be
+- **ADR-0039 Hydration & eviction policy** (what triggers load, what may be
   dropped, interaction with undo history).
-- **ADR-0039 WASM go/no-go:** the measured criteria under which a hot path
+- **ADR-0040 WASM go/no-go:** the measured criteria under which a hot path
   (likely induced-edge aggregation or layout) gets a Rust/WASM port — and
   the decision made from this phase's numbers.
 
@@ -1556,7 +1567,7 @@ replay); all budgets in `budgets.json` green.
 | Regression | Everything — this phase is highest-regression-risk; the full golden corpus must pass against the sqlite backend too |
 
 **13. Definition of Done.** Phase gate passes; benchmark dashboard is part
-of every CI run; ADR-0039 decided with data.
+of every CI run; ADR-0040 decided with data.
 
 ---
 
@@ -1615,17 +1626,17 @@ client; registry manifest (`plugin name/version/apiVersion/hash/signature/
 capabilities/permissions`).
 
 **8. Technical decisions that must be finalized (ADRs).**
-- **ADR-0040 Sync model:** server-authoritative op-log sequencing (chosen
+- **ADR-0041 Sync model:** server-authoritative op-log sequencing (chosen
   over CRDT per §6, revisited here against real requirements — the ADR must
   document the offline-editing consequence: offline is read-only + queued
   ops that rebase on reconnect, *not* full offline merge).
-- **ADR-0041 Conflict policy:** structural ops are order-serialized by the
+- **ADR-0042 Conflict policy:** structural ops are order-serialized by the
   server (no merge needed); concurrent attr writes = LWW + retained history;
   UI surfacing rules.
-- **ADR-0042 Plugin trust model:** signed manifests, worker isolation,
+- **ADR-0043 Plugin trust model:** signed manifests, worker isolation,
   declared permissions (network? AI budget? filesystem?), what an installed
   plugin can never do.
-- **ADR-0043 Docs/versioning of the public SDK** (site generation, versioned
+- **ADR-0044 Docs/versioning of the public SDK** (site generation, versioned
   docs per plugin-api minor).
 
 **9. Risks.** (a) Rebase edge cases — bounded by the op vocabulary being
@@ -1638,7 +1649,7 @@ product decision documented, not solved, here. (d) Server operational
 surface — kept minimal: one stateless-ish service over the durable log;
 no accounts system in scope (auth is a hook).
 
-**10. Intentionally deferred.** Full offline merge/CRDT (unless ADR-0040's
+**10. Intentionally deferred.** Full offline merge/CRDT (unless ADR-0041's
 revisit flips it), comments/annotations layer, permissions/roles beyond
 read-write, plugin marketplace UX (registry is manifest + CLI first),
 mobile.
@@ -1733,4 +1744,3 @@ existential risk while it is still cheap:
 
 *End of roadmap. First action for the implementing engineer: create the
 repo, copy §5 into `CONTRIBUTING.md`, write ADR-0001, and start Phase 0.*
-

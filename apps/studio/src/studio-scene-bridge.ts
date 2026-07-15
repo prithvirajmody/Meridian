@@ -92,6 +92,7 @@ export class StudioSceneBridge {
   private rendererUnsubscribes: Unsubscribe[] = [];
   private cameraUnsubscribe: Unsubscribe | null = null;
   private latestModel: RenderModel | null = null;
+  private latestSourceGeneration: number | null = null;
   private fittedSourceGeneration: number | null = null;
   private ready = false;
   private destroyed = false;
@@ -127,9 +128,6 @@ export class StudioSceneBridge {
     this.scene = this.sceneFactory({ fontUrl: '/fonts/meridian-msdf.fnt' });
     this.bindRendererEvents(this.scene);
     this.storeUnsubscribe = this.store.subscribe((state, previous) => {
-      if (state.renderModel !== previous.renderModel || state.source !== previous.source) {
-        this.modelChanged(state.renderModel, state.source?.generation ?? null);
-      }
       if (state.camera !== previous.camera && !sameCamera(state.camera, this.camera!.state())) {
         this.syncCameraFromStore(state.camera);
       }
@@ -142,8 +140,9 @@ export class StudioSceneBridge {
       await this.scene.mount(canvas);
       if (this.destroyed) return;
       this.ready = true;
-      const state = this.store.getState();
-      this.modelChanged(state.renderModel, state.source?.generation ?? null);
+      if (this.latestModel !== null) {
+        this.modelChanged(this.latestModel, this.latestSourceGeneration);
+      }
     } catch (error) {
       if (!this.destroyed) {
         this.commands.rendererFault({
@@ -151,6 +150,7 @@ export class StudioSceneBridge {
           message: error instanceof Error ? error.message : String(error),
         });
       }
+      throw error;
     }
   }
 
@@ -172,6 +172,7 @@ export class StudioSceneBridge {
 
   private modelChanged(model: RenderModel | null, sourceGeneration: number | null): void {
     this.latestModel = model;
+    this.latestSourceGeneration = sourceGeneration;
     this.commands.clearHover(this.sceneGeneration);
     if (!this.ready || model === null || this.scene === null || this.camera === null) return;
     if (sourceGeneration !== null && sourceGeneration !== this.fittedSourceGeneration) {
@@ -183,6 +184,12 @@ export class StudioSceneBridge {
       }
     }
     this.scene.render(model, this.camera.state());
+  }
+
+  /** Settled map-model ingress owned by MapProjection's node-link port. */
+  acceptSettledModel(model: RenderModel | null, sourceGeneration: number | null): void {
+    if (this.destroyed) throw new Error('StudioSceneBridge.acceptSettledModel called after destroy');
+    this.modelChanged(model, sourceGeneration);
   }
 
   private cameraChanged(camera: CameraState): void {
@@ -331,6 +338,68 @@ export class StudioSceneBridge {
     );
   }
 
+  /** Serializable map-local state used by projection switching. */
+  captureViewState(): {
+    readonly camera: {
+      readonly center: { readonly x: number; readonly y: number };
+      readonly scale: number;
+    };
+  } {
+    const camera = this.camera?.state() ?? this.store.getState().camera;
+    return {
+      camera: {
+        center: { x: camera.center.x, y: camera.center.y },
+        scale: camera.scale,
+      },
+    };
+  }
+
+  restoreViewState(state: unknown): void {
+    if (this.destroyed) throw new Error('StudioSceneBridge.restoreViewState called after destroy');
+    if (typeof state !== 'object' || state === null || !('camera' in state)) {
+      throw new TypeError('Studio map view state is missing camera');
+    }
+    const candidate = (state as { readonly camera?: unknown }).camera;
+    if (typeof candidate !== 'object' || candidate === null || !('center' in candidate)) {
+      throw new TypeError('Studio map view state has an invalid camera');
+    }
+    const camera = candidate as {
+      readonly center?: { readonly x?: unknown; readonly y?: unknown };
+      readonly scale?: unknown;
+    };
+    const x = camera.center?.x;
+    const y = camera.center?.y;
+    const scale = camera.scale;
+    if (
+      typeof x !== 'number' || !Number.isFinite(x) ||
+      typeof y !== 'number' || !Number.isFinite(y) ||
+      typeof scale !== 'number' || !Number.isFinite(scale) || scale <= 0
+    ) {
+      throw new TypeError('Studio map view state has a non-finite camera');
+    }
+    this.commands.setCamera({ center: { x, y }, scale });
+  }
+
+  /** Make an identity target visible without changing scale when it is already
+   * on-screen. Hidden/non-cut identities intentionally remain untouched. */
+  revealNode(nodeId: string | null): void {
+    if (nodeId === null || this.latestModel === null || this.camera === null) return;
+    const index = this.latestModel.nodeIds.findIndex((id) => id === nodeId);
+    if (index < 0) return;
+    const lane = index * 4;
+    const world = {
+      x: this.latestModel.nodeRects[lane]! + this.latestModel.nodeRects[lane + 2]! / 2,
+      y: this.latestModel.nodeRects[lane + 1]! + this.latestModel.nodeRects[lane + 3]! / 2,
+    };
+    const viewport = this.camera.viewport();
+    const screen = worldToScreen(world, this.camera.state(), viewport);
+    if (screen.x >= 0 && screen.x <= viewport.width && screen.y >= 0 && screen.y <= viewport.height) {
+      return;
+    }
+    const current = this.camera.state();
+    this.commands.setCamera({ center: world, scale: current.scale });
+  }
+
   /** Render one transition frame (ADR-0022: the player's only pixel path).
    * Transient models never enter the store; the settled model is published by
    * the navigator at flight end. */
@@ -456,5 +525,6 @@ export class StudioSceneBridge {
     this.camera = null;
     this.canvas = null;
     this.latestModel = null;
+    this.latestSourceGeneration = null;
   }
 }

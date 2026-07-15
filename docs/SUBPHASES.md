@@ -13,7 +13,7 @@ Phases 1–2 are built in the working tree (ADR-0005…0011, `graph-store`,
 `plugin-api`/`plugin-host`/`conformance-kit`, `adapters/markdown`, checklists
 and demos for both) but **uncommitted** — see subphase 2Z below.
 
-**Build progress (updated 2026-07-14).** Committed & tagged through
+**Build progress (updated 2026-07-15).** Committed & tagged through
 **Phase 4** (`phase-4`): 4A `f2b5f77`, 4B `9c845b2`, 4C `5d2897a`,
 4D `58298db`, 4E gate. The two human-judgment rows of the Phase 4 table
 (SVG quality review; pathology eyeball) are marked UNVERIFIED — HUMAN in
@@ -32,7 +32,8 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 7 | ✅ `7A`–`7H` — gate walked, tag `phase-7` awaits user | closing (domain track) |
 | 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
 | 9 | ✅ `9A`–`9E` built | M3 review + `phase-9`/`plugin-api@1.0` tags await user |
-| 10–12 | ⬜ not started | — |
+| 10 | 🔨 `10A`–`10C` implementation built | stopped after `10C`; `10D` not started |
+| 11–12 | ⬜ not started | — |
 
 ---
 
@@ -553,12 +554,13 @@ The dangerous subphase is the refactor (10B) — it's gated on byte-identical
 map goldens, so it gets a session to itself. Each new projection is then an
 independent, parallelizable session. Roadmap refs: Phase 10 §1–13.
 
-### 10A — ADR beat
-Draft ADR-0035 (what survives a mode switch), ADR-0036 (projections own
+### 10A — ADR beat  ✅ DONE (ADRs 0036/0037 accepted 2026-07-15)
+Draft ADR-0036 (what survives a mode switch), ADR-0037 (projections own
 their medium behind ProjectionHost). Stop for approval.
 
-### 10B — Extraction refactor: MapProjection
-Formalize `Selection`/`Focus` (implicit in zustand until now);
+### 10B — Extraction refactor: MapProjection  ✅ DONE (2026-07-15)
+Formalize the existing `SelectionState` and navigation-owned `Focus` as the
+projection-neutral identity contracts;
 `@meridian/projections` with `ViewProjection`/`ProjectionInstance`/
 `ProjectionHost`; refactor the P5/P6 map into `MapProjection`,
 behavior-identical.
@@ -566,12 +568,20 @@ behavior-identical.
   unchanged; map screenshot goldens byte-identical post-refactor.
 - **Exit:** map is a projection; nothing observable changed.
 
-### 10C — OutlineProjection
+The map screenshots passed without regeneration and remain byte-identical.
+The dedicated renderer FPS probe is green; the Studio SwiftShader timing
+case was reproduced as host-load-sensitive on the unmodified pre-Phase-10
+baseline, with no Phase-10-specific regression.
+
+### 10C — OutlineProjection  ✅ DONE (2026-07-15)
 Virtualized DOM tree (second medium — proves view-model neutrality);
 keyboard navigation; layout becomes optional input to `ProjectionModel`.
 - **Tests:** virtualization windowing; 100k rows at 60fps scroll; keyboard
   nav; selection applied/read back.
 - **Exit:** outline works on all three domains.
+
+The browser gate covers markdown, conversation, and argument data; keyboard
+selection/readback; and a 100k-row bounded DOM pool above the 55fps floor.
 
 ### 10D — MatrixProjection
 Canvas adjacency matrix, cluster-ordered.
@@ -586,7 +596,7 @@ message, never crash.
 - **Exit:** timeline on conversations; graceful refusal elsewhere.
 
 ### 10F — Mode switcher & phase gate
-Studio switcher; per-projection view-state persistence; ADR-0035 survival
+Studio switcher; per-projection view-state persistence; ADR-0036 survival
 rules wired (selection+focus always; camera map↔map; scroll→focus-node
 visibility). Property test over random switch sequences; the 4×3
 mode-switch Playwright matrix; switch <200ms; switch-mid-transition;
@@ -603,8 +613,8 @@ then the browser port, then the two big integration wires, then the
 benchmark gate. Roadmap refs: Phase 11 §1–13.
 
 ### 11A — ADR beat
-Draft ADR-0037 (SQLite embedded store, OPFS strategy, single-writer),
-ADR-0038 (hydration & eviction policy). ADR-0039 (WASM go/no-go) is
+Draft ADR-0038 (SQLite embedded store, OPFS strategy, single-writer),
+ADR-0039 (hydration & eviction policy). ADR-0040 (WASM go/no-go) is
 *decided in 11G from measured data* — draft only its criteria now. Stop
 for approval.
 
@@ -622,7 +632,7 @@ migrations per ADR-0004, durable op-log append (the P12 substrate);
 ### 11C — Lazy hydration & eviction
 Per-graph hydration states (`cold|hydrating|live|evictable`) reusing the
 `DetailResolver` pattern from 7F; memory budgets; eviction of
-hydrated-but-unviewed subgraphs per ADR-0038; interaction with undo
+hydrated-but-unviewed subgraphs per ADR-0039; interaction with undo
 history.
 - **Tests:** hydration state machine; eviction vs undo; drill-in triggers
   load; memory ceiling under soak.
@@ -657,7 +667,7 @@ patch; edit-storm coalescing (100 edits/s).
 `benchmarks/` promoted: dashboard artifact per CI run; every promise in
 `budgets.json` green (500k stored / 50k working set / cold open <3s /
 edit→pixel <1s p95); pinned runner class + relative-regression gating
-(±15%); profiling docs; **ADR-0039 decided from this phase's numbers**;
+(±15%); profiling docs; **ADR-0040 decided from this phase's numbers**;
 full-matrix regression (highest-regression-risk phase — everything, both
 backends). DoD, tag `phase-11`.
 - **Exit:** phase gate closed; every performance promise is a CI gate.
@@ -671,9 +681,9 @@ can interleave. The convergence simulator is the flagship deliverable and
 gets its own session. Roadmap refs: Phase 12 §1–13.
 
 ### 12A — ADR beat
-Draft ADR-0040 (sync model — revisit op-log vs CRDT against real
-requirements; document the offline consequence), ADR-0041 (conflict
-policy), ADR-0042 (plugin trust model), ADR-0043 (SDK docs/versioning).
+Draft ADR-0041 (sync model — revisit op-log vs CRDT against real
+requirements; document the offline consequence), ADR-0042 (conflict
+policy), ADR-0043 (plugin trust model), ADR-0044 (SDK docs/versioning).
 Stop for approval.
 
 ### 12B — sync-protocol
@@ -694,7 +704,7 @@ documented hook; containerized with a deployment recipe.
 ### 12D — Client SyncEngine & convergence simulator
 `SyncEngine` wrapping GraphStore: optimistic local apply → server rebase
 (tractable because ops carry `prev` and the server orders); offline =
-read-only + queued ops that rebase on reconnect (ADR-0040); **the
+read-only + queued ops that rebase on reconnect (ADR-0041); **the
 multi-client convergence simulator** — N simulated clients × random op
 streams × random partitions must converge with zero divergence
 (10k-op fuzz runs).
@@ -705,7 +715,7 @@ streams × random partitions must converge with zero divergence
 ### 12E — Presence & live-session UI
 Studio presence layer: avatars, live cursors mapped through each peer's
 projection, camera-follow mode, conflict toasts (attr LWW + retained
-history per ADR-0041).
+history per ADR-0042).
 - **Tests:** two-browser-context Playwright live session; presence
   <250ms p95 LAN; 10-peer presence at 60fps client-side; screenshot
   goldens.
@@ -715,7 +725,7 @@ history per ADR-0041).
 Registry manifest schema (+ signature verification); `meridian plugins add
 <tarball|url>` with signature + conformance-run gate; worker-based plugin
 isolation (the ADR-0009 payoff — plugins get a capability object, never a
-direct store reference); permission declarations enforced (ADR-0042);
+direct store reference); permission declarations enforced (ADR-0043);
 **a third-party demo plugin built outside the monorepo against published
 1.0 types**.
 - **Tests:** malicious-plugin fixture (permission violations blocked +

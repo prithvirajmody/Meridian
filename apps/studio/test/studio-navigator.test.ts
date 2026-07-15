@@ -115,6 +115,27 @@ describe('semantic zoom (ADR-0025 continuous verb)', () => {
     }
   });
 
+  it('completes the semantic target while cancelling interpolation for a projection switch', async () => {
+    const h = await open();
+    try {
+      const before = h.store.getState().renderModel!;
+      h.nav.wheelZoom(60, CENTER);
+      await waitForFlight(h.nav);
+      h.clock.advance(80);
+      h.nav.tick();
+      expect(h.nav.inFlight()).toBe(true);
+
+      h.nav.completeTransitionForProjectionSwitch();
+
+      expect(h.nav.inFlight()).toBe(false);
+      expect(h.store.getState().renderModel?.revision).not.toBe(before.revision);
+      expect(h.store.getState().nav?.zoom).toBe(1);
+      expect(h.nav.telemetry().at(-1)?.settledAtMs).not.toBeNull();
+    } finally {
+      await h.destroy();
+    }
+  });
+
   it('a pure geometric zoom (no threshold crossing) does not start a transition', async () => {
     const h = await open();
     try {
@@ -242,6 +263,7 @@ describe('search & fly-to (6C port wired)', () => {
       await waitForFlight(h.nav);
       await h.settle();
       expect(h.store.getState().nav!.focus).toBe(hits[0]!.node);
+      expect(h.store.getState().projectionModel?.focus.node).toBe(hits[0]!.node);
       expect(h.store.getState().nav!.depth).toBe(depthBefore); // never drills
     } finally {
       await h.destroy();

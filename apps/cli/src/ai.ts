@@ -10,9 +10,12 @@
  *   in-process {@link MockProvider}; `replay` reads a cache-only session whose
  *   misses are a hard, deterministic `replay_miss` — a provider is never called.
  * - **live** is the only mode that can reach the network, and it does so only
- *   with explicit `--ai-consent` *and* a key from the environment (the client
- *   factories are the sole key edge). Missing either is a clean, deterministic
- *   refusal, never a silent call.
+ *   with explicit `--ai-consent`. The default live provider is `claude-cli` —
+ *   a locally-authenticated Claude Code session spawned per call — which needs
+ *   no API key at all (ADR-0035); the SDK providers (`anthropic`, `openai`)
+ *   additionally need a key from the environment (the client factories are the
+ *   sole key edge). A missing consent, binary, or key is a clean,
+ *   deterministic refusal, never a silent call.
  * - AI output stays a *proposal*: these commands read a document and report the
  *   enriched/floored boundary + budget spend; they never write the graph (the
  *   one write path, ADR-0031, lives behind `applyProposal`).
@@ -23,9 +26,14 @@ import {
   type AiConfig,
   type AiProvider,
   type AiSession,
+  CLAUDE_CLI_REFERENCE_CAPABILITIES,
+  ClaudeCliProvider,
+  CODEX_CLI_REFERENCE_CAPABILITIES,
+  CodexCliProvider,
   createAiSession,
   createAnthropicClient,
   createOpenAiClient,
+  createProcessCliRunner,
   isAiError,
   MemoryResponseStore,
   MockProvider,
@@ -57,7 +65,8 @@ export interface AiCommandOptions {
   readonly json: boolean;
   /** Session dollar ceiling (`--budget`). Unset = unbounded. */
   readonly budgetDollars?: number;
-  /** Provider adapter id (`--ai-provider`): `mock` | `anthropic` | `openai`. */
+  /** Provider adapter id (`--ai-provider`): `mock` | `claude-cli` |
+   * `codex-cli` | `anthropic` | `openai`. */
   readonly provider?: string;
   /** Model id (`--ai-model`); a sensible per-provider default when unset. */
   readonly model?: string;
@@ -147,6 +156,8 @@ function mockCompletionOutcome(system: string, userText: string): MockOutcome {
 // --------------------------------------------------------------- session build
 
 const DEFAULT_MODEL: Readonly<Record<string, Partial<Record<TaskClass, string>>>> = {
+  'claude-cli': { summarization: 'claude-opus-4-8', extraction: 'claude-opus-4-8' },
+  'codex-cli': { summarization: 'gpt-5-codex', extraction: 'gpt-5-codex' },
   anthropic: { summarization: 'claude-opus-4-8', extraction: 'claude-opus-4-8' },
   openai: { summarization: 'gpt-4.1', extraction: 'gpt-4.1', embedding: 'text-embedding-3-large' },
 };
@@ -169,9 +180,10 @@ function providerIdFor(mode: AiCliMode, taskClass: TaskClass, opts: AiCommandOpt
   // default record path stays zero-network (recording live needs an explicit
   // --ai-provider plus consent, same as live mode).
   if (mode === 'mock' || mode === 'record') return 'mock';
-  // Anthropic is completion-only in the reference catalog, so the independent
-  // embedding route defaults to OpenAI while completion defaults to Anthropic.
-  return taskClass === 'embedding' ? 'openai' : 'anthropic';
+  // Completion defaults to the keyless Claude Code session provider
+  // (ADR-0035); the CLIs do not embed, so the independent embedding route
+  // still defaults to the embedding-capable SDK provider (OpenAI).
+  return taskClass === 'embedding' ? 'openai' : 'claude-cli';
 }
 
 function modelFor(mode: AiCliMode, providerId: string, taskClass: TaskClass, opts: AiCommandOptions): string {
@@ -212,13 +224,40 @@ function buildProvider(mode: AiCliMode, providerId: string, model: string): AiPr
     const capabilities =
       providerId === 'openai'
         ? OPENAI_REFERENCE_CAPABILITIES
-        : providerId === 'mock'
-          ? mockCapabilities(model)
-          : ANTHROPIC_REFERENCE_CAPABILITIES;
+        : providerId === 'claude-cli'
+          ? CLAUDE_CLI_REFERENCE_CAPABILITIES
+          : providerId === 'codex-cli'
+            ? CODEX_CLI_REFERENCE_CAPABILITIES
+            : providerId === 'mock'
+              ? mockCapabilities(model)
+              : ANTHROPIC_REFERENCE_CAPABILITIES;
     return new MockProvider({ id: providerId, capabilities });
   }
 
-  // live (or live record) — the only paths that can reach the network.
+  // live (or live record) — the only paths that can reach the network. The
+  // CLI-session providers spawn a locally-authenticated agent per call and
+  // kill it on completion/abort — no API key (ADR-0035); MERIDIAN_CLAUDE_CLI /
+  // MERIDIAN_CODEX_CLI override the binary, the env/config edge (§8.2).
+  if (providerId === 'claude-cli') {
+    return new ClaudeCliProvider({
+      id: 'claude-cli',
+      capabilities: CLAUDE_CLI_REFERENCE_CAPABILITIES,
+      runner: createProcessCliRunner(),
+      ...(process.env['MERIDIAN_CLAUDE_CLI'] !== undefined
+        ? { command: process.env['MERIDIAN_CLAUDE_CLI'] }
+        : {}),
+    });
+  }
+  if (providerId === 'codex-cli') {
+    return new CodexCliProvider({
+      id: 'codex-cli',
+      capabilities: CODEX_CLI_REFERENCE_CAPABILITIES,
+      runner: createProcessCliRunner(),
+      ...(process.env['MERIDIAN_CODEX_CLI'] !== undefined
+        ? { command: process.env['MERIDIAN_CODEX_CLI'] }
+        : {}),
+    });
+  }
   if (providerId === 'anthropic') {
     return new AnthropicProvider({
       id: 'anthropic',
@@ -233,7 +272,7 @@ function buildProvider(mode: AiCliMode, providerId: string, model: string): AiPr
       client: createOpenAiClient(),
     });
   }
-  throw new AiCliError(2, `ai: --ai-mode ${mode} needs --ai-provider mock | anthropic | openai, got "${providerId}"`);
+  throw new AiCliError(2, `ai: --ai-mode ${mode} needs --ai-provider mock | claude-cli | codex-cli | anthropic | openai, got "${providerId}"`);
 }
 
 export interface BuiltSession {

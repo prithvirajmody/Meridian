@@ -122,6 +122,16 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
+      name: 'projections-only-view-model-and-layout',
+      severity: 'error',
+      comment:
+        'ADR-0037: projections import only themselves, view-model, and layout — no store, renderer, framework, plugin, domain, I/O, or Node edge, including type-only edges.',
+      from: { path: '^packages/projections/src' },
+      to: {
+        pathNot: '^packages/projections/src|^packages/(view-model|layout)(/|$)',
+      },
+    },
+    {
       name: 'renderer-only-view-model-and-pixi',
       severity: 'error',
       comment:
@@ -254,12 +264,12 @@ module.exports = {
       name: 'studio-is-the-presentation-composition-root',
       severity: 'error',
       comment:
-        'ADR-0022/Phase 6 (+9C): Studio composes the pipeline downward; it may use only the declared semantic, plugin, layout, view-model, navigation, renderer, and built-in adapter (markdown, conversation) packages.',
+        'ADR-0022/0037 · Phase 10: Studio composes the pipeline downward; it may use only the declared semantic, plugin, layout, view-model, projections, navigation, renderer, and built-in adapter (markdown, conversation) packages.',
       from: { path: '^apps/studio/src' },
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|abstraction|layout|view-model|navigation|renderer|plugin-api|plugin-host|adapters/(markdown|conversation))',
+          '^packages/(graph-core|graph-store|abstraction|layout|view-model|projections|navigation|renderer|plugin-api|plugin-host|adapters/(markdown|conversation))',
       },
     },
     {
@@ -281,11 +291,11 @@ module.exports = {
       name: 'ai-only-approved-deps',
       severity: 'error',
       comment:
-        'packages/ai (the AI gateway) imports only itself, zod, and the two vendor AI SDKs (SDKs further confined below). No graph-core/graph-store/abstraction/domain/DOM/plugin edges — the gateway speaks its own vendor-neutral vocabulary (§20; §8).',
+        'packages/ai (the AI gateway) imports only itself, zod, the two vendor AI SDKs, and node:child_process for the CLI-session runner (SDKs and the subprocess edge further confined below, ADR-0035). No graph-core/graph-store/abstraction/domain/DOM/plugin edges — the gateway speaks its own vendor-neutral vocabulary (§20; §8).',
       from: { path: '^packages/ai/src' },
       to: {
         pathNot:
-          '^packages/ai/src|^node_modules/(\\.pnpm/)?zod|^node_modules/(\\.pnpm/)?(@anthropic-ai\\+sdk|openai)(@|/)',
+          '^packages/ai/src|^node_modules/(\\.pnpm/)?zod|^node_modules/(\\.pnpm/)?(@anthropic-ai\\+sdk|openai)(@|/)|^(node:)?child_process$',
         dependencyTypesNot: ['type-only'],
       },
     },
@@ -296,6 +306,17 @@ module.exports = {
         'Only the two provider client factories (packages/ai/src/providers/{anthropic,openai}-client.ts) may import a vendor AI SDK; everything else consumes the vendor-neutral provider interfaces (§20; §8.2). Proves "only packages/ai adapters import SDKs".',
       from: { pathNot: '^packages/ai/(src|dist)/providers/(anthropic|openai)-client\\.(ts|js)$' },
       to: { path: '^node_modules/(\\.pnpm/)?(@anthropic-ai\\+sdk|openai)(@|/)' },
+    },
+    {
+      name: 'child-process-confined-to-cli-runner-client',
+      severity: 'error',
+      comment:
+        'Only the CLI-session runner factory (packages/ai/src/providers/cli-runner-client.ts) may import node:child_process inside the gateway — the subprocess edge is confined exactly like the vendor SDKs; adapters consume the injected CliRunner seam (§20; ADR-0035).',
+      from: {
+        path: '^packages/ai/(src|dist)',
+        pathNot: '^packages/ai/(src|dist)/providers/cli-runner-client\\.(ts|js)$',
+      },
+      to: { path: '^(node:)?child_process$' },
     },
     {
       name: 'ai-services-only-gateway-and-core-seams',

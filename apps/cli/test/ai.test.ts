@@ -16,9 +16,10 @@ const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..
 const cli = resolve(repoRoot, 'apps/cli/dist/main.js');
 
 /** Run the CLI with every AI key stripped from the environment, so a passing
- * mock/replay run proves it never needed the network. */
-function run(args: string[]) {
-  const env = { ...process.env };
+ * mock/replay run proves it never needed the network. `extraEnv` lets the
+ * CLI-session tests point MERIDIAN_CLAUDE_CLI at a stub or missing binary. */
+function run(args: string[], extraEnv: Record<string, string> = {}) {
+  const env = { ...process.env, ...extraEnv };
   delete env['ANTHROPIC_API_KEY'];
   delete env['OPENAI_API_KEY'];
   const r = spawnSync(process.execPath, [cli, ...args], { cwd: repoRoot, encoding: 'utf8', env });
@@ -53,8 +54,32 @@ const FIXTURE = {
   ],
 };
 
+/** A stub `claude` binary: reads the piped prompt, prints one valid
+ * `--output-format json` result envelope whose `result` is schema-valid
+ * summary JSON. Proves the whole spawn→parse→validate path with zero network. */
+const stubClaude = join(scratch, 'stub-claude.mjs');
+const STUB_ENVELOPE = {
+  type: 'result',
+  subtype: 'success',
+  is_error: false,
+  result: JSON.stringify({
+    name: 'Stub group',
+    summary: 'A stubbed Claude Code session answered.',
+    confidence: 0.7,
+  }),
+  session_id: 'stub',
+  total_cost_usd: 0,
+  usage: { input_tokens: 10, output_tokens: 10 },
+};
+const STUB_SOURCE =
+  '#!/usr/bin/env node\n' +
+  'let s = "";\n' +
+  'process.stdin.on("data", (d) => (s += d));\n' +
+  `process.stdin.on("end", () => process.stdout.write(${JSON.stringify(JSON.stringify(STUB_ENVELOPE))}));\n`;
+
 beforeAll(() => {
   writeFileSync(doc, JSON.stringify(FIXTURE, null, 2), 'utf8');
+  writeFileSync(stubClaude, STUB_SOURCE, { encoding: 'utf8', mode: 0o755 });
 });
 
 describe('meridian ai — the fixture round-trips through the ordinary pipeline', () => {
@@ -146,10 +171,39 @@ describe('meridian ai live (consent + key gate)', () => {
     expect(r.stderr).toContain('--ai-consent');
   });
 
-  it('with consent but no key, fails deterministically at the key edge', () => {
-    const r = run(['ai', 'summarize', doc, '--ai-mode', 'live', '--ai-consent']);
+  it('with consent but no key, the SDK provider fails deterministically at the key edge', () => {
+    const r = run(['ai', 'summarize', doc, '--ai-mode', 'live', '--ai-consent', '--ai-provider', 'anthropic']);
     expect(r.code).toBe(2);
     expect(r.stderr).toContain('ANTHROPIC_API_KEY');
+  });
+});
+
+describe('meridian ai live via a local Claude Code session (ADR-0035, no API key)', () => {
+  it('with consent and a missing binary, fails deterministically at the binary edge', () => {
+    const r = run(['ai', 'summarize', doc, '--ai-mode', 'live', '--ai-consent'], {
+      MERIDIAN_CLAUDE_CLI: join(scratch, 'no-such-claude'),
+    });
+    expect(r.code).toBe(1);
+    expect(r.stderr).toContain('claude CLI not found');
+    // The keyless default live provider is the CLI session, not the SDK.
+    expect(r.stderr).not.toContain('ANTHROPIC_API_KEY');
+  });
+
+  it('spawns the (stubbed) claude binary per group and reports its enrichment', () => {
+    const r = run(['ai', 'summarize', doc, '--ai-mode', 'live', '--ai-consent', '--json'], {
+      MERIDIAN_CLAUDE_CLI: stubClaude,
+    });
+    expect(r.code).toBe(0);
+    const parsed = JSON.parse(r.stdout) as {
+      mode: string;
+      provider: string;
+      enriched: number;
+      groups: Array<{ summary?: string }>;
+    };
+    expect(parsed.mode).toBe('live');
+    expect(parsed.provider).toBe('claude-cli');
+    expect(parsed.enriched).toBe(2);
+    expect(parsed.groups[0]?.summary).toBe('A stubbed Claude Code session answered.');
   });
 });
 

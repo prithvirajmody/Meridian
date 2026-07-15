@@ -32,6 +32,9 @@ export interface SelectionState {
   readonly anchor?: SelectionAnchor;
 }
 
+/** Projection-neutral shorthand; exactly the existing selection contract. */
+export type Selection = SelectionState;
+
 export const EMPTY_SELECTION: SelectionState = { nodes: [], edges: [] };
 
 export type RenderDiagnosticCode =

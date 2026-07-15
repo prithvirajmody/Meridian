@@ -7,6 +7,10 @@ independently testable. The worker-built packed quadtree serves both culling
 and synchronous picking. Pixi's leaf renders bounded MSDF `BitmapText` labels
 plus the ADR-0020 shaped-Unicode fallback.
 
+The Phase 10C outline surface is a renderer-owned, fixed-row virtual DOM list.
+Its O(1) window calculation and bounded reusable row pool keep 100k-node
+semantic outlines independent from the headless projection package.
+
 Build the bare WebGL fixture with
 `pnpm --filter @meridian/renderer harness:build`, or run it locally with
 `pnpm --filter @meridian/renderer dev`. After building, run

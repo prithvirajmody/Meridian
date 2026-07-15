@@ -26,3 +26,28 @@ export const OPENAI_REFERENCE_CAPABILITIES: ProviderCapabilities = {
     'text-embedding-3-large': { inputPerMTok: 0.13, outputPerMTok: 0 },
   },
 };
+
+/**
+ * CLI-session provider catalogs (ADR-0035). Pricing is **notional**: a CLI
+ * session bills the user's subscription (marginal dollar cost $0), but a
+ * zero-price catalog would silently disable every `maxDollars` ceiling
+ * (ADR-0032), so BudgetGuard meters what the run *would* cost at reference
+ * API rates. Both CLIs are completion-only; embeddings keep their own route.
+ */
+export const CLAUDE_CLI_REFERENCE_CAPABILITIES: ProviderCapabilities = {
+  completion: true,
+  embedding: false,
+  models: {
+    'claude-opus-4-8': { inputPerMTok: 15, outputPerMTok: 75 },
+    'claude-haiku-4-5': { inputPerMTok: 1, outputPerMTok: 5 },
+  },
+};
+
+export const CODEX_CLI_REFERENCE_CAPABILITIES: ProviderCapabilities = {
+  completion: true,
+  embedding: false,
+  models: {
+    'gpt-5-codex': { inputPerMTok: 1.25, outputPerMTok: 10 },
+    'gpt-5': { inputPerMTok: 1.25, outputPerMTok: 10 },
+  },
+};

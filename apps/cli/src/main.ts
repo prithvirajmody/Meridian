@@ -127,7 +127,11 @@ Usage:
                                              pluggable embeddings into labeled
                                              groups. --ai-mode mock (default) and
                                              replay are zero-network; live needs
-                                             --ai-consent and a key from the env
+                                             --ai-consent. Completion defaults to
+                                             claude-cli (a local Claude Code
+                                             session, no API key; codex-cli
+                                             likewise); anthropic/openai need a
+                                             key from the env
   meridian ai enrich <file> [--out <file>] [--ai-mode <mock|replay|record|live>]
                   [--ai-fixtures <file>] [--ai-provider <id>] [--ai-model <id>]
                   [--budget <dollars>] [--ai-consent] [--json]

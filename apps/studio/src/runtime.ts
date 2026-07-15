@@ -1,19 +1,53 @@
 import { keyToNavCommand } from '@meridian/navigation';
 import type { AbstractionProposal } from '@meridian/abstraction';
-import type { NodeId } from '@meridian/view-model';
+import {
+  EMPTY_FOCUS,
+  EMPTY_SELECTION,
+  type NodeId,
+  type ProjectionModel,
+} from '@meridian/view-model';
 import type { AutoAcceptRule, PendingProposal, ProvenanceView } from './store.js';
 import { BrowserStudioLayoutService } from './browser-layout-worker.js';
-import type { StudioNavigator, TransitionRecord } from './navigation/studio-navigator.js';
+import type {
+  NavigatorRenderer,
+  StudioNavigator,
+  TransitionRecord,
+} from './navigation/studio-navigator.js';
 import {
   createEmptyRenderModel,
   createHostileLayoutRenderModel,
   createPerformanceRenderModel,
   createUnicodeRenderModel,
 } from './performance-fixtures.js';
-import { StudioSceneBridge, type FrameProbeResult } from './studio-scene-bridge.js';
+import type { FrameProbeResult } from './studio-scene-bridge.js';
+import { StudioProjectionCoordinator } from './studio-projection-host.js';
 import { StudioSession } from './studio-session.js';
 import { ManualClock, realClock, type StudioClock } from './transition/clock.js';
-import { createStudioStore, type StudioStore } from './store.js';
+import { createStudioStore, StudioStoreCommands, type StudioStore } from './store.js';
+
+function createOutlineProjectionModel(rowCount: number): ProjectionModel {
+  const count = Math.max(0, Math.min(100_000, Math.floor(rowCount)));
+  return {
+    cutLevel: 0,
+    nodes: Array.from({ length: count }, (_, index) => ({
+      id: `outline-fixture:${index}` as NodeId,
+      label: `Outline row ${String(index + 1).padStart(6, '0')}`,
+      kind: 'fixture:outline-row',
+      attrs: { 'fixture:index': index },
+      graphId: null,
+      parentId: null,
+      detailGraphId: null,
+      depth: 0,
+      cutReason: null,
+      coveredLeaves: 1,
+      orderPath: [index],
+    })),
+    inducedEdges: [],
+    selection: EMPTY_SELECTION,
+    focus: EMPTY_FOCUS,
+    domainMeta: { domain: 'test-fixture', label: 'Outline performance fixture' },
+  };
+}
 
 export interface StudioTestState {
   readonly phase: string;
@@ -46,6 +80,10 @@ export interface MeridianStudioTestApi {
   openUnicodeFixture(): void;
   openHostileLayoutFixture(): void;
   openEmptyFixture(): void;
+  openOutlineFixture(rows?: number): void;
+  /** Phase-10 test/support seam; Studio chrome lands with the 10F switcher. */
+  switchProjection(id: 'map' | 'outline'): Promise<void>;
+  projectionId(): string | null;
   state(): StudioTestState;
   fit(): void;
   zoomBy(factor: number): void;
@@ -102,7 +140,8 @@ export class StudioRuntime {
   readonly store: StudioStore;
   readonly session: StudioSession;
   readonly clock: StudioClock;
-  private bridge: StudioSceneBridge | null = null;
+  private projectionHost: StudioProjectionCoordinator | null = null;
+  private navigatorRenderer: NavigatorRenderer | null = null;
   /** The hash the page arrived with — captured before any replaceState so a
    * linked view survives the navigator's own boot-time URL emission. */
   private pendingRestoreHash: string;
@@ -115,7 +154,7 @@ export class StudioRuntime {
       layoutService: new BrowserStudioLayoutService(),
       clock: this.clock,
       viewportProvider: () => {
-        const size = this.bridge?.viewportSize();
+        const size = this.projectionHost?.viewportSize();
         return size !== undefined && size.width > 0 && size.height > 0
           ? size
           : { width: 1280, height: 800 };
@@ -143,33 +182,46 @@ export class StudioRuntime {
   }
 
   private attachNavigatorRenderer(navigator: StudioNavigator): void {
-    const bridge = this.bridge;
-    if (bridge === null) return;
-    navigator.attachRenderer({
-      render: (model, camera) => bridge.renderTransient(model, camera),
-    });
+    const host = this.projectionHost;
+    if (host === null) return;
+    if (this.navigatorRenderer !== null) navigator.detachRenderer(this.navigatorRenderer);
+    const renderer: NavigatorRenderer = {
+      render: (model, camera) => host.renderTransient(model, camera),
+    };
+    this.navigatorRenderer = renderer;
+    navigator.attachRenderer(renderer);
   }
 
-  createBridge(canvas: HTMLCanvasElement): StudioSceneBridge {
-    const bridge = new StudioSceneBridge(this.store, {
+  createProjectionHost(element: HTMLElement): StudioProjectionCoordinator {
+    const host = new StudioProjectionCoordinator(element, this.store, {
       navigation: () => this.navigator(),
+      focus: () => {
+        const focus = this.navigator()?.context().focus;
+        return { node: focus ?? null };
+      },
+      completeTransition: () => this.navigator()?.completeTransitionForProjectionSwitch(),
     });
-    this.bridge = bridge;
-    void bridge.mount(canvas);
+    this.projectionHost = host;
+    void host.switchProjection('map');
     const navigator = this.navigator();
     if (navigator !== null) this.attachNavigatorRenderer(navigator);
-    return bridge;
+    return host;
   }
 
-  releaseBridge(bridge: StudioSceneBridge): void {
-    bridge.destroy();
-    if (this.bridge === bridge) this.bridge = null;
+  releaseProjectionHost(host: StudioProjectionCoordinator): void {
+    const navigator = this.navigator();
+    if (navigator !== null && this.navigatorRenderer !== null) {
+      navigator.detachRenderer(this.navigatorRenderer);
+    }
+    this.navigatorRenderer = null;
+    host.destroy();
+    if (this.projectionHost === host) this.projectionHost = null;
   }
 
   testApi(): MeridianStudioTestApi {
-    const bridge = (): StudioSceneBridge => {
-      if (this.bridge === null) throw new Error('Studio canvas bridge is not mounted');
-      return this.bridge;
+    const bridge = (): StudioProjectionCoordinator => {
+      if (this.projectionHost === null) throw new Error('Studio canvas bridge is not mounted');
+      return this.projectionHost;
     };
     const nav = (): StudioNavigator => {
       const navigator = this.navigator();
@@ -190,6 +242,14 @@ export class StudioRuntime {
         this.session.publishFixture(createHostileLayoutRenderModel(), 'hostile-layout'),
       openEmptyFixture: () =>
         this.session.publishFixture(createEmptyRenderModel(), 'empty-render-model'),
+      openOutlineFixture: (rows = 100_000) => {
+        this.session.publishFixture(createEmptyRenderModel(), 'outline-100k');
+        new StudioStoreCommands(this.store).setProjectionModel(
+          createOutlineProjectionModel(rows),
+        );
+      },
+      switchProjection: async (id) => bridge().switchProjection(id),
+      projectionId: () => this.projectionHost?.activeId() ?? null,
       state: () => {
         const state = this.store.getState();
         return {
@@ -267,8 +327,9 @@ export class StudioRuntime {
   }
 
   async destroy(): Promise<void> {
-    this.bridge?.destroy();
-    this.bridge = null;
+    this.projectionHost?.destroy();
+    this.projectionHost = null;
+    this.navigatorRenderer = null;
     await this.session.destroy();
   }
 }

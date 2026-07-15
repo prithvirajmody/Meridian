@@ -12,17 +12,11 @@ export function CanvasIsland({ runtime }: CanvasIslandProps) {
   useEffect(() => {
     const host = hostRef.current;
     if (host === null) return;
-    // A WebGL canvas is single-lifecycle: Pixi teardown loses its context for
-    // good, so every bridge mount (including StrictMode's dev double-mount)
-    // must get a fresh element rather than reuse a canvas whose context died.
-    const canvas = host.ownerDocument.createElement('canvas');
-    canvas.setAttribute('aria-label', 'Meridian graph canvas');
-    canvas.setAttribute('data-testid', 'graph-canvas');
-    host.append(canvas);
-    const bridge = runtime.createBridge(canvas);
+    // React owns only the medium-neutral layout box. The projection host owns
+    // the fresh canvas/scene lifecycle, including StrictMode double mounts.
+    const projectionHost = runtime.createProjectionHost(host);
     return () => {
-      runtime.releaseBridge(bridge);
-      canvas.remove();
+      runtime.releaseProjectionHost(projectionHost);
     };
   }, [runtime]);
 

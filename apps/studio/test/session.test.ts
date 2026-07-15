@@ -26,6 +26,11 @@ describe('StudioSession full pipeline', () => {
         expect(state.adapter).toMatchObject({ domain: 'markdown', plugin: '@meridian/adapter-markdown' });
         expect(state.graphVersion).toBe('v1');
         expect(state.renderModel).not.toBeNull();
+        expect(state.projectionModel).not.toBeNull();
+        expect(state.projectionModel?.renderModel).toBe(state.renderModel);
+        expect(state.projectionModel?.nodes.map((node) => node.id).sort()).toEqual(
+          [...(state.renderModel?.nodeIds ?? [])].sort(),
+        );
         expect(state.renderModel?.diagnostics).toEqual([]);
         if (corpus === 'empty.md') expect(state.renderModel?.nodeIds).toHaveLength(0);
       } finally {
@@ -49,6 +54,8 @@ describe('StudioSession full pipeline', () => {
       expect(state.panel).toMatchObject({ kind: 'node', id: nodeId });
       expect(state.panel?.provenance.origin).toBe('source');
       expect(state.renderModel?.revision).not.toBe(before.revision);
+      expect(state.projectionModel?.renderModel).toBe(state.renderModel);
+      expect(state.projectionModel?.selection).toEqual(state.selection);
       expect(state.hover).toBeNull();
     } finally {
       await session.destroy();

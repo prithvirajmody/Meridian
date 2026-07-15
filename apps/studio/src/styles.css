@@ -224,6 +224,61 @@ h1 {
   cursor: grabbing;
 }
 
+.projection-surface {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.projection-surface-outline {
+  background: rgb(9 14 27 / 96%);
+  color: #dce7ff;
+}
+
+.meridian-outline-virtual-list {
+  outline: none;
+}
+
+.meridian-outline-row {
+  gap: 6px;
+  padding-inline: 10px 16px;
+  border-bottom: 1px solid rgb(131 151 194 / 10%);
+  color: #cbd8f3;
+  cursor: default;
+  font-size: 13px;
+}
+
+.meridian-outline-row[aria-selected='true'] {
+  background: rgb(72 117 211 / 30%);
+  color: #f5f8ff;
+}
+
+.meridian-outline-row[data-outline-active='true'] {
+  box-shadow: inset 3px 0 #7aa2ff;
+}
+
+.meridian-outline-row[aria-current='true'] .meridian-outline-label {
+  color: #a8c2ff;
+  font-weight: 650;
+}
+
+.meridian-outline-disclosure {
+  color: #8097c7;
+  cursor: pointer;
+}
+
+.meridian-outline-metadata {
+  color: #7081a6;
+  font-size: 11px;
+}
+
+.meridian-outline-empty {
+  padding: 28px;
+  color: #8795b4;
+  font-size: 13px;
+}
+
 .inspector {
   min-width: 0;
   overflow: auto;

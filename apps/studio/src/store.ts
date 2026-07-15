@@ -5,6 +5,7 @@ import {
   EMPTY_SELECTION,
   type AttrBag,
   type CameraState,
+  type ProjectionModel,
   type RenderDiagnostic,
   type RenderModel,
   type SelectionState,
@@ -35,7 +36,7 @@ export interface AdapterState {
 }
 
 export interface StudioDiagnostic {
-  readonly source: 'pipeline' | 'view-model' | 'renderer';
+  readonly source: 'pipeline' | 'view-model' | 'renderer' | 'projection';
   readonly code: string;
   readonly message: string;
   readonly elementId?: string;
@@ -186,6 +187,8 @@ export interface StudioState {
   readonly adapter: AdapterState | null;
   readonly graphVersion: string | null;
   readonly renderModel: RenderModel | null;
+  /** Presentation-neutral, data-only input consumed by the active projection. */
+  readonly projectionModel: ProjectionModel | null;
   readonly camera: CameraState;
   readonly selection: SelectionState;
   readonly selectionStartedAtMs: number | null;
@@ -227,6 +230,7 @@ export function initialStudioState(debugEnabled = false): StudioState {
     adapter: null,
     graphVersion: null,
     renderModel: null,
+    projectionModel: null,
     camera: createCameraState(),
     selection: EMPTY_SELECTION,
     selectionStartedAtMs: null,
@@ -282,6 +286,7 @@ export class StudioStoreCommands {
       adapter: null,
       graphVersion: null,
       renderModel: null,
+      projectionModel: null,
       camera: createCameraState(),
       selection: EMPTY_SELECTION,
       selectionStartedAtMs: null,
@@ -342,6 +347,12 @@ export class StudioStoreCommands {
     });
   }
 
+  /** Publish the semantic waist independently from the navigator's established
+   * RenderModel channel. StudioSession keeps the two values synchronized. */
+  setProjectionModel(model: ProjectionModel | null): void {
+    this.store.setState({ projectionModel: model });
+  }
+
   fail(generation: number, code: string, message: string): void {
     if (this.store.getState().source?.generation !== generation) return;
     const diagnostic: StudioDiagnostic = { source: 'pipeline', code, message };
@@ -350,6 +361,7 @@ export class StudioStoreCommands {
       phase: 'error',
       message,
       renderModel: null,
+      projectionModel: null,
       hover: null,
       diagnostics: boundedDiagnostics(current.diagnostics, [diagnostic]),
     });
@@ -406,6 +418,25 @@ export class StudioStoreCommands {
     });
   }
 
+  /** Projection-neutral identity write. Concrete media report an intent; the
+   * session remains the sole place that rebuilds panels and view models. */
+  replaceSelection(selection: SelectionState): void {
+    const copy: SelectionState = {
+      nodes: [...selection.nodes],
+      edges: [...selection.edges],
+      ...(selection.anchor === undefined
+        ? {}
+        : selection.anchor.kind === 'node'
+          ? { anchor: { kind: 'node' as const, id: selection.anchor.id } }
+          : { anchor: { kind: 'edge' as const, key: selection.anchor.key } }),
+    };
+    this.store.setState({
+      selection: copy,
+      selectionStartedAtMs: null,
+      ...(copy.nodes.length === 0 && copy.edges.length === 0 ? { panel: null } : {}),
+    });
+  }
+
   setPanel(panel: SelectedElementPanel | null): void {
     this.store.setState({ panel });
   }
@@ -430,6 +461,15 @@ export class StudioStoreCommands {
     const current = this.store.getState();
     this.store.setState({
       diagnostics: boundedDiagnostics(current.diagnostics, [diagnosticsFromFault(fault)]),
+    });
+  }
+
+  projectionFault(code: string, message: string): void {
+    const current = this.store.getState();
+    this.store.setState({
+      diagnostics: boundedDiagnostics(current.diagnostics, [
+        { source: 'projection', code, message },
+      ]),
     });
   }
 

@@ -145,11 +145,27 @@ describe('StudioSceneBridge lifecycle and event direction', () => {
     const first = createPerformanceRenderModel(2);
     const latest = { ...createPerformanceRenderModel(3), revision: 'latest' };
     commands.publishModel(first, 'v1', 0, 'first');
+    bridge.acceptSettledModel(first, 1);
     commands.publishModel(latest, 'v1', 0, 'latest');
+    bridge.acceptSettledModel(latest, 1);
     expect(scene.renders).toHaveLength(0);
     resolveMount();
     await mounting;
     expect(scene.renders.at(-1)?.model.revision).toBe('latest');
+    bridge.destroy();
+  });
+
+  it('reports and rethrows async mount failure for projection fallback', async () => {
+    const scene = new FakeScene();
+    const failure = new Error('gpu unavailable');
+    scene.mountPromise = Promise.reject(failure);
+    const { store, bridge } = bridgeFor(scene);
+    await expect(bridge.mount(canvas())).rejects.toBe(failure);
+    expect(store.getState().diagnostics.at(-1)).toMatchObject({
+      source: 'renderer',
+      code: 'mount-failed',
+      message: 'gpu unavailable',
+    });
     bridge.destroy();
   });
 

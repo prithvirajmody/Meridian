@@ -44,6 +44,9 @@ export {
 } from './camera.js';
 export type { CameraScaleLimits, CameraState, ViewportSize } from './camera.js';
 
+export { createFocusState, EMPTY_FOCUS } from './focus.js';
+export type { FocusState } from './focus.js';
+
 export {
   isLabelEligible,
   LABEL_ALL_THRESHOLD_CSS_PX,
@@ -79,6 +82,16 @@ export type {
   RenderDiagnostic,
   RenderDiagnosticCode,
   RenderModel,
+  Selection,
   SelectionAnchor,
   SelectionState,
 } from './render-model.js';
+
+export { buildProjectionModel } from './projection-model.js';
+export type {
+  BuildProjectionModelOptions,
+  DomainMeta,
+  ProjectionModel,
+  ProjectionNode,
+  TemporalDomainHints,
+} from './projection-model.js';

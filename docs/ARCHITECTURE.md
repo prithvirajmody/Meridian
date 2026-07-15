@@ -1435,7 +1435,7 @@ Every optimization must cite a benchmark; every benchmark runs in CI;
 profiles accompany perf PRs. The pre-agreed escalation path for a hot spot
 that resists JS-level optimization (most likely induced-edge aggregation or
 force layout) is a WASM port behind the existing pure interface — a
-decision gated on measured need (roadmap ADR-0039), not anticipation.
+decision gated on measured need (roadmap ADR-0040), not anticipation.
 
 ---
 
@@ -1782,7 +1782,7 @@ registry lives in `docs/adr/`. Format per entry: **D**ecision,
   command envelope later without touching handlers.
 
 **ADR-A10 — One-file SQLite project with the op log as primary artifact**
-*(roadmap ADR-0037)*
+*(roadmap ADR-0038)*
 - **D:** `.meridian` = SQLite (elements, log, snapshots, Views); JSON IR
   for interchange; storage behind an injected backend.
 - **A:** directory of JSON files; custom binary format; IndexedDB-native.
@@ -1793,7 +1793,7 @@ registry lives in `docs/adr/`. Format per entry: **D**ecision,
   compression are internal changes.
 
 **ADR-A11 — Plugin capabilities enumerated; built-ins are plugins;
-isolation designed now, enforced by tier** *(roadmap ADR-0009/0042)*
+isolation designed now, enforced by tier** *(roadmap ADR-0009/0043)*
 - **D:** closed, versioned capability enum; first-party implementations
   register through the public contract; message-friendly API from day one;
   trust tiers phase in enforcement.
@@ -1805,7 +1805,7 @@ isolation designed now, enforced by tier** *(roadmap ADR-0009/0042)*
   serializability retrofits are rewrites.
 - **F:** Tier 2 (registry, signatures, quotas) is additive.
 
-**ADR-A12 — Performance budgets as versioned CI contracts** *(roadmap §5.2, ADR-0039)*
+**ADR-A12 — Performance budgets as versioned CI contracts** *(roadmap §5.2, ADR-0040)*
 - **D:** §16.1 targets live in a budget manifest; regressions fail CI;
   WASM escalation is measurement-gated.
 - **A:** perf as periodic audit; optimize-when-users-complain.
@@ -1887,7 +1887,6 @@ this document is edited in the same change. Silent divergence is the only
 prohibited outcome.
 
 *End of architecture specification.*
-
 
 
 

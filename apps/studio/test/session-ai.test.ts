@@ -70,6 +70,13 @@ describe('StudioSession AI trust surface (end-to-end)', () => {
       expect(store.getState().ai.provenanceView).toBe('evidence-only');
       expect(store.getState().renderModel!.nodeIds).not.toContain('ai-cluster-1');
       expect(store.getState().renderModel!.nodeIds.length).toBe(fullCount - summary.aiNodeCount);
+      expect(store.getState().projectionModel?.renderModel).toBe(store.getState().renderModel);
+      expect(store.getState().projectionModel?.nodes.map((node) => node.id).sort()).toEqual(
+        [...store.getState().renderModel!.nodeIds].sort(),
+      );
+      expect(store.getState().projectionModel?.inducedEdges.every((edge) =>
+        store.getState().renderModel!.edgeKeys.includes(`${edge.src}→${edge.dst}→${edge.kind}`),
+      )).toBe(true);
 
       // Toggling back restores the full model — nothing was lost from the store.
       session.setProvenanceView('all');

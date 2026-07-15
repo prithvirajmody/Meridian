@@ -5,9 +5,14 @@ import { describe, expect, it } from 'vitest';
 
 const SRC_DIR = fileURLToPath(new URL('../src', import.meta.url));
 const SDK_IMPORT = /(?:from|import)\s*\(?\s*['"](@anthropic-ai\/sdk|openai)['"]/;
+const CHILD_PROCESS_IMPORT = /(?:from|import)\s*\(?\s*['"](?:node:)?child_process['"]/;
 
 // The two — and only two — modules permitted to import a vendor AI SDK.
 const ALLOWED = new Set(['providers/anthropic-client.ts', 'providers/openai-client.ts']);
+
+// The one module permitted to import node:child_process (ADR-0035): the
+// CLI-session runner factory. Adapters consume the injected CliRunner seam.
+const CLI_RUNNER_CLIENT = 'providers/cli-runner-client.ts';
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -41,5 +46,24 @@ describe('architecture: vendor SDK imports are confined to the adapter client fa
       const content = readFileSync(join(SRC_DIR, rel), 'utf8');
       expect(SDK_IMPORT.test(content)).toBe(true);
     }
+  });
+});
+
+describe('architecture: node:child_process is confined to the CLI runner factory (ADR-0035)', () => {
+  const files = walk(SRC_DIR);
+
+  it('no module outside providers/cli-runner-client.ts imports node:child_process', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      const rel = relative(SRC_DIR, file).split('\\').join('/');
+      if (rel === CLI_RUNNER_CLIENT) continue;
+      if (CHILD_PROCESS_IMPORT.test(readFileSync(file, 'utf8'))) offenders.push(rel);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('the runner factory does import node:child_process (the confinement is real, not vacuous)', () => {
+    const content = readFileSync(join(SRC_DIR, CLI_RUNNER_CLIENT), 'utf8');
+    expect(CHILD_PROCESS_IMPORT.test(content)).toBe(true);
   });
 });

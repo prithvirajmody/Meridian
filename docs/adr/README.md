@@ -93,6 +93,9 @@ so the decision history stays legible.
 | [0032](0032-budget-policy.md) | Budget policy: per-project/per-session ceilings, hard-stop preserving valid partial graph state, provider-neutral accounting | Proposed | §8.3.3, §8.1, ADR-A5 | 8 |
 | [0033](0033-plugin-api-1-0-scope.md) | plugin-api 1.0 scope: `plugin-api` exports (incl. re-exported graph-core wire types) freeze, additive-only until 2.0, deprecation policy; provisional pending the 9E chafe audit | Proposed | §3.3, §14.2, P12; ADR-0010 | 9 |
 | [0034](0034-hybrid-adapter-pattern.md) | Hybrid adapter pattern: deterministic AI-free skeleton `DomainParser` + separately-cacheable composition-root AI enrichment emitting proposals only | Accepted | §7.2, §8.1, ADR-A5 | 9 |
+| [0035](0035-cli-session-providers.md) | CLI-session providers: Claude Code + Codex as subprocess-backed `AiProvider` adapters (spawn per call, kill on abort), keyless default live route, notional budget pricing, `node:child_process` confined to the runner factory | Accepted | §8.2–8.3, §20; ADR-0029/0030/0032 | 8 (amendment) |
+| [0036](0036-mode-switch-survival.md) | Mode-switch survival: identity always, geometry only when compatible | Accepted | §9.4, §10.3–10.5, §12.1; ADR-0023/0025 | 10 |
+| [0037](0037-projection-host-medium.md) | Projections choose their medium behind a capability-scoped host | Accepted | §1.3, §9, §14, §20; ADR-A8/0009/0019/0022/0033 | 10 |
 
 Later phases extend this registry (ADR-0009+ at Phase 2, and so on). The
 constitution's `ADR-A5…A12` are pre-recorded there and become numbered ADRs in
