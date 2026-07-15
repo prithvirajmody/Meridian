@@ -10,7 +10,7 @@
  * `arg:thesis|claim|premise|objection|evidence` nodes and
  * `arg:supports|rebuts|assumes|cites` edges that only the 9D AI enrichment
  * pass produces — so an enriched graph validates against one registered
- * vocabulary. `apiVersion` stays caret `^0.2.0`; the 1.0 freeze is 9E.
+ * vocabulary. `apiVersion` targets caret `^1.0.0` (the 9E freeze, ADR-0033).
  *
  * **Sniff is a deliberate under-bid.** Prose has no structural marker that
  * says "read me as an argument" — a `.md` essay is legitimately claimed by
@@ -31,7 +31,7 @@ const VERSION = '0.1.0';
 export const manifest: PluginManifest = {
   name: '@meridian/adapter-argument',
   version: VERSION,
-  apiVersion: '^0.2.0',
+  apiVersion: '^1.0.0',
   capabilities: [{ kind: 'domain-parser', id: DOMAIN }],
   kinds: [
     'arg:essay',

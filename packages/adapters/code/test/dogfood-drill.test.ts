@@ -37,7 +37,7 @@ afterAll(() => mapper.dispose());
 
 const ctx = testContext();
 const ids: IdFacade = ctx.ids;
-const detailCtx: DetailContext = { apiVersion: '0.2.0', log: { info: () => undefined, warn: () => undefined } };
+const detailCtx: DetailContext = { apiVersion: '1.0.0', log: { info: () => undefined, warn: () => undefined } };
 const vocabulary: VocabularyRegistry = {
   kinds: new Set(codeManifest.kinds ?? []),
   attrs: new Map(Object.entries(codeManifest.attrSchemas ?? {}).map(([k, v]) => [k, v.type])),

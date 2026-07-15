@@ -1,6 +1,10 @@
 # ADR-0010 — plugin-api versioning policy
 
-- **Status:** Proposed
+- **Status:** Proposed — **reconciled by 9E (2026-07-15): flips to Accepted
+  at the M3 review together with ADR-0033.** The policy this record scheduled
+  (semver with declared checkpoints, freeze at Phase 9) has now been executed
+  through both checkpoints exactly as written; nothing in it remains
+  speculative.
 - **Date:** 2026-07-05
 - **Phase:** 2 (roadmap)
 - **Constitution:** ARCHITECTURE.md §3.3 (no unversioned external surface), §14.2, P12

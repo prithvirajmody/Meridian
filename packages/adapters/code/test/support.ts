@@ -129,7 +129,7 @@ export function inProcessMapper(): CodeMapper {
 
 export function testContext(): PluginContext {
   return {
-    apiVersion: '0.2.0',
+    apiVersion: '1.0.0',
     ids: {
       nodeId: (c) => deriveNodeId(c) as string,
       graphId: (c) => deriveGraphId(c) as string,

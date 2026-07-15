@@ -9,8 +9,8 @@
  * The manifest declares the whole Phase 9 conversation vocabulary — including
  * the `conv:topic`/`conv:claim` nodes and `conv:about`/`conv:refers-back` edges
  * that only the 9C AI enrichment pass produces — so an enriched graph validates
- * against one registered vocabulary. `apiVersion` stays caret `^0.2.0`; the 1.0
- * freeze is 9E, not here.
+ * against one registered vocabulary. `apiVersion` targets caret `^1.0.0` (the
+ * 9E freeze, ADR-0033).
  */
 import type { MeridianPlugin, PluginManifest, SourceDescriptor } from '@meridian/plugin-api';
 import { buildDocument, DOMAIN } from './document.js';
@@ -23,7 +23,7 @@ const VERSION = '0.1.0';
 export const manifest: PluginManifest = {
   name: '@meridian/adapter-conversation',
   version: VERSION,
-  apiVersion: '^0.2.0',
+  apiVersion: '^1.0.0',
   capabilities: [{ kind: 'domain-parser', id: DOMAIN }],
   kinds: [
     'conv:session',

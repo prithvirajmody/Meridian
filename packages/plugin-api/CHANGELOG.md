@@ -5,6 +5,29 @@ authors are downstream consumers even while "plugin authors" means us.
 Versioning policy: ADR-0010 (semver; pre-1.0 minors may break, only at
 declared checkpoints P7/P9).
 
+## 1.0.0 — Phase 9E (the freeze; ADR-0033)
+
+**The contract is frozen.** `PLUGIN_API_VERSION` moves to `1.0.0` and the
+exported surface is pinned by the committed api-extractor report
+(`etc/plugin-api.api.md`), verified on every test run — accidental drift now
+fails CI. Regenerate only via `pnpm api:update` (root) after a reviewed,
+changelogged surface change. Evolution is **additive-only until 2.0**: new
+exports, new capability kinds, new optional fields; deprecations are marked
+in-type and never removed before 2.0.
+
+This release folds in the three post-0.1 additions below (7F
+`detail-resolver`, 7G incremental types, 9C `ProposedGroup.kind`) — all
+audited into the freeze by `docs/chafe-report-plugin-api-1.0.md`. No symbol
+was removed or reshaped; a 0.2-compatible plugin is source-compatible with
+1.0.
+
+**Migration (every plugin author):** rebuild against 1.0.0, pass the
+conformance kit, set the manifest's `apiVersion` to `'^1.0.0'` — caret-0.x
+ranges exclude 1.0 (ADR-0010), so unmigrated manifests are refused at
+registration with a typed error. All four first-party adapters and the
+toy-adapter exercise migrated this way; none needed any change beyond the
+manifest line.
+
 ## Unreleased — Phase 9C (conversation enrichment)
 
 Additive, **type-only** — runtime surface unchanged, so no version bump per
@@ -31,7 +54,7 @@ Phase-9 chafe report as the second post-P2 contract addition (after 7F's
 
 ## 0.2.0 — Phase 7F (the P7 amendment checkpoint)
 
-**The first post-2.0 runtime-surface change** (ADR-0010 §3 schedules a breaking
+**The first post-P2 runtime-surface change** (ADR-0010 §3 schedules a breaking
 window at Phase 7; this one is only *additive*, so a **minor** bump, not a
 break). Flagged here and in `capabilities.ts` for the Phase-9 chafe report
 (SUBPHASES §7F / §9E).

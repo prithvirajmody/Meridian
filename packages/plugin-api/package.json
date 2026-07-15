@@ -1,9 +1,9 @@
 {
   "name": "@meridian/plugin-api",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Meridian plugin contract: types, capability descriptors, and the API version constant. Deliberately dependency-thin — type-only imports from @meridian/graph-core, nothing else.",
+  "description": "Meridian plugin contract: types, capability descriptors, and the API version constant. Deliberately dependency-thin \u2014 type-only imports from @meridian/graph-core, nothing else.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,13 +15,15 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+    "test": "vitest run && api-extractor run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "api:update": "api-extractor run --local"
   },
   "dependencies": {
     "@meridian/graph-core": "workspace:*"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "^7.58.9",
     "@types/node": "^24.0.0",
     "typescript": "^5.8.0",
     "vitest": "^3.2.0"

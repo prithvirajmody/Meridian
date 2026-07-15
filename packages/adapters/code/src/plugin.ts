@@ -30,7 +30,7 @@ export const VERSION = '0.2.0';
 export const manifest: PluginManifest = {
   name: '@meridian/adapter-code',
   version: VERSION,
-  apiVersion: '^0.2.0',
+  apiVersion: '^1.0.0',
   capabilities: [
     { kind: 'domain-parser', id: DOMAIN },
     // 7F: this adapter materializes a function's CFG/AST on drill-in

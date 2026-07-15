@@ -21,7 +21,8 @@
     "goldens:update": "pnpm goldens:update:cli && pnpm goldens:update:ui",
     "meridian": "node apps/cli/dist/main.js",
     "audit:strings": "! grep -ril markdown packages/graph-core/src packages/graph-store/src packages/abstraction/src packages/view-model/src packages/layout/src packages/navigation/src packages/renderer/src packages/plugin-api/src packages/plugin-host/src packages/conformance-kit/src",
-    "ci": "pnpm lint && pnpm typecheck && pnpm depcruise && pnpm audit:strings && pnpm build && pnpm test && pnpm test:evals && pnpm test:e2e && pnpm bench"
+    "ci": "pnpm lint && pnpm typecheck && pnpm depcruise && pnpm audit:strings && pnpm build && pnpm test && pnpm test:evals && pnpm test:e2e && pnpm bench",
+    "api:update": "turbo run build --filter @meridian/plugin-api && pnpm --filter @meridian/plugin-api api:update"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",

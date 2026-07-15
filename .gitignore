@@ -36,3 +36,6 @@ fixtures/.cut-inputs/
 # fixtures/oss/fetch.sh; only the compact summary golden is committed. See
 # fixtures/oss/README.md.
 fixtures/oss/clones/
+
+# api-extractor scratch
+packages/*/temp/

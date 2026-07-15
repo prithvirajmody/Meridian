@@ -1,7 +1,11 @@
 # ADR-0033 — plugin-api 1.0 scope: which surface freezes, additive-only until 2.0, deprecation policy
 
-- **Status:** Proposed
-- **Date:** 2026-07-14
+- **Status:** Proposed — **finalized by the 9E audit (2026-07-15); flips to
+  Accepted at the M3 review**, together with ADR-0010, when the user cuts the
+  `plugin-api@1.0` tag. The mechanical freeze (version 1.0.0, committed
+  api-extractor report as a CI verify gate, manifest migration) is already in
+  the tree and is revertible until that tag.
+- **Date:** 2026-07-14 (drafted) / 2026-07-15 (finalized, 9E)
 - **Phase:** 9 (roadmap)
 - **Constitution:** ARCHITECTURE.md §3.3 (no unversioned external surface), §14.1 (enumerated capability kinds, extended deliberately), §14.2 (manifest + contract, api-extractor-style surface checking), §20 (dependency law — adapters/plugins see only `plugin-api`), P12 (interfaces are versioned contracts)
 - **Roadmap:** ROADMAP.md Phase 9 §5 (chafe report), §6 (plugin-api 1.0 semver-guarded by api-extractor), §8 (ADR-0033), §12 (Architecture row — api-extractor 1.0 snapshot gate)
@@ -168,19 +172,27 @@ breaking need opens a reviewed 2.0 with migration notes. The api-extractor
 report becomes a permanent CI gate, so "we can refactor freely" stays false
 here by design — exactly the one place it should be.
 
-## Open questions for review
+## 9E finalization (2026-07-15)
 
-1. **Exact frozen export list + chafe dispositions.** The surface above is the
-   current `index.ts`; the *final* frozen list is settled in 9E after the chafe
-   report audits markdown/code/conversation/argument and 7F's `DetailResolver`,
-   fixing or explicitly deferring each chafe item. Confirm that ADR-0033 is
-   finalized (Proposed → Accepted) only in that 9E step, carrying the
-   dispositions and migration notes.
-2. **`DetailResolver` inclusion.** Confirm `DetailResolver` (and its
-   `DetailContext`/`DetailNode`/`DetailGraphRef` types) is inside the 1.0
-   freeze, versus being reshaped or held back by the chafe audit first.
-3. **M3 demo path.** ROADMAP §13 writes the three-domain demo to
-   `docs/meridian/demos/m3.md`; SUBPHASES §9E writes it to `docs/demos/m3.md`.
-   The existing repo convention is `docs/demos/` (`m1.md`, `m2.md`,
-   `phase-0N.md` all live there). **Recommend `docs/demos/m3.md`** and treat
-   the ROADMAP path as a typo to reconcile at the 9E gate.
+The audit ran; every disposition lives in
+[`docs/chafe-report-plugin-api-1.0.md`](../chafe-report-plugin-api-1.0.md).
+Resolutions of the drafted open questions:
+
+1. **Exact frozen export list.** The frozen surface is the committed
+   api-extractor report `packages/plugin-api/etc/plugin-api.api.md`
+   (404 lines, generated from `dist/index.d.ts`), verified on every test run
+   — the list in this record's Decision section matched it exactly, plus the
+   one audited 9C addition (`ProposedGroup.kind`, optional, additive). No
+   chafe item required removing or reshaping a frozen symbol (chafe report §4).
+2. **`DetailResolver` inclusion: confirmed in.** Two consumers, unchanged
+   shape across 7F–9D, P11 designed against it (chafe report §1.1).
+3. **M3 demo path: `docs/demos/m3.md`** (repo convention); the ROADMAP §13
+   path is a typo, noted in the phase-09 checklist.
+
+**Migration notes (0.2 → 1.0).** Rebuild against `@meridian/plugin-api@1.0.0`,
+run the conformance kit, then set the manifest's `apiVersion` to `'^1.0.0'`
+(caret-0.x ranges exclude 1.0 by ADR-0010's rules — a 0.2 manifest is refused
+at registration with a typed manifest error, never a crash). Executed for all
+four first-party adapters and the toy-adapter exercise in 9E; no source
+change beyond the manifest line was needed for any of them — the freeze is a
+promise about the surface they were already using.

@@ -31,7 +31,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 6 | ✅ `6A`–`6E` built | M2 review + human rows + tag pending |
 | 7 | ✅ `7A`–`7H` — gate walked, tag `phase-7` awaits user | closing (domain track) |
 | 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
-| 9 | 🔨 `9A`–`9D` built | `9E` (freeze audit) next |
+| 9 | ✅ `9A`–`9E` built | M3 review + `phase-9`/`plugin-api@1.0` tags await user |
 | 10–12 | ⬜ not started | — |
 
 ---
@@ -490,13 +490,16 @@ tag `phase-8`.
 
 ---
 
-## Phase 9 — Conversations & arguments (closes M3)  🔨 IN PROGRESS
+## Phase 9 — Conversations & arguments (closes M3)  ✅ BUILT (M3 gate awaits user)
 
 One adapter per pair of sessions, then the freeze — the freeze is its own
 session because it's an audit, not a build. Roadmap refs: Phase 9 §1–13.
 
-Work stopped intentionally after the completed 9B skeleton on 2026-07-14;
-9C and 9D built 2026-07-15. Subphase 9E (the freeze audit) remains.
+9B built 2026-07-14; 9C–9E built 2026-07-15. The mechanical freeze is in the
+tree (plugin-api 1.0.0, api-extractor CI gate, manifests migrated); the human
+rows — M3 review, manual-exploratory judgements, fresh-person toy exercise,
+ADR-0033/0010 acceptance, `phase-9` + `plugin-api@1.0` tags — are itemized in
+`docs/checklists/phase-09.md` and remain open.
 
 ### 9A — ADR beat  ✅ DONE (ADR-0034 Accepted; ADR-0033 Proposed for 9E)
 Draft ADR-0034 (hybrid adapter pattern: deterministic skeleton + cacheable
@@ -531,7 +534,7 @@ known essay judged against a human-made reference map.
   recorded goldens.
 - **Exit:** both AI-native domains pass conformance and zoom in Studio.
 
-### 9E — Chafe report, 1.0 freeze, M3 gate
+### 9E — Chafe report, 1.0 freeze, M3 gate  ✅ BUILT (human rows + M3 review + tags pending — checklists/phase-09.md)
 The audit session: write the **chafe report** (every place the plugin
 contract chafed across markdown/code/conversation/argument — including 7F's
 DetailResolver addition); fix or explicitly defer each item; finalize

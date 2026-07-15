@@ -120,7 +120,7 @@ const toyPlugin: MeridianPlugin = {
   manifest: {
     name: 'toy-todo',
     version: '0.0.1',
-    apiVersion: '^0.2.0',
+    apiVersion: '^1.0.0',
     capabilities: [{ kind: 'domain-parser', id: DOMAIN }],
     kinds: ['todo:project', 'todo:task'],
     attrSchemas: {

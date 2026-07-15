@@ -1,10 +1,21 @@
-# Writing a Meridian domain parser — plugin author guide (draft 1)
+# Writing a Meridian domain parser — plugin author guide (v1)
 
-*Status: first draft, produced from the Phase 2 toy-adapter exercise
-(ROADMAP Phase 2 §12, manual exploratory). The exercise — a TODO-list parser
-written against `@meridian/plugin-api` alone — lives on as executable
+*Status: v1, published with the `plugin-api@1.0` freeze (Phase 9E,
+ADR-0033). Grown from the Phase 2 toy-adapter exercise — a TODO-list parser
+written against `@meridian/plugin-api` alone, which lives on as executable
 documentation in `packages/conformance-kit/test/toy-todo.test.ts`; read it
-side-by-side with this guide.*
+side-by-side with this guide. Four first-party domains (markdown, code,
+conversation, argument) were built against the contract before it froze.*
+
+## What 1.0 promises you
+
+The exported surface of `@meridian/plugin-api` is **frozen**: it is pinned by
+a committed api-extractor report checked in CI, and it evolves
+**additively only** until a deliberate 2.0 — new exports, new capability
+kinds, new *optional* fields; nothing you compile against today will be
+removed, renamed, narrowed, or re-semanticized in any 1.x (ADR-0033).
+Declare `apiVersion: '^1.0.0'` in your manifest; the host refuses
+incompatible manifests at registration with a typed error, never a crash.
 
 ## The contract in one paragraph
 
@@ -22,7 +33,7 @@ validated at the IR gate before it can touch anything.
 ## Step by step (as the toy exercise went)
 
 1. **Declare the manifest.** Name, your semver, an `apiVersion` range
-   (`'^0.1.0'`; exact or caret only — ADR-0010), one capability
+   (`'^1.0.0'`; exact or caret only — ADR-0010), one capability
    `{ kind: 'domain-parser', id: '<your-domain>' }`, and — this part is law,
    not decoration — your **vocabulary**: every node/edge `kind` and every
    attr key your output uses, with a type per attr key (U8). An attr key you
@@ -68,10 +79,34 @@ validated at the IR gate before it can touch anything.
   from `@meridian/plugin-api`.
 - The corpus loader knew file extensions it had no business knowing → media
   types are now caller-supplied.
-- Delta emission (`emitDelta`) is deliberately loosely typed in 0.1: the op
-  vocabulary belongs to graph-store and streaming parsers arrive in Phase 7,
-  a declared contract checkpoint. Emit documents unless you know why you
-  need deltas.
+- Delta emission (`emitDelta`) is deliberately loosely typed in 1.0: the op
+  vocabulary belongs to graph-store, and the gate validates every delta you
+  stream. Emit documents unless you know why you need deltas
+  (chafe report §2.2 records the rationale and the additive 1.x path).
+
+## Beyond the skeleton (capabilities that shipped since the draft)
+
+- **`detail-resolver`** (7F, ADR-0027): materialize deep detail lazily on
+  drill-in — `canResolve(node)` + `resolve(node, sink)` emitting ordinary
+  deltas. The code adapter's CFG/AST resolver is the reference.
+- **`IncrementalAdapter`** (7G, ADR-0028): watch mode — `update(change,
+  sink)` turns one `SourceChange` into a *minimal* delta (whitespace-only
+  edit ⇒ empty delta; the incremental conformance suite enforces this).
+- **AI-native domains** (Phase 9, ADR-0034): your parser stays the
+  deterministic, AI-free skeleton — that is the whole contract. AI
+  enrichment lives *outside* your package in the application composition
+  root, reads your accepted skeleton, and enters the graph as
+  provenance-tagged proposals. You never call AI, never see a store, and
+  never need to: declare your enrichment vocabulary (node/edge kinds the
+  enrichment pass may produce) in your manifest so enriched graphs validate,
+  and keep your skeleton byte-deterministic. The conversation and argument
+  adapters are the reference implementations.
+- **Intent-driven adapters:** if your domain is a *reading* of a source
+  rather than a detectable format (the argument adapter over prose), sniff
+  with a deliberate under-bid — claim genuine input at a score below every
+  format adapter's floor (0.1 < markdown's 0.15) so you satisfy the
+  claim-your-corpus law without winning arbitrations you have no evidence
+  for. Users select you explicitly (`--adapter <domain>`).
 
 ## What you may not do
 
