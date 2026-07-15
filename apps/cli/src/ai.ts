@@ -113,22 +113,26 @@ function mockSummaryOutcome(userText: string): MockOutcome {
 }
 
 /** Deterministic synthetic extraction: up to two claim-worthy sentences of the
- * source text become `<domain>:claim` nodes; two claims get one refers-back
- * edge. Stable and schema-valid (`extractedStructureSchema`) with no network. */
+ * source text become typed nodes; a pair gets one typed edge. For the `arg`
+ * domain the pair is claim ← premise with an `arg:supports` edge (the 9D
+ * vocabulary); everywhere else two claims with a refers-back edge (9C).
+ * Stable and schema-valid (`extractedStructureSchema`) with no network. */
 function mockExtractOutcome(system: string, userText: string): MockOutcome {
   const domain = /"([a-z][a-z0-9-]*):name"/.exec(system)?.[1] ?? 'core';
   const sentences = userText
     .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
     .filter((s) => s.length >= 24);
+  const kinds = domain === 'arg' ? ['claim', 'premise'] : ['claim', 'claim'];
   const nodes = sentences.slice(0, 2).map((s, i) => ({
     id: `${domain}:c-${i + 1}`,
-    kind: `${domain}:claim`,
+    kind: `${domain}:${kinds[i]!}`,
     label: s.length > 120 ? `${s.slice(0, 119)}…` : s,
   }));
+  const edgeKind = domain === 'arg' ? 'supports' : 'refers-back';
   const edges =
     nodes.length === 2
-      ? [{ id: `${domain}:r-1`, src: `${domain}:c-2`, dst: `${domain}:c-1`, kind: `${domain}:refers-back` }]
+      ? [{ id: `${domain}:r-1`, src: `${domain}:c-2`, dst: `${domain}:c-1`, kind: `${domain}:${edgeKind}` }]
       : [];
   return { kind: 'json', value: { nodes, edges } };
 }

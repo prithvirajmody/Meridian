@@ -6,18 +6,24 @@ import test from 'node:test';
 
 import { AiSession, MemoryResponseStore } from '../../packages/ai/dist/index.js';
 import { mockEmbedProvider } from '../lib/mock-embed.mjs';
+import { mockExtractProvider } from '../lib/mock-extract.mjs';
 import { mockSummarizeProvider } from '../lib/mock-summarize.mjs';
 import { parseRecordArgs, runEvaluation, runRecord } from '../run.mjs';
 
 function fakeRecordSession(target) {
   const store = new MemoryResponseStore();
-  const isCluster = target.task === 'cluster';
-  const provider = isCluster
-    ? mockEmbedProvider(target.provider, target.model)
-    : mockSummarizeProvider(target.provider, target.model);
-  const routes = isCluster
-    ? { embedding: { providerId: provider.id, model: target.model } }
-    : { summarization: { providerId: provider.id, model: target.model } };
+  const provider =
+    target.task === 'cluster'
+      ? mockEmbedProvider(target.provider, target.model)
+      : target.task === 'argmap'
+        ? mockExtractProvider(target.provider, target.model)
+        : mockSummarizeProvider(target.provider, target.model);
+  const routes =
+    target.task === 'cluster'
+      ? { embedding: { providerId: provider.id, model: target.model } }
+      : target.task === 'argmap'
+        ? { extraction: { providerId: provider.id, model: target.model } }
+        : { summarization: { providerId: provider.id, model: target.model } };
   const config = { mode: 'record', routes, egressConsent: true };
   const session = new AiSession({ config, providers: [provider], store });
   return Promise.resolve({ session, store, config, provider });
@@ -105,10 +111,20 @@ test('offline fake record writes durable artifacts that replay green without net
       },
       common,
     );
+    const argmap = await runRecord(
+      {
+        provider: 'fake-extract',
+        model: 'fake-extract-1',
+        task: 'argmap',
+        egressConsent: true,
+      },
+      common,
+    );
 
     assert.equal(existsSync(recordingPath), true);
     assert.equal(existsSync(summarize.outputPath), true);
     assert.equal(existsSync(cluster.outputPath), true);
+    assert.equal(existsSync(argmap.outputPath), true);
 
     const recording = JSON.parse(readFileSync(recordingPath, 'utf8'));
     assert.equal(Object.keys(recording.summarize.snapshot).length, 20);
@@ -125,6 +141,10 @@ test('offline fake record writes durable artifacts that replay green without net
     assert.equal(report.ok, true);
     assert.equal(report.summarize.deterministic, true);
     assert.equal(report.cluster.deterministic, true);
+    assert.equal(report.argmap.deterministic, true);
+    assert.equal(report.argmap.structuralOk, true);
+    assert.ok(report.argmap.nodeCount > 8);
+    assert.ok(report.argmap.budget.spentDollars > 0);
     assert.equal(report.cluster.purity, 1);
     assert.ok(report.summarize.budget.spentDollars > 0);
     assert.ok(report.cluster.budget.spentDollars > 0);

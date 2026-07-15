@@ -234,6 +234,37 @@
           "description": "source timestamp as written — ISO 8601 string or epoch-seconds decimal"
         }
       }
+    },
+    {
+      "name": "@meridian/adapter-argument",
+      "version": "0.1.0",
+      "apiVersion": "^0.2.0",
+      "capabilities": [
+        {
+          "kind": "domain-parser",
+          "id": "argument"
+        }
+      ],
+      "kinds": [
+        "arg:essay",
+        "arg:paragraph",
+        "arg:sentence",
+        "arg:thesis",
+        "arg:claim",
+        "arg:premise",
+        "arg:objection",
+        "arg:evidence",
+        "arg:supports",
+        "arg:rebuts",
+        "arg:assumes",
+        "arg:cites"
+      ],
+      "attrSchemas": {
+        "arg:index": {
+          "type": "number",
+          "description": "0-based order of an element within its graph"
+        }
+      }
     }
   ]
 }

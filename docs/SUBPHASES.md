@@ -31,7 +31,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 6 | ✅ `6A`–`6E` built | M2 review + human rows + tag pending |
 | 7 | ✅ `7A`–`7H` — gate walked, tag `phase-7` awaits user | closing (domain track) |
 | 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
-| 9 | 🔨 `9A`–`9C` built | `9D` next |
+| 9 | 🔨 `9A`–`9D` built | `9E` (freeze audit) next |
 | 10–12 | ⬜ not started | — |
 
 ---
@@ -496,7 +496,7 @@ One adapter per pair of sessions, then the freeze — the freeze is its own
 session because it's an audit, not a build. Roadmap refs: Phase 9 §1–13.
 
 Work stopped intentionally after the completed 9B skeleton on 2026-07-14;
-9C built 2026-07-15. Subphases 9D–9E remain.
+9C and 9D built 2026-07-15. Subphase 9E (the freeze audit) remains.
 
 ### 9A — ADR beat  ✅ DONE (ADR-0034 Accepted; ADR-0033 Proposed for 9E)
 Draft ADR-0034 (hybrid adapter pattern: deterministic skeleton + cacheable
@@ -522,7 +522,7 @@ recorded fixtures; goldens.
 - **Exit:** a real exported conversation zooms topics→messages with AI
   topic labels in Studio.
 
-### 9D — Argument adapter
+### 9D — Argument adapter  ✅ DONE
 `adapters/argument`: deterministic paragraph/sentence fallback skeleton;
 `StructureExtractor`-driven claims/premises/objections with typed
 `arg:supports|rebuts|assumes|cites` edges; eval fixture: argument map of a

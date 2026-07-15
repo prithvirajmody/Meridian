@@ -1,0 +1,31 @@
+{
+  "name": "@meridian/adapter-argument",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Meridian's argument domain adapter (ROADMAP Phase 9): essays/debates → a deterministic essay → paragraph → sentence skeleton (the AI-less floor, ADR-0034). Claims, premises, objections and typed argumentative relations are AI enrichment and live in the composition root, never here. Imports @meridian/plugin-api and nothing else of Meridian.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/plugin-api": "workspace:*"
+  },
+  "devDependencies": {
+    "@meridian/conformance-kit": "workspace:*",
+    "@meridian/graph-core": "workspace:*",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

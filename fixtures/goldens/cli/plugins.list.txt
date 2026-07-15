@@ -1,4 +1,4 @@
-plugins (3):
+plugins (4):
   @meridian/adapter-markdown 0.1.0 — plugin-api ^0.2.0
     capabilities  domain-parser:markdown
     kinds         doc:break, doc:code, doc:html, doc:links-to, doc:list, doc:paragraph, doc:quote, doc:section
@@ -11,3 +11,7 @@ plugins (3):
     capabilities  domain-parser:conversation
     kinds         conv:about, conv:claim, conv:exchange, conv:message, conv:refers-back, conv:replies-to, conv:session, conv:topic
     attrs         conv:index, conv:role, conv:source-id, conv:timestamp
+  @meridian/adapter-argument 0.1.0 — plugin-api ^0.2.0
+    capabilities  domain-parser:argument
+    kinds         arg:assumes, arg:cites, arg:claim, arg:essay, arg:evidence, arg:objection, arg:paragraph, arg:premise, arg:rebuts, arg:sentence, arg:supports, arg:thesis
+    attrs         arg:index

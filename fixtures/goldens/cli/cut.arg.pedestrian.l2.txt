@@ -1,0 +1,30 @@
+cut fixtures/.cut-inputs/arg-pedestrian.meridian.json — level 2/2 · zoom 0.8333
+  chain      argument · 3 levels (level-0 → level-1 → level-2)
+  coverage   24/24 leaves — covers ✓
+  nodes (24):
+    n372isvwdhrrzqiykrmfawhistq "Accessibility is the one objection that deserves a design answer rather than a rebuttal." (arg:sentence) · leaf · covers 1
+    n3q3ldreuc5ae2kypp25n6ij2yy "No engineering retrofit of a medieval street grid achieves that record while cars remain." (arg:sentence) · leaf · covers 1
+    n577l65xhjb4zk7hxdfqnykwgmm "A consistent share of car trips simply evaporates when the road space is withdrawn, because those trips were marginal to begin with." (arg:sentence) · leaf · covers 1
+    n65ooemu5eiuc3py3mkvifovybu "The plazas of pedestrianized cities fill with markets, children, and evening crowds, which is precisely the civic life the center existed to host before the car displaced it." (arg:sentence) · leaf · covers 1
+    n6gm6dnwdxcpamuun7d7oampqfq "Pedestrianization is not a hardship to be endured but an amenity to be claimed." (arg:sentence) · leaf · covers 1
+    n6t2ccxsjkgvdo2nwgere6ouiu4 "That revealed preference is the strongest evidence of all." (arg:sentence) · leaf · covers 1
+    n7botftu4aksd7kjdwp7ugd36ye "Permit systems, timed delivery windows, and unimpeded emergency corridors are standard practice in every successful zone, and they work better on streets that are not choked with private cars." (arg:sentence) · leaf · covers 1
+    nazcywftjvvtpu5xuk6n7ni46zu "Streets built before the automobile were never designed to absorb it, and the collision statistics show it: narrow sightlines and mixed traffic put pedestrians in danger at every corner." (arg:sentence) · leaf · covers 1
+    nbwmczjxu5o233uagvmkgjcesb4 "People linger where they can walk, and lingering people spend money." (arg:sentence) · leaf · covers 1
+    ncdvneuwvxl4vhcyauodmg5x7ga "The change pays for itself in safety, commerce, and civic life, and the objections raised against it dissolve on contact with the evidence from cities that have already made the move." (arg:sentence) · leaf · covers 1
+    ne57kpgh4qz7a24t673lz3afzdm "When Pontevedra removed through traffic from its old town, traffic deaths in the zone fell to zero and stayed there for over a decade." (arg:sentence) · leaf · covers 1
+    nf64tyzwkhwmhilogeehmo6fkdy "Shopkeepers predict ruin whenever a pedestrian zone is proposed, because they assume their customers arrive by car." (arg:sentence) · leaf · covers 1
+    nkctxm6zphmjdnowdt7qbf4l5n4 "Critics also argue that closing the center merely pushes congestion outward to the ring roads." (arg:sentence) · leaf · covers 1
+    nkcyvgfiymrxsstm7pk7qzpaezq "The evidence for induced disappearance answers this." (arg:sentence) · leaf · covers 1
+    nkyqlzf5wa5bswbup245m4fhqmu "The cities that moved first now top the livability rankings, and none of them has voted to let the cars back in." (arg:sentence) · leaf · covers 1
+    nl4zeb4fq3wq4b2ofubk2xcd67q "Retail studies in Madrid and Oslo found the opposite pattern: foot traffic rose after pedestrianization, and retail revenue in the affected streets grew faster than in car-accessible control districts." (arg:sentence) · leaf · covers 1
+    nmcvsmbs4xg2nkhqitsadl3kgrq "City governments should close their historic centers to private cars." (arg:sentence) · leaf · covers 1
+    nq5d4cnumoxbuftiiehne3n5epe "# Cities should pedestrianize their historic centers" (arg:sentence) · leaf · covers 1
+    nqropwnu2ipq2nd4qwmxq23ov54 "The commercial objection is the loudest and the weakest." (arg:sentence) · leaf · covers 1
+    nr3dras3z3nn7dmh34rmibrksoy "Residents with limited mobility, delivery services, and emergency vehicles all need motorized access, and a well-run pedestrian zone grants it." (arg:sentence) · leaf · covers 1
+    nvmtppcor6kh2ypidulyh7eqx24 "The deeper argument is about what a center is for." (arg:sentence) · leaf · covers 1
+    nvvz3vhtg3jk3rt5zz3bb4bjktu "The safety case is the simplest." (arg:sentence) · leaf · covers 1
+    nyfgyubbyxs2ftmbkys55vp3x6y "A historic core is the city's shared living room, and a living room does not improve when you park machines in it." (arg:sentence) · leaf · covers 1
+    nz5m6oftn3a5hihbdmj4xpwmlh4 "Zurich measured this directly: a third of the displaced trips shifted to transit or foot, and another share never rematerialized at all." (arg:sentence) · leaf · covers 1
+  induced edges (0):
+  frontier   expandable 0 · collapsible 24

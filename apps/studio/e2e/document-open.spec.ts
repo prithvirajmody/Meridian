@@ -29,22 +29,43 @@ interface WireNode {
 let enrichedText: string;
 let topicIds: string[] = [];
 let messageIds: string[] = [];
+let argText: string;
+let argMapIds: string[] = [];
 
-test.beforeAll(() => {
+/** Ingest a corpus source and enrich it (mock mode, zero network) through the
+ * real CLI; returns the enriched document text. */
+function buildEnriched(source: string, adapter: string, stem: string): string {
   const dir = `${repoRoot}fixtures/.cut-inputs/`;
   mkdirSync(dir, { recursive: true });
-  const skeleton = `${dir}e2e-conv-two-topics.meridian.json`;
-  const enriched = `${dir}e2e-conv-two-topics.enriched.meridian.json`;
-  execFileSync(process.execPath, [
-    cli, 'ingest', `${repoRoot}fixtures/corpora/conversation/claude-two-topics.json`,
-    '--adapter', 'conversation', '--out', skeleton,
-  ]);
+  const skeleton = `${dir}${stem}.meridian.json`;
+  const enriched = `${dir}${stem}.enriched.meridian.json`;
+  execFileSync(process.execPath, [cli, 'ingest', source, '--adapter', adapter, '--out', skeleton]);
   execFileSync(process.execPath, [cli, 'ai', 'enrich', skeleton, '--out', enriched]);
-  enrichedText = readFileSync(enriched, 'utf8');
+  return readFileSync(enriched, 'utf8');
+}
+
+test.beforeAll(() => {
+  enrichedText = buildEnriched(
+    `${repoRoot}fixtures/corpora/conversation/claude-two-topics.json`,
+    'conversation',
+    'e2e-conv-two-topics',
+  );
   const doc = JSON.parse(enrichedText) as { graphs: { nodes: WireNode[] }[] };
   const nodes = doc.graphs.flatMap((g) => g.nodes);
   topicIds = nodes.filter((n) => n.kind === 'conv:topic').map((n) => n.id);
   messageIds = nodes.filter((n) => n.kind === 'conv:message').map((n) => n.id);
+
+  argText = buildEnriched(
+    `${repoRoot}fixtures/corpora/argument/pedestrian-centers.md`,
+    'argument',
+    'e2e-arg-pedestrian',
+  );
+  const argDoc = JSON.parse(argText) as { graphs: { nodes: WireNode[] }[] };
+  const argMapKinds = new Set(['arg:thesis', 'arg:claim', 'arg:premise', 'arg:objection', 'arg:evidence']);
+  argMapIds = argDoc.graphs
+    .flatMap((g) => g.nodes)
+    .filter((n) => argMapKinds.has(n.kind))
+    .map((n) => n.id);
 });
 
 test('an enriched conversation opens as a saved document and zooms topics→messages', async ({ page }) => {
@@ -104,6 +125,46 @@ test('an enriched conversation opens as a saved document and zooms topics→mess
   await page.waitForFunction(
     () => window.__MERIDIAN_STUDIO__!.aiState().aiNodeCount > 0,
     undefined,
+    { timeout: 30_000 },
+  );
+});
+
+test('an enriched argument essay opens and zooms with the AI argument map overlaid (9D)', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(
+    ([name, text]) => window.__MERIDIAN_STUDIO__!.openText(name!, text!),
+    ['pedestrian.meridian.json', argText],
+  );
+  await expect(page.getByTestId('pipeline-phase')).toHaveText('ready', { timeout: 30_000 });
+
+  const adapter = await page.evaluate(() => window.__MERIDIAN_STUDIO__!.state().adapter);
+  expect(adapter?.plugin).toBe('meridian:document');
+  expect(adapter?.domain).toBe('argument');
+
+  // The trust surface recognizes the argument map as AI structure.
+  const ai = await page.evaluate(() => window.__MERIDIAN_STUDIO__!.aiState());
+  expect(argMapIds.length).toBeGreaterThan(8);
+  for (const id of argMapIds) expect(ai.aiNodeIds).toContain(id);
+
+  // Paragraph level: the extracted claims/premises overlay the paragraphs.
+  await page.evaluate(() => window.__MERIDIAN_STUDIO__!.navZoomTo(0.5));
+  await page.waitForFunction(
+    (ids) => {
+      const visible = new Set(window.__MERIDIAN_STUDIO__!.state().nodeIds);
+      return ids!.every((id) => visible.has(id));
+    },
+    argMapIds,
+    { timeout: 30_000 },
+  );
+
+  // Evidence-only view hides the whole map (ADR-0031).
+  await page.getByTestId('provenance-filter-toggle').click();
+  await page.waitForFunction(
+    (ids) => {
+      const visible = new Set(window.__MERIDIAN_STUDIO__!.state().nodeIds);
+      return ids!.every((id) => !visible.has(id));
+    },
+    argMapIds,
     { timeout: 30_000 },
   );
 });

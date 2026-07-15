@@ -39,6 +39,16 @@ determinism and gates on the objective floors + goldens. This is what a
 reviewer runs to confirm the harness is healthy. Exits non-zero on any
 regression.
 
+Since 9D the offline run also scores the **argmap** task: per-paragraph
+`extractStructure` over `fixtures/corpora/argument/pedestrian-centers.md`,
+scored against the human-made reference map
+(`evals/fixtures/argmap-reference.json`) by the metric in
+`evals/lib/argmap-metrics.mjs` — node/relation precision-recall-F1 with
+greedy same-paragraph token-F1 label matching (this metric settles
+ADR-0034's open question 2). Offline, only structure and determinism gate;
+the F1 numbers are informative (mock echo output is never treated as model
+quality, mirroring the human-ratings rule).
+
 ### 2. Replay — CI-style
 
 ```sh
@@ -49,8 +59,11 @@ Loads a committed recording (`evals/recordings/services.recording.json`) and
 replays it with the network disabled — a cache miss is a hard error (ADR-0030).
 Replay commits the fixture's recorded usage to `BudgetGuard` so budget state is
 deterministic, but it makes no provider call and incurs no new vendor charge.
-A full recording needs both a `summarize` and a `cluster` entry. Live recordings
-are absent until a human authors them with the path below.
+A full recording needs both a `summarize` and a `cluster` entry; an `argmap`
+entry is optional — when present it is replayed and the
+`argmap-node-f1-min` / `argmap-edge-f1-min` quality floors gate it, when
+absent argmap is reported UNVERIFIED. Live recordings are absent until a
+human authors them with the path below.
 
 ### 3. Live / record — the human step (needs keys)
 
@@ -65,6 +78,10 @@ OPENAI_API_KEY=… node evals/run.mjs --record openai gpt-4.1 \
 # The 500-node clustering fixture needs an embedding-capable provider:
 OPENAI_API_KEY=… node evals/run.mjs --record openai text-embedding-3-large \
   --task cluster --consent-live
+
+# The 9D argument-map fixture (any completion provider):
+ANTHROPIC_API_KEY=… node evals/run.mjs --record anthropic claude-opus-4-8 \
+  --task argmap --consent-live
 ```
 
 The literal `--consent-live` flag and the matching provider key are both required;

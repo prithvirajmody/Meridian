@@ -1,0 +1,7 @@
+cut fixtures/.cut-inputs/arg-pedestrian.enriched.meridian.json — level 0/2 · zoom 0.1667
+  chain      argument · 3 levels (level-0 → level-1 → level-2)
+  coverage   39/39 leaves — covers ✓
+  nodes (1):
+    n3lop7cxgvpjnhmcmc4t2bahq2i "Cities should pedestrianize their historic centers" (arg:essay) · level · covers 39
+  induced edges (0):
+  frontier   expandable 1 · collapsible 0

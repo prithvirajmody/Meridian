@@ -1,0 +1,39 @@
+{
+  "$comment": "Human-made reference argument map for fixtures/corpora/argument/pedestrian-centers.md (ROADMAP Phase 9 §11: 'argument map of a known essay judged against a human-made reference map'). Authored with the fixture essay in 9D; the M3 gate reviews it alongside the essay (a reference map is only as human as its reviewer). Paragraph indices follow the adapter's segmentation: 0 is the heading line, 1–7 the prose paragraphs. Node kinds/edge kinds are the manifest vocabulary; labels are the essay's own words where possible so token-F1 matching stays honest. Scored by evals/lib/argmap-metrics.mjs; floors in evals/floors.json gate live recordings only.",
+  "source": "fixtures/corpora/argument/pedestrian-centers.md",
+  "nodes": [
+    { "id": "thesis", "kind": "arg:thesis", "label": "City governments should close their historic centers to private cars", "paragraph": 1 },
+    { "id": "pays-for-itself", "kind": "arg:claim", "label": "The change pays for itself in safety, commerce, and civic life", "paragraph": 1 },
+    { "id": "safety-claim", "kind": "arg:claim", "label": "Pre-automobile streets put pedestrians in danger at every corner", "paragraph": 2 },
+    { "id": "pontevedra", "kind": "arg:evidence", "label": "Pontevedra removed through traffic and traffic deaths in the zone fell to zero for over a decade", "paragraph": 2 },
+    { "id": "commerce-objection", "kind": "arg:objection", "label": "Shopkeepers predict ruin because they assume their customers arrive by car", "paragraph": 3 },
+    { "id": "retail-evidence", "kind": "arg:evidence", "label": "Retail studies in Madrid and Oslo found foot traffic rose and retail revenue grew faster than in control districts", "paragraph": 3 },
+    { "id": "lingering-claim", "kind": "arg:claim", "label": "People linger where they can walk, and lingering people spend money", "paragraph": 3 },
+    { "id": "congestion-objection", "kind": "arg:objection", "label": "Closing the center merely pushes congestion outward to the ring roads", "paragraph": 4 },
+    { "id": "evaporation-claim", "kind": "arg:claim", "label": "A consistent share of car trips simply evaporates when the road space is withdrawn", "paragraph": 4 },
+    { "id": "zurich", "kind": "arg:evidence", "label": "Zurich measured a third of displaced trips shifting to transit or foot and a share never rematerializing", "paragraph": 4 },
+    { "id": "access-objection", "kind": "arg:objection", "label": "Residents with limited mobility, delivery services, and emergency vehicles all need motorized access", "paragraph": 5 },
+    { "id": "access-answer", "kind": "arg:claim", "label": "Permit systems, timed delivery windows, and emergency corridors are standard practice in every successful zone", "paragraph": 5 },
+    { "id": "living-room", "kind": "arg:claim", "label": "A historic core is the city's shared living room and does not improve when you park machines in it", "paragraph": 6 },
+    { "id": "civic-evidence", "kind": "arg:evidence", "label": "Plazas of pedestrianized cities fill with markets, children, and evening crowds", "paragraph": 6 },
+    { "id": "amenity-claim", "kind": "arg:claim", "label": "Pedestrianization is not a hardship to be endured but an amenity to be claimed", "paragraph": 7 },
+    { "id": "revealed-preference", "kind": "arg:evidence", "label": "The cities that moved first top the livability rankings and none has voted to let the cars back in", "paragraph": 7 }
+  ],
+  "edges": [
+    { "src": "pays-for-itself", "dst": "thesis", "kind": "arg:supports" },
+    { "src": "safety-claim", "dst": "thesis", "kind": "arg:supports" },
+    { "src": "pontevedra", "dst": "safety-claim", "kind": "arg:supports" },
+    { "src": "commerce-objection", "dst": "thesis", "kind": "arg:rebuts" },
+    { "src": "retail-evidence", "dst": "commerce-objection", "kind": "arg:rebuts" },
+    { "src": "lingering-claim", "dst": "retail-evidence", "kind": "arg:supports" },
+    { "src": "congestion-objection", "dst": "thesis", "kind": "arg:rebuts" },
+    { "src": "evaporation-claim", "dst": "congestion-objection", "kind": "arg:rebuts" },
+    { "src": "zurich", "dst": "evaporation-claim", "kind": "arg:supports" },
+    { "src": "access-objection", "dst": "thesis", "kind": "arg:rebuts" },
+    { "src": "access-answer", "dst": "access-objection", "kind": "arg:rebuts" },
+    { "src": "living-room", "dst": "thesis", "kind": "arg:supports" },
+    { "src": "civic-evidence", "dst": "living-room", "kind": "arg:supports" },
+    { "src": "amenity-claim", "dst": "thesis", "kind": "arg:supports" },
+    { "src": "revealed-preference", "dst": "amenity-claim", "kind": "arg:supports" }
+  ]
+}

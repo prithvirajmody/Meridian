@@ -1,0 +1,52 @@
+cut fixtures/.cut-inputs/arg-pedestrian.enriched.meridian.json — level 2/2 · zoom 0.8333
+  chain      argument · 3 levels (level-0 → level-1 → level-2)
+  coverage   39/39 leaves — covers ✓
+  nodes (39):
+    n372isvwdhrrzqiykrmfawhistq "Accessibility is the one objection that deserves a design answer rather than a rebuttal." (arg:sentence) · leaf · covers 1
+    n3q3ldreuc5ae2kypp25n6ij2yy "No engineering retrofit of a medieval street grid achieves that record while cars remain." (arg:sentence) · leaf · covers 1
+    n44udxmhu4bcozervfczraoqpry "Pedestrianization is not a hardship to be endured but an amenity to be claimed." (arg:claim) · leaf · covers 1
+    n577l65xhjb4zk7hxdfqnykwgmm "A consistent share of car trips simply evaporates when the road space is withdrawn, because those trips were marginal to begin with." (arg:sentence) · leaf · covers 1
+    n65ooemu5eiuc3py3mkvifovybu "The plazas of pedestrianized cities fill with markets, children, and evening crowds, which is precisely the civic life the center existed to host before the car displaced it." (arg:sentence) · leaf · covers 1
+    n6gm6dnwdxcpamuun7d7oampqfq "Pedestrianization is not a hardship to be endured but an amenity to be claimed." (arg:sentence) · leaf · covers 1
+    n6t2ccxsjkgvdo2nwgere6ouiu4 "That revealed preference is the strongest evidence of all." (arg:sentence) · leaf · covers 1
+    n6t7wjrz7y56evywcdbsyam7ij4 "Streets built before the automobile were never designed to absorb it, and the collision statistics show it: narrow sigh…" (arg:premise) · leaf · covers 1
+    n7botftu4aksd7kjdwp7ugd36ye "Permit systems, timed delivery windows, and unimpeded emergency corridors are standard practice in every successful zone, and they work better on streets that are not choked with private cars." (arg:sentence) · leaf · covers 1
+    namg2inmnkogstkvh34vyqhhjh4 "The change pays for itself in safety, commerce, and civic life, and the objections raised against it dissolve on contac…" (arg:premise) · leaf · covers 1
+    nazcywftjvvtpu5xuk6n7ni46zu "Streets built before the automobile were never designed to absorb it, and the collision statistics show it: narrow sightlines and mixed traffic put pedestrians in danger at every corner." (arg:sentence) · leaf · covers 1
+    nbgjqeide5ul235l5ykxw7f5kqq "Shopkeepers predict ruin whenever a pedestrian zone is proposed, because they assume their customers arrive by car." (arg:premise) · leaf · covers 1
+    nbwmczjxu5o233uagvmkgjcesb4 "People linger where they can walk, and lingering people spend money." (arg:sentence) · leaf · covers 1
+    ncdvneuwvxl4vhcyauodmg5x7ga "The change pays for itself in safety, commerce, and civic life, and the objections raised against it dissolve on contact with the evidence from cities that have already made the move." (arg:sentence) · leaf · covers 1
+    ncvnmlnveb52htz5xrzwhw2fz3q "The commercial objection is the loudest and the weakest." (arg:claim) · leaf · covers 1
+    ne57kpgh4qz7a24t673lz3afzdm "When Pontevedra removed through traffic from its old town, traffic deaths in the zone fell to zero and stayed there for over a decade." (arg:sentence) · leaf · covers 1
+    nes5izbqflg6jf6xhiasjj7bnii "A historic core is the city's shared living room, and a living room does not improve when you park machines in it." (arg:premise) · leaf · covers 1
+    nf64tyzwkhwmhilogeehmo6fkdy "Shopkeepers predict ruin whenever a pedestrian zone is proposed, because they assume their customers arrive by car." (arg:sentence) · leaf · covers 1
+    ni5nnfj4fjpr72kkh2xdht4blt4 "City governments should close their historic centers to private cars." (arg:claim) · leaf · covers 1
+    nk32u7dqj6gc3jvv7v7fzikh73u "Critics also argue that closing the center merely pushes congestion outward to the ring roads." (arg:claim) · leaf · covers 1
+    nkctxm6zphmjdnowdt7qbf4l5n4 "Critics also argue that closing the center merely pushes congestion outward to the ring roads." (arg:sentence) · leaf · covers 1
+    nkcyvgfiymrxsstm7pk7qzpaezq "The evidence for induced disappearance answers this." (arg:sentence) · leaf · covers 1
+    nkwctvgkyefgmi54bl2m46tpvim "The deeper argument is about what a center is for." (arg:claim) · leaf · covers 1
+    nkyqlzf5wa5bswbup245m4fhqmu "The cities that moved first now top the livability rankings, and none of them has voted to let the cars back in." (arg:sentence) · leaf · covers 1
+    nl4zeb4fq3wq4b2ofubk2xcd67q "Retail studies in Madrid and Oslo found the opposite pattern: foot traffic rose after pedestrianization, and retail revenue in the affected streets grew faster than in car-accessible control districts." (arg:sentence) · leaf · covers 1
+    nmcvsmbs4xg2nkhqitsadl3kgrq "City governments should close their historic centers to private cars." (arg:sentence) · leaf · covers 1
+    no4ir2epuacnuixixwx52ep5qjq "The safety case is the simplest." (arg:claim) · leaf · covers 1
+    npysv2mx66itehhgzewwrwizxse "Accessibility is the one objection that deserves a design answer rather than a rebuttal." (arg:claim) · leaf · covers 1
+    nq5d4cnumoxbuftiiehne3n5epe "# Cities should pedestrianize their historic centers" (arg:sentence) · leaf · covers 1
+    nqropwnu2ipq2nd4qwmxq23ov54 "The commercial objection is the loudest and the weakest." (arg:sentence) · leaf · covers 1
+    nr3dras3z3nn7dmh34rmibrksoy "Residents with limited mobility, delivery services, and emergency vehicles all need motorized access, and a well-run pedestrian zone grants it." (arg:sentence) · leaf · covers 1
+    nsaonwjrgaxlpeveaokitn3w7z4 "# Cities should pedestrianize their historic centers" (arg:claim) · leaf · covers 1
+    nsgcxnmnoexfzvmedu4bimku7ku "Residents with limited mobility, delivery services, and emergency vehicles all need motorized access, and a well-run pe…" (arg:premise) · leaf · covers 1
+    nvmtppcor6kh2ypidulyh7eqx24 "The deeper argument is about what a center is for." (arg:sentence) · leaf · covers 1
+    nvvz3vhtg3jk3rt5zz3bb4bjktu "The safety case is the simplest." (arg:sentence) · leaf · covers 1
+    nyfgyubbyxs2ftmbkys55vp3x6y "A historic core is the city's shared living room, and a living room does not improve when you park machines in it." (arg:sentence) · leaf · covers 1
+    nytcisonpq4wdnqxhzuthuclh7y "The evidence for induced disappearance answers this." (arg:premise) · leaf · covers 1
+    nyyjzqn2mazmwb3upkpomhoyrce "The cities that moved first now top the livability rankings, and none of them has voted to let the cars back in." (arg:premise) · leaf · covers 1
+    nz5m6oftn3a5hihbdmj4xpwmlh4 "Zurich measured this directly: a third of the displaced trips shifted to transit or foot, and another share never rematerialized at all." (arg:sentence) · leaf · covers 1
+  induced edges (7):
+    n6t7wjrz7y56evywcdbsyam7ij4 "Streets built before the automobile were never designed to absorb it, and the collision statistics show it: narrow sigh…" → no4ir2epuacnuixixwx52ep5qjq "The safety case is the simplest." [arg:supports] · weight 1 · ×1 (emeza564gkuzrkl3yuxhzzb7j6y)
+    namg2inmnkogstkvh34vyqhhjh4 "The change pays for itself in safety, commerce, and civic life, and the objections raised against it dissolve on contac…" → ni5nnfj4fjpr72kkh2xdht4blt4 "City governments should close their historic centers to private cars." [arg:supports] · weight 1 · ×1 (euligk3snice2zs7rfkzz4fc67m)
+    nbgjqeide5ul235l5ykxw7f5kqq "Shopkeepers predict ruin whenever a pedestrian zone is proposed, because they assume their customers arrive by car." → ncvnmlnveb52htz5xrzwhw2fz3q "The commercial objection is the loudest and the weakest." [arg:supports] · weight 1 · ×1 (epcpebl25hq7u2y5kyz7odi2qpi)
+    nes5izbqflg6jf6xhiasjj7bnii "A historic core is the city's shared living room, and a living room does not improve when you park machines in it." → nkwctvgkyefgmi54bl2m46tpvim "The deeper argument is about what a center is for." [arg:supports] · weight 1 · ×1 (efnlm3ux53wt2h7n63ddkf7ayfy)
+    nsgcxnmnoexfzvmedu4bimku7ku "Residents with limited mobility, delivery services, and emergency vehicles all need motorized access, and a well-run pe…" → npysv2mx66itehhgzewwrwizxse "Accessibility is the one objection that deserves a design answer rather than a rebuttal." [arg:supports] · weight 1 · ×1 (e2vapbtjivbzvfmfzjmjns5fahq)
+    nytcisonpq4wdnqxhzuthuclh7y "The evidence for induced disappearance answers this." → nk32u7dqj6gc3jvv7v7fzikh73u "Critics also argue that closing the center merely pushes congestion outward to the ring roads." [arg:supports] · weight 1 · ×1 (evqjdeilwmopd4knkay6yjtplgq)
+    nyyjzqn2mazmwb3upkpomhoyrce "The cities that moved first now top the livability rankings, and none of them has voted to let the cars back in." → n44udxmhu4bcozervfczraoqpry "Pedestrianization is not a hardship to be endured but an amenity to be claimed." [arg:supports] · weight 1 · ×1 (elzj57x6lepuxkjquqdmjetdqh4)
+  frontier   expandable 0 · collapsible 24

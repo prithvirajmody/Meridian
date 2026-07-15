@@ -6,7 +6,16 @@
  * `ai-services` through the Phase 8 gateway, and turns the results into
  * ordinary atomic deltas through the store's one write path (ADR-0005/0031).
  *
- * Two separately-cacheable passes (§7.2 step 4):
+ * Domains (dispatched by the document's graphs):
+ * - **conversation** (9C) — the topic + claim passes below.
+ * - **argument** (9D) — per-paragraph argument-map extraction: `extractStructure`
+ *   over each paragraph yields typed `arg:thesis|claim|premise|objection|evidence`
+ *   nodes placed in the paragraphs graph, each anchored to its source paragraph
+ *   with an `arg:cites` evidence edge, plus the model's intra-extraction
+ *   `arg:supports|rebuts|assumes|cites` relations. The skeleton stays the
+ *   AI-less floor (§7.3: maximal enrichment reliance over a sentence floor).
+ *
+ * Two separately-cacheable conversation passes (§7.2 step 4):
  * - **Topics** — each session's exchanges are embedding-clustered (8E) and each
  *   cluster is AI-named/summarized (8D); the groups materialize through
  *   `applyProposal` as `conv:topic` nodes whose detail graphs hold the grouped
@@ -58,6 +67,15 @@ import {
 } from './ai.js';
 
 const DOMAIN = 'conversation';
+const ARG_DOMAIN = 'argument';
+const ARG_MAP_KINDS: ReadonlySet<string> = new Set([
+  'arg:thesis',
+  'arg:claim',
+  'arg:premise',
+  'arg:objection',
+  'arg:evidence',
+]);
+const ARG_REL_KINDS: ReadonlySet<string> = new Set(['arg:supports', 'arg:rebuts', 'arg:assumes', 'arg:cites']);
 const ACTOR = 'ai:enrich';
 const PRODUCER = { name: '@meridian/cli', version: '0.1.0' };
 /** Prompt-size guard on an exchange's embedded/extracted digest. */
@@ -85,7 +103,7 @@ function cmp(a: string, b: string): number {
  * consistent total order; mixing per-pair rules would let the sort shuffle. */
 function sortedNodes(graph: SemanticGraph): SemanticNode[] {
   const indexOf = (n: SemanticNode): number => {
-    const i = n.attrs['conv:index'];
+    const i = n.attrs['conv:index'] ?? n.attrs['arg:index'];
     return typeof i === 'number' ? i : Number.MAX_SAFE_INTEGER;
   };
   return [...graph.nodes.values()].sort((a, b) => {
@@ -411,6 +429,159 @@ async function enrichClaims(store: GraphStore, session: AiSession): Promise<Clai
   return stats;
 }
 
+// ----------------------------------------------------------------- argument
+
+interface ArgMapStats {
+  paragraphs: number;
+  added: number;
+  unchanged: number;
+  replaced: number;
+  floored: number;
+}
+
+/** The essay detail graphs (the graphs holding paragraph nodes), sorted for
+ * a stable gateway-call sequence (ADR-0030 replay). */
+function essayGraphIds(space: GraphSpace): GraphId[] {
+  const ids: GraphId[] = [];
+  for (const graph of space.graphs.values()) {
+    if (graph.meta.domain !== ARG_DOMAIN) continue;
+    for (const node of graph.nodes.values()) {
+      if (node.kind === 'arg:essay' && node.detail !== undefined) ids.push(node.detail.graph);
+    }
+  }
+  return ids.sort(cmp);
+}
+
+/**
+ * The 9D argument-map pass (module doc). Extracted nodes live in the same
+ * graph as their source paragraphs, so cross-paragraph relations stay legal
+ * intra-graph edges when a later pass ever correlates them; v1 keeps only
+ * relations within one extraction. All changes commit as one atomic delta.
+ */
+async function enrichArgumentMap(store: GraphStore, session: AiSession): Promise<ArgMapStats> {
+  const stats: ArgMapStats = { paragraphs: 0, added: 0, unchanged: 0, replaced: 0, floored: 0 };
+  const space = store.snapshot();
+  const ops: GraphOpInput[] = [];
+
+  for (const graphId of essayGraphIds(space)) {
+    const graph = space.graphs.get(graphId);
+    if (graph === undefined) continue;
+    const paragraphs = sortedNodes(graph).filter((n) => n.kind === 'arg:paragraph');
+    if (paragraphs.length === 0) continue;
+
+    // Existing AI argument-map nodes, anchored to their paragraph via arg:cites.
+    const mapNodes = new Map<string, SemanticNode>();
+    for (const n of graph.nodes.values()) {
+      if (ARG_MAP_KINDS.has(n.kind) && n.provenance.origin === 'ai') mapNodes.set(n.id, n);
+    }
+    const byParagraph = new Map<string, SemanticNode[]>();
+    for (const e of sortedEdges(graph)) {
+      if (e.kind !== 'arg:cites') continue;
+      const node = mapNodes.get(e.src);
+      const anchor = graph.nodes.get(e.dst);
+      if (node === undefined || anchor === undefined || anchor.kind !== 'arg:paragraph') continue;
+      const list = byParagraph.get(e.dst) ?? [];
+      list.push(node);
+      byParagraph.set(e.dst, list);
+    }
+
+    for (const paragraph of paragraphs) {
+      stats.paragraphs += 1;
+      const res = await extractStructure(session, paragraph.label, { domain: 'arg' });
+      if (!res.extracted) {
+        stats.floored += 1; // keep whatever accepted enrichment exists (ADR-0032)
+        continue;
+      }
+      const prov = res.proposal.provenance;
+      const existing = byParagraph.get(paragraph.id) ?? [];
+      const kept = res.proposal.nodes.filter((n) => ARG_MAP_KINDS.has(n.kind));
+      if (
+        existing.length > 0
+          ? existing.every((c) => c.provenance.inputHash === prov?.inputHash)
+          : kept.length === 0
+      ) {
+        stats.unchanged += 1;
+        continue;
+      }
+
+      const removedIds = new Set(existing.map((c) => c.id));
+      if (removedIds.size > 0) {
+        for (const e of sortedEdges(graph)) {
+          if (removedIds.has(e.src) || removedIds.has(e.dst)) {
+            ops.push({ t: 'edge:remove', graph: graphId, id: e.id, prev: e });
+          }
+        }
+        for (const c of existing) ops.push({ t: 'node:remove', graph: graphId, id: c.id, prev: c });
+      }
+
+      const provenance: SourceRef = {
+        origin: 'ai',
+        ...(prov !== undefined
+          ? {
+              providerId: prov.providerId,
+              model: prov.model,
+              promptVersion: prov.promptVersion,
+              inputHash: prov.inputHash,
+            }
+          : {}),
+      };
+      const idMap = new Map<string, ReturnType<typeof deriveNodeId>>();
+      for (const n of kept) {
+        const nodeId = deriveNodeId({ domain: ARG_DOMAIN, source: paragraph.id, path: ['arg', n.id] });
+        idMap.set(n.id, nodeId);
+        ops.push({
+          t: 'node:add',
+          graph: graphId,
+          node: { id: nodeId, kind: n.kind, label: n.label, attrs: {}, provenance },
+        });
+        // The evidence anchor: the extracted structure cites its source paragraph.
+        ops.push({
+          t: 'edge:add',
+          graph: graphId,
+          edge: {
+            id: deriveEdgeId({ graph: graphId, kind: 'arg:cites', src: nodeId, dst: paragraph.id }),
+            src: nodeId,
+            dst: paragraph.id,
+            kind: 'arg:cites',
+            attrs: {},
+            provenance,
+          },
+        });
+      }
+      for (const e of res.proposal.edges) {
+        if (!ARG_REL_KINDS.has(e.kind)) continue;
+        const src = idMap.get(e.src);
+        const dst = idMap.get(e.dst);
+        if (src === undefined || dst === undefined || src === dst) continue;
+        ops.push({
+          t: 'edge:add',
+          graph: graphId,
+          edge: {
+            id: deriveEdgeId({ graph: graphId, kind: e.kind, src, dst }),
+            src,
+            dst,
+            kind: e.kind,
+            attrs: {},
+            provenance,
+          },
+        });
+      }
+      stats[existing.length > 0 ? 'replaced' : 'added'] += 1;
+    }
+  }
+
+  if (ops.length > 0) {
+    const r = store.apply({ origin: { actor: ACTOR }, ops });
+    if (!r.ok) {
+      throw new AiCliError(
+        1,
+        `ai enrich: argument-map delta rejected: ${r.errors.map((e) => `[${e.code}] ${e.message}`).join('; ')}`,
+      );
+    }
+  }
+  return stats;
+}
+
 // ------------------------------------------------------------------ command
 
 export async function cmdAiEnrich(file: string, text: string, opts: EnrichCommandOptions): Promise<number> {
@@ -421,8 +592,10 @@ export async function cmdAiEnrich(file: string, text: string, opts: EnrichComman
     return 1;
   }
   const domains = new Set([...decoded.space.graphs.values()].map((g) => g.meta.domain));
-  if (!domains.has(DOMAIN)) {
-    err(`ai enrich: ${file} has no ${DOMAIN}-domain graphs (9C enriches conversations; the argument domain arrives in 9D)`);
+  const hasConversation = domains.has(DOMAIN);
+  const hasArgument = domains.has(ARG_DOMAIN);
+  if (!hasConversation && !hasArgument) {
+    err(`ai enrich: ${file} has no conversation- or argument-domain graphs (the two AI-native domains, Phase 9)`);
     return 2;
   }
 
@@ -435,8 +608,9 @@ export async function cmdAiEnrich(file: string, text: string, opts: EnrichComman
 
   const store = createStore(decoded.space);
   try {
-    const topics = await enrichTopics(store, built.session);
-    const claims = await enrichClaims(store, built.session);
+    const topics = hasConversation ? await enrichTopics(store, built.session) : undefined;
+    const claims = hasConversation ? await enrichClaims(store, built.session) : undefined;
+    const argmap = hasArgument ? await enrichArgumentMap(store, built.session) : undefined;
 
     if (built.mode === 'record' && opts.fixtures !== undefined) {
       await persistFixtures(built, opts.fixtures);
@@ -452,12 +626,13 @@ export async function cmdAiEnrich(file: string, text: string, opts: EnrichComman
           {
             file,
             command: 'enrich',
-            domain: DOMAIN,
+            domain: hasConversation && hasArgument ? 'conversation+argument' : hasConversation ? DOMAIN : ARG_DOMAIN,
             mode: built.mode,
             provider: built.providerId,
             model: built.model,
-            topics,
-            claims,
+            ...(topics !== undefined ? { topics } : {}),
+            ...(claims !== undefined ? { claims } : {}),
+            ...(argmap !== undefined ? { argmap } : {}),
             budget,
             ...(opts.out !== undefined ? { out: opts.out } : {}),
           },
@@ -469,14 +644,24 @@ export async function cmdAiEnrich(file: string, text: string, opts: EnrichComman
     }
 
     out(`OK ${file} — enrich (mode=${built.mode}, provider=${built.providerId}, model=${built.model})`);
-    out(
-      `  topics: sessions ${topics.sessions} · layered ${topics.layered} · unchanged ${topics.unchanged}` +
-        ` · replaced ${topics.replaced} · floored ${topics.floored}`,
-    );
-    out(
-      `  claims: messages ${claims.messages} · added ${claims.added} · unchanged ${claims.unchanged}` +
-        ` · replaced ${claims.replaced} · floored ${claims.floored}`,
-    );
+    if (topics !== undefined) {
+      out(
+        `  topics: sessions ${topics.sessions} · layered ${topics.layered} · unchanged ${topics.unchanged}` +
+          ` · replaced ${topics.replaced} · floored ${topics.floored}`,
+      );
+    }
+    if (claims !== undefined) {
+      out(
+        `  claims: messages ${claims.messages} · added ${claims.added} · unchanged ${claims.unchanged}` +
+          ` · replaced ${claims.replaced} · floored ${claims.floored}`,
+      );
+    }
+    if (argmap !== undefined) {
+      out(
+        `  argmap: paragraphs ${argmap.paragraphs} · added ${argmap.added} · unchanged ${argmap.unchanged}` +
+          ` · replaced ${argmap.replaced} · floored ${argmap.floored}`,
+      );
+    }
     out(
       `  budget: $${budget.spentDollars.toFixed(6)} · ${budget.spentTokens} tokens · ${budget.calls} calls`,
     );

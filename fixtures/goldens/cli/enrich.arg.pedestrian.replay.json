@@ -1,0 +1,23 @@
+{
+  "file": "fixtures/.cut-inputs/arg-pedestrian.meridian.json",
+  "command": "enrich",
+  "domain": "argument",
+  "mode": "replay",
+  "provider": "mock",
+  "model": "mock-model",
+  "argmap": {
+    "paragraphs": 8,
+    "added": 8,
+    "unchanged": 0,
+    "replaced": 0,
+    "floored": 0
+  },
+  "budget": {
+    "spentTokens": 160,
+    "spentDollars": 0.00016,
+    "calls": 8,
+    "tripped": false,
+    "status": "ok"
+  },
+  "out": "fixtures/.cut-inputs/arg-pedestrian.enriched.meridian.json"
+}

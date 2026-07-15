@@ -25,7 +25,10 @@ import { fileURLToPath } from 'node:url';
 
 import { summarizeCut } from '../packages/ai-services/dist/summarize.js';
 import { clusterNodes } from '../packages/ai-services/dist/cluster.js';
+import { extractStructure } from '../packages/ai-services/dist/extract.js';
+import { parseEssay } from '../packages/adapters/argument/dist/index.js';
 import {
+  mockArgmapSession,
   mockSummarizeSession,
   mockClusterSession,
   recordSession,
@@ -33,6 +36,7 @@ import {
 } from './lib/sessions.mjs';
 import { buildSoup } from './fixtures/node-soup.mjs';
 import { purity, adjustedRandIndex, summaryStructure, mean } from './lib/metrics.mjs';
+import { argmapScores, argmapStructure } from './lib/argmap-metrics.mjs';
 import { MockProvider } from '../packages/ai/dist/index.js';
 
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
@@ -49,7 +53,7 @@ const USAGE = `Usage:
   node evals/run.mjs
   node evals/run.mjs --replay
   node evals/run.mjs --update-golden
-  node evals/run.mjs --record <anthropic|openai> <model> --task <summarize|cluster> --consent-live
+  node evals/run.mjs --record <anthropic|openai> <model> --task <summarize|cluster|argmap> --consent-live
 
 Named --provider/--model arguments are also accepted. If --task is omitted,
 completion models record summaries and OpenAI embedding models record clusters.`;
@@ -106,6 +110,57 @@ async function clusterOnce(session) {
   };
 }
 
+const ARG_MAP_KINDS = new Set(['arg:thesis', 'arg:claim', 'arg:premise', 'arg:objection', 'arg:evidence']);
+const ARG_REL_KINDS = new Set(['arg:supports', 'arg:rebuts', 'arg:assumes', 'arg:cites']);
+const ARGMAP_REFERENCE = readJson('./fixtures/argmap-reference.json');
+
+/** Per-paragraph extraction over the reference essay — the same shape the 9D
+ * enrichment pass materializes, minus the store. */
+async function argmapOnce(session) {
+  const text = readFileSync(here('../fixtures/corpora/argument/pedestrian-centers.md'), 'utf8');
+  const essay = parseEssay(text);
+  const raw = { nodes: 0, edges: 0 };
+  const nodes = [];
+  const edges = [];
+  for (const [pi, paragraph] of essay.paragraphs.entries()) {
+    const res = await extractStructure(session, paragraph.text, { domain: 'arg' });
+    if (!res.extracted) continue;
+    raw.nodes += res.proposal.nodes.length;
+    raw.edges += res.proposal.edges.length;
+    const keptIds = new Set();
+    for (const n of res.proposal.nodes) {
+      if (!ARG_MAP_KINDS.has(n.kind)) continue;
+      keptIds.add(n.id);
+      nodes.push({ id: `p${pi}:${n.id}`, kind: n.kind, label: n.label, paragraph: pi });
+    }
+    for (const e of res.proposal.edges) {
+      if (!ARG_REL_KINDS.has(e.kind) || !keptIds.has(e.src) || !keptIds.has(e.dst)) continue;
+      edges.push({ src: `p${pi}:${e.src}`, dst: `p${pi}:${e.dst}`, kind: e.kind });
+    }
+  }
+  const structure = argmapStructure(nodes, edges);
+  const kept = nodes.length + edges.length;
+  const total = raw.nodes + raw.edges;
+  const scoresRaw = argmapScores({ nodes, edges }, ARGMAP_REFERENCE);
+  const scores = Object.fromEntries(
+    Object.entries(scoresRaw).map(([k, v]) => [k, typeof v === 'number' ? Number(v.toFixed(6)) : v]),
+  );
+  return {
+    paragraphs: essay.paragraphs.length,
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
+    // Usable share of everything the model emitted (undeclared kinds and
+    // dangling relations are dropped before the graph, so they count against).
+    usableShare: total === 0 ? 1 : kept / total,
+    structuralOk: structure.ok,
+    structuralIssues: structure.issues,
+    scores,
+    nodes,
+    edges,
+    budget: session.budget,
+  };
+}
+
 // ------------------------------------------------------------- service evals
 export async function runSummarize(makeSession) {
   const result = await summarizeOnce(makeSession());
@@ -113,6 +168,16 @@ export async function runSummarize(makeSession) {
   return {
     ...result,
     deterministic: canon(result.summaries) === canon(again.summaries),
+  };
+}
+
+export async function runArgmap(makeSession) {
+  const result = await argmapOnce(makeSession());
+  const again = await argmapOnce(makeSession());
+  const shape = (r) => ({ nodes: r.nodes, edges: r.edges, scores: r.scores });
+  return {
+    ...result,
+    deterministic: canon(shape(result)) === canon(shape(again)),
   };
 }
 
@@ -157,11 +222,11 @@ export function loadRecordings(path = DEFAULT_RECORDING_PATH) {
 }
 
 function replayProvider(recording, task) {
-  const routeName = task === 'summarize' ? 'summarization' : 'embedding';
+  const routeName = task === 'summarize' ? 'summarization' : task === 'argmap' ? 'extraction' : 'embedding';
   const route = recording.config.routes[routeName];
   if (!route) throw new Error(`Recording '${task}' has no '${routeName}' route.`);
   const capabilities = {
-    completion: task === 'summarize',
+    completion: task === 'summarize' || task === 'argmap',
     embedding: task === 'cluster',
     models: {
       [route.model]: recording.metadata?.pricing ?? {
@@ -238,7 +303,8 @@ export async function runRecord(
   const existing = existsSync(recordingPath) ? readJsonPath(recordingPath) : {};
   const { session, store, config, provider } = await createSession(target);
   const recordedAt = now();
-  const routeName = target.task === 'cluster' ? 'embedding' : 'summarization';
+  const routeName =
+    target.task === 'cluster' ? 'embedding' : target.task === 'argmap' ? 'extraction' : 'summarization';
   const route = config.routes[routeName];
   if (!route) throw new Error(`Record session has no '${routeName}' route.`);
   const pricing = provider?.capabilities?.models?.[route.model];
@@ -283,8 +349,27 @@ export async function runRecord(
       },
       summaries: taskResult.summaries,
     };
+  } else if (target.task === 'argmap') {
+    taskResult = await argmapOnce(session);
+    unitCount = taskResult.paragraphs;
+    output = {
+      version: 1,
+      recordedAt,
+      providerId: route.providerId,
+      model: route.model,
+      fixture: 'argmap-pedestrian',
+      nodeCount: taskResult.nodeCount,
+      usage: usageSummary(taskResult.budget, unitCount),
+      metrics: {
+        usableShare: Number(taskResult.usableShare.toFixed(6)),
+        ...taskResult.scores,
+      },
+      // The live map itself, for human review against the reference.
+      nodes: taskResult.nodes,
+      edges: taskResult.edges,
+    };
   } else {
-    throw new Error(`Unknown record task '${target.task}' (expected summarize|cluster).`);
+    throw new Error(`Unknown record task '${target.task}' (expected summarize|cluster|argmap).`);
   }
 
   const outputPath = resolve(
@@ -293,7 +378,7 @@ export async function runRecord(
   );
   writeJsonAtomic(outputPath, output);
 
-  const taskKey = target.task === 'cluster' ? 'cluster' : 'summarize';
+  const taskKey = target.task;
   const recording = {
     ...existing,
     version: 1,
@@ -375,8 +460,10 @@ export function parseRecordArgs(args, env = process.env) {
     task = 'summarize';
   } else if (requestedTask === 'cluster' || requestedTask === 'embedding') {
     task = 'cluster';
+  } else if (requestedTask === 'argmap' || requestedTask === 'extract' || requestedTask === 'extraction') {
+    task = 'argmap';
   } else {
-    throw new Error(`Unknown --task '${requestedTask}' (expected summarize|cluster).`);
+    throw new Error(`Unknown --task '${requestedTask}' (expected summarize|cluster|argmap).`);
   }
   if (provider === 'anthropic' && task === 'cluster') {
     throw new Error('The built-in Anthropic adapter has no embedding capability; use an embedding provider such as OpenAI for --task cluster.');
@@ -401,11 +488,20 @@ export async function runEvaluation({
 } = {}) {
   let makeSummarize = mockSummarizeSession;
   let makeCluster = mockClusterSession;
+  let makeArgmap = mockArgmapSession;
+  // Argmap quality floors gate live recordings only (never mock echo output).
+  let argmapQualityGated = false;
   if (mode === 'replay') {
     const rec = recordings ?? loadRecordings(recordingPath);
     if (!rec.summarize || !rec.cluster) throw new Error('Replay requires summarize and cluster recordings.');
     makeSummarize = () => replaySession(rec.summarize, replayProvider(rec.summarize, 'summarize'));
     makeCluster = () => replaySession(rec.cluster, replayProvider(rec.cluster, 'cluster'));
+    if (rec.argmap) {
+      makeArgmap = () => replaySession(rec.argmap, replayProvider(rec.argmap, 'argmap'));
+      argmapQualityGated = true;
+    } else {
+      makeArgmap = null; // no recording — leave argmap UNVERIFIED in replay
+    }
   } else if (mode !== 'mock') {
     throw new Error(`Unknown eval mode '${mode}'.`);
   }
@@ -413,6 +509,7 @@ export async function runEvaluation({
   log(`meridian evals — mode: ${mode}\n`);
   const sum = await runSummarize(makeSummarize);
   const clus = await runCluster(makeCluster);
+  const argmap = makeArgmap === null ? null : await runArgmap(makeArgmap);
 
   log('summarize (module summaries):');
   log(`  ${sum.summaries.length} modules · ${sum.enriched} enriched · ${sum.floored} floored`);
@@ -420,6 +517,16 @@ export async function runEvaluation({
   log(
     `  ${clus.nodeCount} nodes → ${clus.clusterCount} clusters · purity ${clus.purity.toFixed(3)} · ARI ${clus.ari.toFixed(3)}`,
   );
+  if (argmap !== null) {
+    log('argmap (pedestrian-centers essay vs human reference):');
+    log(
+      `  ${argmap.paragraphs} paragraphs → ${argmap.nodeCount} nodes · ${argmap.edgeCount} relations · ` +
+        `node-F1 ${argmap.scores.nodeF1.toFixed(3)} · edge-F1 ${argmap.scores.edgeF1.toFixed(3)}` +
+        (argmapQualityGated ? '' : ' (informative — quality floors gate live recordings only)'),
+    );
+  } else {
+    log('argmap: UNVERIFIED — no argmap recording in the replay set (record with --task argmap).');
+  }
 
   const goldens = {
     './goldens/module-summaries.mock.json': sum.summaries,
@@ -429,6 +536,17 @@ export async function runEvaluation({
       ari: Number(clus.ari.toFixed(6)),
       labels: clus.labels,
     },
+    ...(mode === 'mock' && argmap !== null
+      ? {
+          './goldens/argmap.mock.json': {
+            paragraphs: argmap.paragraphs,
+            nodeCount: argmap.nodeCount,
+            edgeCount: argmap.edgeCount,
+            usableShare: Number(argmap.usableShare.toFixed(6)),
+            scores: argmap.scores,
+          },
+        }
+      : {}),
   };
   if (updateGolden) {
     if (mode !== 'mock') throw new Error('--update-golden is only valid in mock mode.');
@@ -445,6 +563,15 @@ export async function runEvaluation({
   ok = check(log, 'summary-structural-valid-min', sum.validShare >= FLOORS['summary-structural-valid-min'], sum.validShare.toFixed(3), `≥ ${FLOORS['summary-structural-valid-min']}`) && ok;
   ok = check(log, 'summarize-deterministic', sum.deterministic, String(sum.deterministic), 'true') && ok;
   ok = check(log, 'cluster-deterministic', clus.deterministic, String(clus.deterministic), 'true') && ok;
+  if (argmap !== null) {
+    const structural = argmap.structuralOk && argmap.usableShare >= FLOORS['argmap-structural-valid-min'];
+    ok = check(log, 'argmap-structural-valid-min', structural, argmap.usableShare.toFixed(3), `≥ ${FLOORS['argmap-structural-valid-min']}`) && ok;
+    ok = check(log, 'argmap-deterministic', argmap.deterministic, String(argmap.deterministic), 'true') && ok;
+    if (argmapQualityGated) {
+      ok = check(log, 'argmap-node-f1-min', argmap.scores.nodeF1 >= FLOORS['argmap-node-f1-min'], argmap.scores.nodeF1.toFixed(3), `≥ ${FLOORS['argmap-node-f1-min']}`) && ok;
+      ok = check(log, 'argmap-edge-f1-min', argmap.scores.edgeF1 >= FLOORS['argmap-edge-f1-min'], argmap.scores.edgeF1.toFixed(3), `≥ ${FLOORS['argmap-edge-f1-min']}`) && ok;
+    }
+  }
 
   if (mode === 'mock') {
     for (const [path, value] of Object.entries(goldens)) {
@@ -464,6 +591,10 @@ export async function runEvaluation({
     log('\nstructural failures:');
     for (const inv of sum.invalid) log(`  ${inv.id}: ${inv.issues.join(', ')}`);
   }
+  if (argmap !== null && argmap.structuralIssues.length > 0) {
+    log('\nargmap structural issues:');
+    for (const issue of argmap.structuralIssues) log(`  ${issue}`);
+  }
 
   const humanMean = humanSummaryMean(ratingsPath);
   log('\nhuman-rated summary quality (RUBRIC.md):');
@@ -476,7 +607,7 @@ export async function runEvaluation({
 
   if (!ok) log('\neval floor breached — regression gate (ROADMAP §9c: floors, not per-CI).');
   else log('\nall objective floors held.');
-  return { ok, summarize: sum, cluster: clus, humanMean };
+  return { ok, summarize: sum, cluster: clus, argmap, humanMean };
 }
 
 export async function main(args = process.argv.slice(2), env = process.env) {

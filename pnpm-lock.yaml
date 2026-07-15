@@ -32,6 +32,9 @@ importers:
       '@meridian/abstraction':
         specifier: workspace:*
         version: link:../../packages/abstraction
+      '@meridian/adapter-argument':
+        specifier: workspace:*
+        version: link:../../packages/adapters/argument
       '@meridian/adapter-code':
         specifier: workspace:*
         version: link:../../packages/adapters/code
@@ -173,6 +176,28 @@ importers:
       fast-check:
         specifier: ^4.0.0
         version: 4.8.0
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@24.13.2)
+
+  packages/adapters/argument:
+    dependencies:
+      '@meridian/plugin-api':
+        specifier: workspace:*
+        version: link:../../plugin-api
+    devDependencies:
+      '@meridian/conformance-kit':
+        specifier: workspace:*
+        version: link:../../conformance-kit
+      '@meridian/graph-core':
+        specifier: workspace:*
+        version: link:../../graph-core
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
       typescript:
         specifier: ^5.8.0
         version: 5.9.3

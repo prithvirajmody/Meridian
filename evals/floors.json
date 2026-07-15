@@ -1,7 +1,10 @@
 {
-  "$comment": "Regression floors for the eval harness (ROADMAP Phase 8 §9c: 'small human-rated golden sets with rubric, trend-tracked, not gate-blocking except for regressions below a floor'). Floors are minimums (value must be >= floor). Objective floors gate the offline/replay run; summary-human-mean-min gates ONLY when evals/ratings/module-summaries.ratings.json exists (human ratings are never fabricated). Floors ratchet up, never down.",
+  "$comment": "Regression floors for the eval harness (ROADMAP Phase 8 \u00a79c: 'small human-rated golden sets with rubric, trend-tracked, not gate-blocking except for regressions below a floor'). Floors are minimums (value must be >= floor). Objective floors gate the offline/replay run; summary-human-mean-min gates ONLY when evals/ratings/module-summaries.ratings.json exists (human ratings are never fabricated). Floors ratchet up, never down. Argmap (9D): argmap-structural-valid-min + determinism gate every run; argmap-node-f1-min / argmap-edge-f1-min score the extracted map against the human reference (evals/fixtures/argmap-reference.json, metric in evals/lib/argmap-metrics.mjs) and gate ONLY when a live argmap recording is replayed \u2014 mock echo output is never scored for quality.",
   "cluster-purity-min": 0.95,
   "cluster-ari-min": 0.9,
   "summary-structural-valid-min": 1.0,
-  "summary-human-mean-min": 3.5
+  "summary-human-mean-min": 3.5,
+  "argmap-structural-valid-min": 1.0,
+  "argmap-node-f1-min": 0.35,
+  "argmap-edge-f1-min": 0.15
 }

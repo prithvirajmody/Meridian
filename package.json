@@ -14,7 +14,7 @@
     "test:evals": "turbo run build && node --test evals/test/*.test.mjs",
     "typecheck": "turbo run typecheck",
     "lint": "eslint .",
-    "depcruise": "depcruise packages/graph-core/src packages/graph-store/src packages/abstraction/src packages/view-model/src packages/layout/src packages/navigation/src packages/renderer/src packages/plugin-api/src packages/plugin-host/src packages/conformance-kit/src packages/adapters/markdown/src packages/adapters/code/src packages/adapters/conversation/src packages/ai/src packages/ai-services/src apps/cli/src apps/studio/src --config .dependency-cruiser.cjs",
+    "depcruise": "depcruise packages/graph-core/src packages/graph-store/src packages/abstraction/src packages/view-model/src packages/layout/src packages/navigation/src packages/renderer/src packages/plugin-api/src packages/plugin-host/src packages/conformance-kit/src packages/adapters/markdown/src packages/adapters/code/src packages/adapters/conversation/src packages/adapters/argument/src packages/ai/src packages/ai-services/src apps/cli/src apps/studio/src --config .dependency-cruiser.cjs",
     "bench": "turbo run build && node benchmarks/decode-validate.bench.mjs && node benchmarks/store-deltas.bench.mjs && node benchmarks/ingest-markdown.bench.mjs && node benchmarks/abstraction-cut.bench.mjs && node benchmarks/layout-elk.bench.mjs && node benchmarks/layout-force.bench.mjs && node benchmarks/navigation-plan.bench.mjs && node benchmarks/ai-replay-overhead.bench.mjs && node benchmarks/ai-cluster-5k.bench.mjs",
     "goldens:update:cli": "turbo run build && UPDATE_GOLDENS=1 pnpm --filter @meridian/cli test",
     "goldens:update:ui": "pnpm build && pnpm --filter @meridian/studio test:e2e:update --grep 'visual baselines|Unicode fallback'",

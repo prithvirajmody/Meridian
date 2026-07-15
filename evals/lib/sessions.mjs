@@ -21,6 +21,7 @@ import {
   MOCK_COMPLETE_PROVIDER_ID,
 } from './mock-summarize.mjs';
 import { mockEmbedProvider, MOCK_EMBED_MODEL, MOCK_EMBED_PROVIDER_ID } from './mock-embed.mjs';
+import { mockExtractProvider, MOCK_EXTRACT_MODEL, MOCK_EXTRACT_PROVIDER_ID } from './mock-extract.mjs';
 
 /** Offline summarize session: mock completion provider, no cache, no network. */
 export function mockSummarizeSession() {
@@ -41,6 +42,18 @@ export function mockClusterSession() {
     config: {
       mode: 'off',
       routes: { embedding: { providerId: MOCK_EMBED_PROVIDER_ID, model: MOCK_EMBED_MODEL } },
+    },
+    providers: [provider],
+  });
+}
+
+/** Offline argmap session: mock extraction provider, no cache, no network. */
+export function mockArgmapSession() {
+  const provider = mockExtractProvider();
+  return new AiSession({
+    config: {
+      mode: 'off',
+      routes: { extraction: { providerId: MOCK_EXTRACT_PROVIDER_ID, model: MOCK_EXTRACT_MODEL } },
     },
     providers: [provider],
   });
@@ -89,7 +102,10 @@ export async function recordSession(target) {
       capabilities: ANTHROPIC_REFERENCE_CAPABILITIES,
       client: createAnthropicClient(),
     });
-    routes = { summarization: { providerId: provider.id, model: target.model } };
+    routes =
+      target.task === 'argmap'
+        ? { extraction: { providerId: provider.id, model: target.model } }
+        : { summarization: { providerId: provider.id, model: target.model } };
   } else if (target.provider === 'openai') {
     if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required for --record openai');
     provider = new OpenAiProvider({
@@ -98,7 +114,9 @@ export async function recordSession(target) {
     });
     routes = target.task === 'cluster' || target.task === 'embedding'
       ? { embedding: { providerId: provider.id, model: target.model } }
-      : { summarization: { providerId: provider.id, model: target.model } };
+      : target.task === 'argmap'
+        ? { extraction: { providerId: provider.id, model: target.model } }
+        : { summarization: { providerId: provider.id, model: target.model } };
   } else {
     throw new Error(`unknown provider '${target.provider}' (expected anthropic|openai)`);
   }

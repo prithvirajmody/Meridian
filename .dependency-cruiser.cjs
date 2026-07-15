@@ -247,7 +247,7 @@ module.exports = {
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|abstraction|layout|plugin-api|plugin-host|adapters/markdown|adapters/code|adapters/conversation|ai-services|ai)(/|$)',
+          '^packages/(graph-core|graph-store|abstraction|layout|plugin-api|plugin-host|adapters/markdown|adapters/code|adapters/conversation|adapters/argument|ai-services|ai)(/|$)',
       },
     },
     {

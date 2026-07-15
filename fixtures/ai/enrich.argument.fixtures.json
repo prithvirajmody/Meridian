@@ -1,0 +1,514 @@
+{
+  "21c4c6cd7e17a52d7ddd9caf44ac37a380f571be67cee50d3fdf12ff1026f075": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "8ec8bc656a841bbe17e9676e2e3cd510391e4951dd92a76331beb885cdae54d8",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "arg:c-1",
+              "kind": "arg:claim",
+              "label": "# Cities should pedestrianize their historic centers"
+            }
+          ],
+          "edges": []
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "arg:c-1",
+            "kind": "arg:claim",
+            "label": "# Cities should pedestrianize their historic centers"
+          }
+        ],
+        "edges": []
+      }
+    }
+  },
+  "372f444c07ce992a4d4f51c5275c2bede09b2a9a6afeed497f8a3cd04fc54c70": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "aa54ff2c033ea1b00a2997561b2f8c2ec19a800b2e22da7118ed86a65eec1963",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "arg:c-1",
+              "kind": "arg:claim",
+              "label": "Pedestrianization is not a hardship to be endured but an amenity to be claimed."
+            },
+            {
+              "id": "arg:c-2",
+              "kind": "arg:premise",
+              "label": "The cities that moved first now top the livability rankings, and none of them has voted to let the cars back in."
+            }
+          ],
+          "edges": [
+            {
+              "id": "arg:r-1",
+              "src": "arg:c-2",
+              "dst": "arg:c-1",
+              "kind": "arg:supports"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "arg:c-1",
+            "kind": "arg:claim",
+            "label": "Pedestrianization is not a hardship to be endured but an amenity to be claimed."
+          },
+          {
+            "id": "arg:c-2",
+            "kind": "arg:premise",
+            "label": "The cities that moved first now top the livability rankings, and none of them has voted to let the cars back in."
+          }
+        ],
+        "edges": [
+          {
+            "id": "arg:r-1",
+            "src": "arg:c-2",
+            "dst": "arg:c-1",
+            "kind": "arg:supports"
+          }
+        ]
+      }
+    }
+  },
+  "3a832ec16a9c63721d0d042725d8b02c1add62a8268c9aa0f48f5c4703a3b03b": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "9f7031759fc4bb85995057fd87d8cbdeb5c8a47d905a6ddb9898cd1503a2608e",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "arg:c-1",
+              "kind": "arg:claim",
+              "label": "The commercial objection is the loudest and the weakest."
+            },
+            {
+              "id": "arg:c-2",
+              "kind": "arg:premise",
+              "label": "Shopkeepers predict ruin whenever a pedestrian zone is proposed, because they assume their customers arrive by car."
+            }
+          ],
+          "edges": [
+            {
+              "id": "arg:r-1",
+              "src": "arg:c-2",
+              "dst": "arg:c-1",
+              "kind": "arg:supports"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "arg:c-1",
+            "kind": "arg:claim",
+            "label": "The commercial objection is the loudest and the weakest."
+          },
+          {
+            "id": "arg:c-2",
+            "kind": "arg:premise",
+            "label": "Shopkeepers predict ruin whenever a pedestrian zone is proposed, because they assume their customers arrive by car."
+          }
+        ],
+        "edges": [
+          {
+            "id": "arg:r-1",
+            "src": "arg:c-2",
+            "dst": "arg:c-1",
+            "kind": "arg:supports"
+          }
+        ]
+      }
+    }
+  },
+  "54be7ec048e5520b1e8f009c8dfdb9a3c636c3ca0e9251480efe9608edcb40bf": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "9dba440d6ea147f005486e9f32c1c15a8fd6e3924697c939b7429823c06f278d",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "arg:c-1",
+              "kind": "arg:claim",
+              "label": "City governments should close their historic centers to private cars."
+            },
+            {
+              "id": "arg:c-2",
+              "kind": "arg:premise",
+              "label": "The change pays for itself in safety, commerce, and civic life, and the objections raised against it dissolve on contac…"
+            }
+          ],
+          "edges": [
+            {
+              "id": "arg:r-1",
+              "src": "arg:c-2",
+              "dst": "arg:c-1",
+              "kind": "arg:supports"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "arg:c-1",
+            "kind": "arg:claim",
+            "label": "City governments should close their historic centers to private cars."
+          },
+          {
+            "id": "arg:c-2",
+            "kind": "arg:premise",
+            "label": "The change pays for itself in safety, commerce, and civic life, and the objections raised against it dissolve on contac…"
+          }
+        ],
+        "edges": [
+          {
+            "id": "arg:r-1",
+            "src": "arg:c-2",
+            "dst": "arg:c-1",
+            "kind": "arg:supports"
+          }
+        ]
+      }
+    }
+  },
+  "8c889cb9d169610410e413941d0fecd44c23e3f1c23708cd31654d21ff8db880": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "a057930fcf8893b72860ac4fa6119103b5dca92ae060cedc81094c8ed60a84ec",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "arg:c-1",
+              "kind": "arg:claim",
+              "label": "Critics also argue that closing the center merely pushes congestion outward to the ring roads."
+            },
+            {
+              "id": "arg:c-2",
+              "kind": "arg:premise",
+              "label": "The evidence for induced disappearance answers this."
+            }
+          ],
+          "edges": [
+            {
+              "id": "arg:r-1",
+              "src": "arg:c-2",
+              "dst": "arg:c-1",
+              "kind": "arg:supports"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "arg:c-1",
+            "kind": "arg:claim",
+            "label": "Critics also argue that closing the center merely pushes congestion outward to the ring roads."
+          },
+          {
+            "id": "arg:c-2",
+            "kind": "arg:premise",
+            "label": "The evidence for induced disappearance answers this."
+          }
+        ],
+        "edges": [
+          {
+            "id": "arg:r-1",
+            "src": "arg:c-2",
+            "dst": "arg:c-1",
+            "kind": "arg:supports"
+          }
+        ]
+      }
+    }
+  },
+  "b7f12de1ad8e9c9ab46500e04875f4193bcabe7f62cfe3ffcdc2d9301e398917": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "105cfc9a3dedc57fedd6cd913d281055e2636a1c65dee7839e1dad2bd790f425",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "arg:c-1",
+              "kind": "arg:claim",
+              "label": "Accessibility is the one objection that deserves a design answer rather than a rebuttal."
+            },
+            {
+              "id": "arg:c-2",
+              "kind": "arg:premise",
+              "label": "Residents with limited mobility, delivery services, and emergency vehicles all need motorized access, and a well-run pe…"
+            }
+          ],
+          "edges": [
+            {
+              "id": "arg:r-1",
+              "src": "arg:c-2",
+              "dst": "arg:c-1",
+              "kind": "arg:supports"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "arg:c-1",
+            "kind": "arg:claim",
+            "label": "Accessibility is the one objection that deserves a design answer rather than a rebuttal."
+          },
+          {
+            "id": "arg:c-2",
+            "kind": "arg:premise",
+            "label": "Residents with limited mobility, delivery services, and emergency vehicles all need motorized access, and a well-run pe…"
+          }
+        ],
+        "edges": [
+          {
+            "id": "arg:r-1",
+            "src": "arg:c-2",
+            "dst": "arg:c-1",
+            "kind": "arg:supports"
+          }
+        ]
+      }
+    }
+  },
+  "d6b546738c2ed6b6a52c270d877ab905c873f29e8e50c1631d99d3bb9d856776": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "4ea86108e7eaa201b7ca1329ada79de73466ae0bd93a3750e1f15f29d1a9d65b",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "arg:c-1",
+              "kind": "arg:claim",
+              "label": "The deeper argument is about what a center is for."
+            },
+            {
+              "id": "arg:c-2",
+              "kind": "arg:premise",
+              "label": "A historic core is the city's shared living room, and a living room does not improve when you park machines in it."
+            }
+          ],
+          "edges": [
+            {
+              "id": "arg:r-1",
+              "src": "arg:c-2",
+              "dst": "arg:c-1",
+              "kind": "arg:supports"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "arg:c-1",
+            "kind": "arg:claim",
+            "label": "The deeper argument is about what a center is for."
+          },
+          {
+            "id": "arg:c-2",
+            "kind": "arg:premise",
+            "label": "A historic core is the city's shared living room, and a living room does not improve when you park machines in it."
+          }
+        ],
+        "edges": [
+          {
+            "id": "arg:r-1",
+            "src": "arg:c-2",
+            "dst": "arg:c-1",
+            "kind": "arg:supports"
+          }
+        ]
+      }
+    }
+  },
+  "d769c73969444e5ee5fcf3a9ed6603b15c570041d2d9713cb27aac870612d78e": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "42cbb4d52010820e292cb12856d620eb92299722a3e0b99e22f1c91b090a4b4c",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "arg:c-1",
+              "kind": "arg:claim",
+              "label": "The safety case is the simplest."
+            },
+            {
+              "id": "arg:c-2",
+              "kind": "arg:premise",
+              "label": "Streets built before the automobile were never designed to absorb it, and the collision statistics show it: narrow sigh…"
+            }
+          ],
+          "edges": [
+            {
+              "id": "arg:r-1",
+              "src": "arg:c-2",
+              "dst": "arg:c-1",
+              "kind": "arg:supports"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "arg:c-1",
+            "kind": "arg:claim",
+            "label": "The safety case is the simplest."
+          },
+          {
+            "id": "arg:c-2",
+            "kind": "arg:premise",
+            "label": "Streets built before the automobile were never designed to absorb it, and the collision statistics show it: narrow sigh…"
+          }
+        ],
+        "edges": [
+          {
+            "id": "arg:r-1",
+            "src": "arg:c-2",
+            "dst": "arg:c-1",
+            "kind": "arg:supports"
+          }
+        ]
+      }
+    }
+  }
+}

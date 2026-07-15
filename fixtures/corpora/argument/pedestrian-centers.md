@@ -1,0 +1,15 @@
+# Cities should pedestrianize their historic centers
+
+City governments should close their historic centers to private cars. The change pays for itself in safety, commerce, and civic life, and the objections raised against it dissolve on contact with the evidence from cities that have already made the move.
+
+The safety case is the simplest. Streets built before the automobile were never designed to absorb it, and the collision statistics show it: narrow sightlines and mixed traffic put pedestrians in danger at every corner. When Pontevedra removed through traffic from its old town, traffic deaths in the zone fell to zero and stayed there for over a decade. No engineering retrofit of a medieval street grid achieves that record while cars remain.
+
+The commercial objection is the loudest and the weakest. Shopkeepers predict ruin whenever a pedestrian zone is proposed, because they assume their customers arrive by car. Retail studies in Madrid and Oslo found the opposite pattern: foot traffic rose after pedestrianization, and retail revenue in the affected streets grew faster than in car-accessible control districts. People linger where they can walk, and lingering people spend money.
+
+Critics also argue that closing the center merely pushes congestion outward to the ring roads. The evidence for induced disappearance answers this. A consistent share of car trips simply evaporates when the road space is withdrawn, because those trips were marginal to begin with. Zurich measured this directly: a third of the displaced trips shifted to transit or foot, and another share never rematerialized at all.
+
+Accessibility is the one objection that deserves a design answer rather than a rebuttal. Residents with limited mobility, delivery services, and emergency vehicles all need motorized access, and a well-run pedestrian zone grants it. Permit systems, timed delivery windows, and unimpeded emergency corridors are standard practice in every successful zone, and they work better on streets that are not choked with private cars.
+
+The deeper argument is about what a center is for. A historic core is the city's shared living room, and a living room does not improve when you park machines in it. The plazas of pedestrianized cities fill with markets, children, and evening crowds, which is precisely the civic life the center existed to host before the car displaced it.
+
+Pedestrianization is not a hardship to be endured but an amenity to be claimed. The cities that moved first now top the livability rankings, and none of them has voted to let the cars back in. That revealed preference is the strongest evidence of all.
