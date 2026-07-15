@@ -90,9 +90,11 @@ function fixture() {
         return surface;
       }),
     },
+    canvas2d: { mount: async () => Promise.reject(new Error('unused')) },
     viewport: () => ({ width: 800, height: 600, devicePixelRatio: 1 }),
     now: () => 0,
     selectNode: (nodeId, mode) => selections.push({ nodeId, mode }),
+    selectEdges: vi.fn(),
     focusNode: vi.fn(),
     navigate: (intent) => navigation.push(intent),
     reportDiagnostic: (diagnostic) => diagnostics.push(diagnostic),

@@ -9,6 +9,8 @@ interface UiBudgets {
   readonly 'renderer-interaction-p95-ms': number;
   readonly 'renderer-max-live-labels': number;
   readonly 'outline-scroll-min-fps': number;
+  readonly 'matrix-2k-render-ms': number;
+  readonly 'projection-switch-ms': number;
   readonly 'studio-heap-soak-ms': number;
   readonly 'studio-heap-retained-growth-bytes': number;
   readonly 'transition-frame-p95-ms': number;

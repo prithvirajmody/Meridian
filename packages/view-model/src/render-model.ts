@@ -113,9 +113,12 @@ function compareString(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function edgeKey(edge: InducedEdge): string {
+/** Canonical selection key for an induced edge, shared by every projection. */
+export function inducedEdgeKey(edge: InducedEdge): string {
   return `${edge.src}→${edge.dst}→${edge.kind}`;
 }
+
+const edgeKey = inducedEdgeKey;
 
 function compareEdge(a: InducedEdge, b: InducedEdge): number {
   return compareString(a.src, b.src) || compareString(a.dst, b.dst) || compareString(a.kind, b.kind);

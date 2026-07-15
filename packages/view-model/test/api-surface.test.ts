@@ -26,6 +26,7 @@ describe('@meridian/view-model public surface', () => {
       'characteristicLength',
       'createCameraState',
       'createFocusState',
+      'inducedEdgeKey',
       'isLabelEligible',
       'labelTier',
       'panBy',

@@ -22,6 +22,7 @@ describe('@meridian/renderer public surface', () => {
       'cullScenePlan',
       'fitCameraToBounds',
       'mountOutlineVirtualList',
+      'mountProjectionCanvas',
       'queryQuadtree',
       'queryQuadtreeWithStats',
     ]);

@@ -99,6 +99,69 @@ export interface VirtualListMedium {
   mount(onInput: (input: VirtualListInput) => void): Promise<VirtualListSurface>;
 }
 
+/** One filled rectangle in a retained 2D-canvas frame. Logical (CSS) pixels. */
+export interface Canvas2dRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly fill: string;
+}
+
+export interface Canvas2dLine {
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+  readonly color: string;
+  readonly width: number;
+}
+
+export interface Canvas2dLabel {
+  readonly x: number;
+  readonly y: number;
+  readonly text: string;
+  readonly color: string;
+  readonly size: number;
+  readonly align: 'left' | 'center' | 'right';
+}
+
+/**
+ * Data-only retained draw list. The concrete canvas element, context, and
+ * rasterization cadence live behind the medium, never in a projection.
+ */
+export interface Canvas2dFrame {
+  readonly revision: string;
+  readonly background: string;
+  readonly rects: readonly Canvas2dRect[];
+  readonly lines: readonly Canvas2dLine[];
+  readonly labels: readonly Canvas2dLabel[];
+  readonly message: string | null;
+}
+
+export type Canvas2dPointerAction = 'down' | 'move' | 'up' | 'leave';
+
+/** Plain input data emitted by the medium; coordinates are logical pixels. */
+export type Canvas2dInput =
+  | {
+      readonly type: 'pointer';
+      readonly action: Canvas2dPointerAction;
+      readonly x: number;
+      readonly y: number;
+      readonly primary: boolean;
+    }
+  | { readonly type: 'wheel'; readonly x: number; readonly y: number; readonly deltaY: number }
+  | { readonly type: 'resize'; readonly width: number; readonly height: number };
+
+export interface Canvas2dSurface {
+  render(frame: Canvas2dFrame): void;
+  destroy(): void;
+}
+
+export interface Canvas2dMedium {
+  mount(onInput: (input: Canvas2dInput) => void): Promise<Canvas2dSurface>;
+}
+
 export type ProjectionNavigationIntent =
   | {
       readonly kind: 'focus' | 'expand' | 'collapse' | 'drill-in';
@@ -114,9 +177,12 @@ export interface ProjectionViewport extends ViewportSize {
 export interface ProjectionHost {
   readonly nodeLink: NodeLinkMedium;
   readonly virtualList: VirtualListMedium;
+  readonly canvas2d: Canvas2dMedium;
   viewport(): ProjectionViewport;
   now(): number;
   selectNode(nodeId: NodeId, mode: 'replace' | 'toggle'): void;
+  /** Replace the edge selection; `anchorKey` must be one of `keys` when set. */
+  selectEdges(keys: readonly string[], anchorKey?: string): void;
   focusNode(nodeId: NodeId | null): void;
   navigate(intent: ProjectionNavigationIntent): void;
   reportDiagnostic(diagnostic: ProjectionDiagnostic): void;

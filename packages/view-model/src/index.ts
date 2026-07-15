@@ -71,6 +71,7 @@ export type { StabilityScore } from './stability.js';
 
 export {
   buildRenderModel,
+  inducedEdgeKey,
   EDGE_FLAG_SELECTED,
   EDGE_FLAG_SELECTION_ANCHOR,
   EMPTY_SELECTION,

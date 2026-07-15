@@ -25,6 +25,16 @@ export type {
   OutlineVirtualSelection,
   VirtualWindow,
 } from './outline-virtual-list.js';
+export { mountProjectionCanvas } from './projection-canvas.js';
+export type {
+  ProjectionCanvasFrame,
+  ProjectionCanvasInput,
+  ProjectionCanvasLabel,
+  ProjectionCanvasLine,
+  ProjectionCanvasPointerAction,
+  ProjectionCanvasRect,
+  ProjectionCanvasSurface,
+} from './projection-canvas.js';
 export {
   buildQuadtree,
   queryQuadtree,

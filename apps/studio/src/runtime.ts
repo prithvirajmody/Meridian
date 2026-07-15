@@ -3,6 +3,7 @@ import type { AbstractionProposal } from '@meridian/abstraction';
 import {
   EMPTY_FOCUS,
   EMPTY_SELECTION,
+  type InducedEdge,
   type NodeId,
   type ProjectionModel,
 } from '@meridian/view-model';
@@ -49,12 +50,55 @@ function createOutlineProjectionModel(rowCount: number): ProjectionModel {
   };
 }
 
+function createMatrixProjectionModel(size: number): ProjectionModel {
+  const count = Math.max(2, Math.min(2_000, Math.floor(size)));
+  const clusterSize = 40;
+  const edges: InducedEdge[] = [];
+  const pushEdge = (src: number, dst: number, weight: number): void => {
+    if (src === dst) return;
+    edges.push({
+      src: `matrix-fixture:${src}` as NodeId,
+      dst: `matrix-fixture:${dst}` as NodeId,
+      kind: 'fixture:link',
+      weight,
+      multiplicity: 1,
+      samples: [],
+    });
+  };
+  for (let index = 0; index < count; index++) {
+    pushEdge(index, (index + 1) % count, 1 + (index % 5));
+    pushEdge(index, (index * 7) % count, 1);
+    pushEdge(index, (index + clusterSize) % count, 2);
+  }
+  return {
+    cutLevel: 0,
+    nodes: Array.from({ length: count }, (_, index) => ({
+      id: `matrix-fixture:${index}` as NodeId,
+      label: `Matrix node ${String(index + 1).padStart(4, '0')}`,
+      kind: 'fixture:matrix-node',
+      attrs: { 'fixture:index': index },
+      graphId: null,
+      parentId: `matrix-fixture:cluster-${Math.floor(index / clusterSize)}` as NodeId,
+      detailGraphId: null,
+      depth: 1,
+      cutReason: null,
+      coveredLeaves: 1,
+      orderPath: [Math.floor(index / clusterSize), index % clusterSize],
+    })),
+    inducedEdges: edges,
+    selection: EMPTY_SELECTION,
+    focus: EMPTY_FOCUS,
+    domainMeta: { domain: 'test-fixture', label: 'Matrix performance fixture' },
+  };
+}
+
 export interface StudioTestState {
   readonly phase: string;
   readonly message: string;
   readonly adapter: ReturnType<StudioStore['getState']>['adapter'];
   readonly panel: ReturnType<StudioStore['getState']>['panel'];
   readonly hover: ReturnType<StudioStore['getState']>['hover'];
+  readonly selection: ReturnType<StudioStore['getState']>['selection'];
   readonly diagnostics: ReturnType<StudioStore['getState']>['diagnostics'];
   readonly metrics: ReturnType<StudioStore['getState']>['metrics'];
   readonly rendererStats: ReturnType<StudioStore['getState']>['rendererStats'];
@@ -81,8 +125,9 @@ export interface MeridianStudioTestApi {
   openHostileLayoutFixture(): void;
   openEmptyFixture(): void;
   openOutlineFixture(rows?: number): void;
+  openMatrixFixture(size?: number): void;
   /** Phase-10 test/support seam; Studio chrome lands with the 10F switcher. */
-  switchProjection(id: 'map' | 'outline'): Promise<void>;
+  switchProjection(id: 'map' | 'outline' | 'matrix' | 'timeline'): Promise<void>;
   projectionId(): string | null;
   state(): StudioTestState;
   fit(): void;
@@ -248,6 +293,12 @@ export class StudioRuntime {
           createOutlineProjectionModel(rows),
         );
       },
+      openMatrixFixture: (size = 2_000) => {
+        this.session.publishFixture(createEmptyRenderModel(), 'matrix-2k');
+        new StudioStoreCommands(this.store).setProjectionModel(
+          createMatrixProjectionModel(size),
+        );
+      },
       switchProjection: async (id) => bridge().switchProjection(id),
       projectionId: () => this.projectionHost?.activeId() ?? null,
       state: () => {
@@ -258,6 +309,7 @@ export class StudioRuntime {
           adapter: state.adapter,
           panel: state.panel,
           hover: state.hover,
+          selection: state.selection,
           diagnostics: state.diagnostics,
           metrics: state.metrics,
           rendererStats: state.rendererStats,

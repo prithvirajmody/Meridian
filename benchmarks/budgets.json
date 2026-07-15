@@ -20,6 +20,8 @@
   "renderer-interaction-p95-ms": 16,
   "renderer-max-live-labels": 512,
   "outline-scroll-min-fps": 55,
+  "matrix-2k-render-ms": 500,
+  "projection-switch-ms": 200,
   "studio-heap-soak-ms": 300000,
   "studio-heap-retained-growth-bytes": 16777216,
   "transition-frame-p95-ms": 22,

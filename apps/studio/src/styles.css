@@ -279,6 +279,29 @@ h1 {
   font-size: 13px;
 }
 
+.projection-surface-canvas2d {
+  background: #101318;
+}
+
+.meridian-projection-canvas {
+  outline: none;
+}
+
+.meridian-projection-canvas-message {
+  position: absolute;
+  inset-inline: 0;
+  top: 40%;
+  padding: 0 32px;
+  color: #8795b4;
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.meridian-projection-canvas-message[hidden] {
+  display: none;
+}
+
 .inspector {
   min-width: 0;
   overflow: auto;

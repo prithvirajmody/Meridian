@@ -1,7 +1,10 @@
 import {
   MAP_PROJECTION,
+  MATRIX_PROJECTION,
   OUTLINE_PROJECTION,
   ProjectionRegistry,
+  type Canvas2dInput,
+  type Canvas2dSurface,
   type NodeLinkSurface,
   type ProjectionDiagnostic,
   type ProjectionHost,
@@ -15,6 +18,7 @@ import {
 } from '@meridian/projections';
 import {
   mountOutlineVirtualList,
+  mountProjectionCanvas,
   type OutlineVirtualKey,
 } from '@meridian/renderer';
 import {
@@ -136,7 +140,7 @@ export class StudioProjectionCoordinator {
   ) {
     this.commands = new StudioStoreCommands(store);
     this.registry = new ProjectionRegistry(
-      options.projections ?? [MAP_PROJECTION, OUTLINE_PROJECTION],
+      options.projections ?? [MAP_PROJECTION, OUTLINE_PROJECTION, MATRIX_PROJECTION],
     );
     this.navigation = options.navigation ?? (() => null);
     this.focus = options.focus ?? (() => createFocusState());
@@ -263,6 +267,9 @@ export class StudioProjectionCoordinator {
       virtualList: {
         mount: (onInput) => this.mountVirtualList(attempt, onInput),
       },
+      canvas2d: {
+        mount: (onInput) => this.mountCanvas2d(attempt, onInput),
+      },
       viewport: () => {
         const viewport = this.bridgeForUse()?.viewportSize() ?? {
           width: this.element.clientWidth,
@@ -275,6 +282,7 @@ export class StudioProjectionCoordinator {
       },
       now: () => this.element.ownerDocument.defaultView?.performance.now() ?? Date.now(),
       selectNode: (nodeId, mode) => this.selectNode(nodeId, mode),
+      selectEdges: (keys, anchorKey) => this.selectEdges(keys, anchorKey),
       focusNode: (nodeId) => {
         if (nodeId !== null) this.navigation()?.flyTo(nodeId);
       },
@@ -339,6 +347,55 @@ export class StudioProjectionCoordinator {
       revealNode: (nodeId) => renderer.revealNode(nodeId),
       destroy: cleanup,
     };
+  }
+
+  private async mountCanvas2d(
+    attempt: MountAttempt,
+    onInput: (input: Canvas2dInput) => void,
+  ): Promise<Canvas2dSurface> {
+    if (this.destroyed || attempt.generation !== this.generation) {
+      throw new Error('Studio projection mount is stale');
+    }
+    const root = this.element.ownerDocument.createElement('div');
+    root.className = 'projection-surface projection-surface-canvas2d';
+    root.setAttribute('data-testid', 'canvas2d-projection');
+    root.style.visibility = 'hidden';
+    this.element.append(root);
+
+    let cleaned = false;
+    const surface = mountProjectionCanvas(root, onInput);
+    const cleanup = (): void => {
+      if (cleaned) return;
+      cleaned = true;
+      this.pendingCleanups.delete(cleanup);
+      surface.destroy();
+      root.remove();
+    };
+    attempt.cleanup = cleanup;
+    attempt.activate = () => {
+      root.style.visibility = 'visible';
+    };
+    this.pendingCleanups.add(cleanup);
+
+    if (this.destroyed || attempt.generation !== this.generation) {
+      cleanup();
+      throw new Error('Studio projection mount completed after it became stale');
+    }
+
+    return {
+      render: (frame) => surface.render(frame),
+      destroy: cleanup,
+    };
+  }
+
+  private selectEdges(keys: readonly string[], anchorKey?: string): void {
+    if (keys.length === 0) return;
+    const anchor = anchorKey !== undefined && keys.includes(anchorKey) ? anchorKey : keys[0]!;
+    this.commands.replaceSelection({
+      nodes: [],
+      edges: [...keys],
+      anchor: { kind: 'edge', key: anchor },
+    });
   }
 
   private selectNode(nodeId: NodeId, mode: 'replace' | 'toggle'): void {
