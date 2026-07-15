@@ -10,6 +10,7 @@ export type HostIssueCode =
   | 'activation-failed'
   | 'exports-mismatch'
   | 'vocabulary-conflict'
+  | 'capability-conflict'
   | 'no-parser'
   | 'ambiguous-source'
   | 'unknown-parser'

@@ -189,6 +189,8 @@ export interface StudioState {
   readonly renderModel: RenderModel | null;
   /** Presentation-neutral, data-only input consumed by the active projection. */
   readonly projectionModel: ProjectionModel | null;
+  /** Active projection id; null before first mount or after terminal failure. */
+  readonly projectionId: string | null;
   readonly camera: CameraState;
   readonly selection: SelectionState;
   readonly selectionStartedAtMs: number | null;
@@ -231,6 +233,7 @@ export function initialStudioState(debugEnabled = false): StudioState {
     graphVersion: null,
     renderModel: null,
     projectionModel: null,
+    projectionId: null,
     camera: createCameraState(),
     selection: EMPTY_SELECTION,
     selectionStartedAtMs: null,
@@ -351,6 +354,11 @@ export class StudioStoreCommands {
    * RenderModel channel. StudioSession keeps the two values synchronized. */
   setProjectionModel(model: ProjectionModel | null): void {
     this.store.setState({ projectionModel: model });
+  }
+
+  /** The coordinator publishes the settled active projection (ADR-0036 §step 7). */
+  projectionActivated(id: string | null): void {
+    this.store.setState({ projectionId: id });
   }
 
   fail(generation: number, code: string, message: string): void {

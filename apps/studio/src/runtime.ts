@@ -130,9 +130,11 @@ export interface MeridianStudioTestApi {
   openEmptyFixture(): void;
   openOutlineFixture(rows?: number): void;
   openMatrixFixture(size?: number): void;
-  /** Phase-10 test/support seam; Studio chrome lands with the 10F switcher. */
-  switchProjection(id: 'map' | 'outline' | 'matrix' | 'timeline'): Promise<void>;
+  /** Test/support seam mirroring the 10F switcher chrome. */
+  switchProjection(id: string): Promise<void>;
   projectionId(): string | null;
+  /** Register a projection whose mount always throws (failure-case e2e). */
+  registerBombProjection(): void;
   state(): StudioTestState;
   fit(): void;
   zoomBy(factor: number): void;
@@ -251,6 +253,18 @@ export class StudioRuntime {
       completeTransition: () => this.navigator()?.completeTransitionForProjectionSwitch(),
     });
     this.projectionHost = host;
+    // Plugin-exported projections join the same registry as the built-ins
+    // (ADR-0037); a bad export is a diagnostic, never a failed island.
+    for (const registration of this.session.pluginViewProjections()) {
+      try {
+        host.registerProjection(registration.projection);
+      } catch (error) {
+        new StudioStoreCommands(this.store).projectionFault(
+          'plugin-projection-rejected',
+          `${registration.plugin}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     void host.switchProjection('map');
     const navigator = this.navigator();
     if (navigator !== null) this.attachNavigatorRenderer(navigator);
@@ -265,6 +279,16 @@ export class StudioRuntime {
     this.navigatorRenderer = null;
     host.destroy();
     if (this.projectionHost === host) this.projectionHost = null;
+  }
+
+  /** Chrome-facing switch entry (10F); a no-op before the island mounts. */
+  switchProjection(id: string): Promise<void> {
+    return this.projectionHost?.switchProjection(id) ?? Promise.resolve();
+  }
+
+  /** Registered projections ranked for the current model (menu ordering). */
+  rankedProjections(): readonly { id: string; label: string; suitability: number }[] {
+    return this.projectionHost?.rankedProjections() ?? [];
   }
 
   testApi(): MeridianStudioTestApi {
@@ -305,6 +329,15 @@ export class StudioRuntime {
       },
       switchProjection: async (id) => bridge().switchProjection(id),
       projectionId: () => this.projectionHost?.activeId() ?? null,
+      registerBombProjection: () =>
+        bridge().registerProjection({
+          id: 'bomb',
+          label: 'Bomb',
+          suitability: () => 0,
+          mount: async () => {
+            throw new Error('bomb projection always fails to mount');
+          },
+        }),
       state: () => {
         const state = this.store.getState();
         return {

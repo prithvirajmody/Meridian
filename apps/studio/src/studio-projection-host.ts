@@ -126,6 +126,10 @@ export class StudioProjectionCoordinator {
   private readonly viewStates = new Map<string, ProjectionViewState>();
   private readonly unsubscribeStore: () => void;
   private active: ActiveProjection | null = null;
+  /** The id the coordinator is currently converging to (ADR-0036): the guard
+   * for rapid re-clicks must consider the in-flight request, not just the
+   * active instance, or A→B→A during B's mount would settle on stale B. */
+  private requestedId: string | null = null;
   private activeBridge: StudioMapBridge | null = null;
   private mountingBridge: StudioMapBridge | null = null;
   private readonly pendingCleanups = new Set<() => void>();
@@ -175,9 +179,30 @@ export class StudioProjectionCoordinator {
     return this.active?.id ?? null;
   }
 
+  /** Late registration (plugin projections, test fixtures); duplicates throw. */
+  registerProjection(projection: ViewProjection): void {
+    this.registry.register(projection);
+  }
+
+  /** Registered projections ranked by suitability for the current model. */
+  rankedProjections(): readonly { id: string; label: string; suitability: number }[] {
+    const model = this.store.getState().projectionModel;
+    if (model === null) {
+      return this.registry
+        .list()
+        .map((projection) => ({ id: projection.id, label: projection.label, suitability: 0 }));
+    }
+    return this.registry.ranked(model).map(({ projection, suitability }) => ({
+      id: projection.id,
+      label: projection.label,
+      suitability,
+    }));
+  }
+
   /** Initial mount and the future switch entry share one transaction. */
   async switchProjection(id = 'map'): Promise<void> {
-    if (this.destroyed || this.active?.id === id) return;
+    if (this.destroyed || this.requestedId === id) return;
+    this.requestedId = id;
     const switching = this.active !== null;
     if (switching) this.completeTransition();
 
@@ -241,6 +266,7 @@ export class StudioProjectionCoordinator {
       this.activeBridge = attempt.bridge;
       if (this.mountingBridge === attempt.bridge) this.mountingBridge = null;
       this.clearMessage();
+      this.commands.projectionActivated(id);
     } catch (error) {
       try {
         instance?.destroy();
@@ -264,6 +290,9 @@ export class StudioProjectionCoordinator {
     if (switching) this.active?.instance.destroy();
     this.active = null;
     this.activeBridge = null;
+    // A retry of the same id must not be swallowed by the request guard.
+    this.requestedId = null;
+    this.commands.projectionActivated(null);
     this.showTerminalFailure();
   }
 
@@ -561,6 +590,8 @@ export class StudioProjectionCoordinator {
     const failed = this.active;
     this.active = null;
     this.activeBridge = null;
+    // Recovery may remount the same id; the request guard must not block it.
+    this.requestedId = null;
     try {
       failed?.instance.destroy();
     } catch {
@@ -632,6 +663,7 @@ export class StudioProjectionCoordinator {
       for (const cleanup of [...this.pendingCleanups]) cleanup();
       this.mountingBridge = null;
       this.clearMessage();
+      this.commands.projectionActivated(null);
     }
   }
 }

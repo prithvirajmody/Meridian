@@ -53,5 +53,37 @@ export type {
   ProvenanceTally,
 } from './parser.js';
 export type { MeridianPlugin, PluginExports } from './plugin.js';
+export type {
+  ProjectionCanvasFrame,
+  ProjectionCanvasInput,
+  ProjectionCanvasLabel,
+  ProjectionCanvasLine,
+  ProjectionCanvasMedium,
+  ProjectionCanvasPointerAction,
+  ProjectionCanvasRect,
+  ProjectionCanvasSurface,
+  ProjectionDomainMeta,
+  ProjectionFocus,
+  ProjectionLifecyclePhase,
+  ProjectionListFrame,
+  ProjectionListInput,
+  ProjectionListKey,
+  ProjectionListMedium,
+  ProjectionListRow,
+  ProjectionListSurface,
+  ProjectionModelEdge,
+  ProjectionModelIssue,
+  ProjectionModelNode,
+  ProjectionModelView,
+  ProjectionNavigationIntent,
+  ProjectionSelection,
+  ProjectionTemporalExtent,
+  ProjectionViewState,
+  ProjectionViewport,
+  ViewProjectionDiagnostic,
+  ViewProjectionExport,
+  ViewProjectionHost,
+  ViewProjectionInstance,
+} from './projection.js';
 export type { Progress, SourceChange, SourceDescriptor } from './source.js';
 export { PLUGIN_API_VERSION } from './version.js';

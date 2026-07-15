@@ -197,3 +197,21 @@ deferred.
 Accepted as written: package/port ownership and async lifecycle; plugin-api
 1.1.0 as the additive public-capability release; and domain-declared temporal
 metadata with descendant extent roll-up.
+
+## Phase 10F build amendment (2026-07-15)
+
+Two readings fixed during the build, folded back so semantics do not live
+only in code:
+
+- **The public facade omits the node-link medium.** The internal host's
+  node-link port carries the established `RenderModel`, which this record
+  forbids from public declarations. The plugin-facing `ViewProjectionHost`
+  therefore exposes only the virtual-list and 2D-canvas media; the map
+  remains a built-in. A future public node-link port requires its own wire
+  model and a fresh minor release.
+- **`ProjectionModelView` is a structural slice, not the internal type.**
+  The public model twin narrows `cutReason` to `string | null` and omits
+  `graphId`/`detailGraphId`/`layout`/`renderModel`; assignability of the
+  internal model to the slice (and of a publicly-authored projection to the
+  internal `ViewProjection`) is pinned by compile-time tests
+  (`apps/studio/test/projection-twin.test.ts`).

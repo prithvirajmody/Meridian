@@ -4,6 +4,7 @@
 
 ```ts
 
+import type { AttrBag } from '@meridian/graph-core';
 import type { AttrValue } from '@meridian/graph-core';
 import { AttrValueType } from '@meridian/graph-core';
 import { GraphDocument } from '@meridian/graph-core';
@@ -283,6 +284,8 @@ export interface PluginExports {
     readonly detailResolvers?: readonly DetailResolver[];
     // (undocumented)
     readonly parsers?: readonly DomainParser[];
+    // (undocumented)
+    readonly viewProjections?: readonly ViewProjectionExport[];
 }
 
 // @public (undocumented)
@@ -329,6 +332,309 @@ export interface Progress {
     // (undocumented)
     readonly total?: number;
 }
+
+// @public
+export interface ProjectionCanvasFrame {
+    // (undocumented)
+    readonly background: string;
+    // (undocumented)
+    readonly labels: readonly ProjectionCanvasLabel[];
+    // (undocumented)
+    readonly lines: readonly ProjectionCanvasLine[];
+    // (undocumented)
+    readonly message: string | null;
+    // (undocumented)
+    readonly rects: readonly ProjectionCanvasRect[];
+    // (undocumented)
+    readonly revision: string;
+}
+
+// @public
+export type ProjectionCanvasInput = {
+    readonly type: 'pointer';
+    readonly action: ProjectionCanvasPointerAction;
+    readonly x: number;
+    readonly y: number;
+    readonly primary: boolean;
+} | {
+    readonly type: 'wheel';
+    readonly x: number;
+    readonly y: number;
+    readonly deltaY: number;
+} | {
+    readonly type: 'resize';
+    readonly width: number;
+    readonly height: number;
+};
+
+// @public
+export interface ProjectionCanvasLabel {
+    // (undocumented)
+    readonly align: 'left' | 'center' | 'right';
+    // (undocumented)
+    readonly color: string;
+    // (undocumented)
+    readonly size: number;
+    // (undocumented)
+    readonly text: string;
+    // (undocumented)
+    readonly x: number;
+    // (undocumented)
+    readonly y: number;
+}
+
+// @public
+export interface ProjectionCanvasLine {
+    // (undocumented)
+    readonly color: string;
+    // (undocumented)
+    readonly width: number;
+    // (undocumented)
+    readonly x1: number;
+    // (undocumented)
+    readonly x2: number;
+    // (undocumented)
+    readonly y1: number;
+    // (undocumented)
+    readonly y2: number;
+}
+
+// @public (undocumented)
+export interface ProjectionCanvasMedium {
+    // (undocumented)
+    mount(onInput: (input: ProjectionCanvasInput) => void): Promise<ProjectionCanvasSurface>;
+}
+
+// @public (undocumented)
+export type ProjectionCanvasPointerAction = 'down' | 'move' | 'up' | 'leave';
+
+// @public
+export interface ProjectionCanvasRect {
+    // (undocumented)
+    readonly fill: string;
+    // (undocumented)
+    readonly height: number;
+    // (undocumented)
+    readonly width: number;
+    // (undocumented)
+    readonly x: number;
+    // (undocumented)
+    readonly y: number;
+}
+
+// @public
+export interface ProjectionCanvasSurface {
+    // (undocumented)
+    destroy(): void;
+    // (undocumented)
+    render(frame: ProjectionCanvasFrame): void;
+}
+
+// @public
+export interface ProjectionDomainMeta {
+    // (undocumented)
+    readonly domain: string;
+    // (undocumented)
+    readonly label: string;
+    // (undocumented)
+    readonly temporal?: TemporalPresentationHints;
+}
+
+// @public
+export interface ProjectionFocus {
+    // (undocumented)
+    readonly node: NodeId | null;
+}
+
+// @public (undocumented)
+export type ProjectionLifecyclePhase = 'mount' | 'render' | 'selection' | 'focus' | 'view-state' | 'destroy';
+
+// @public
+export interface ProjectionListFrame {
+    // (undocumented)
+    readonly activeNodeId: NodeId | null;
+    // (undocumented)
+    readonly emptyMessage: string | null;
+    // (undocumented)
+    readonly focus: ProjectionFocus;
+    // (undocumented)
+    readonly revision: string;
+    // (undocumented)
+    readonly rows: readonly ProjectionListRow[];
+    // (undocumented)
+    readonly selection: ProjectionSelection;
+}
+
+// @public
+export type ProjectionListInput = {
+    readonly type: 'activate';
+    readonly nodeId: NodeId;
+    readonly source: 'pointer' | 'keyboard';
+} | {
+    readonly type: 'toggle';
+    readonly nodeId: NodeId;
+} | {
+    readonly type: 'key';
+    readonly key: ProjectionListKey;
+};
+
+// @public (undocumented)
+export type ProjectionListKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End' | 'Enter' | ' ';
+
+// @public (undocumented)
+export interface ProjectionListMedium {
+    // (undocumented)
+    mount(onInput: (input: ProjectionListInput) => void): Promise<ProjectionListSurface>;
+}
+
+// @public
+export interface ProjectionListRow {
+    // (undocumented)
+    readonly coveredLeaves: number;
+    // (undocumented)
+    readonly depth: number;
+    // (undocumented)
+    readonly expandable: boolean;
+    // (undocumented)
+    readonly expanded: boolean;
+    // (undocumented)
+    readonly key: string;
+    // (undocumented)
+    readonly kind: string;
+    // (undocumented)
+    readonly label: string;
+    // (undocumented)
+    readonly nodeId: NodeId;
+    // (undocumented)
+    readonly parentId: NodeId | null;
+}
+
+// @public
+export interface ProjectionListSurface {
+    // (undocumented)
+    captureViewState(): ProjectionViewState;
+    // (undocumented)
+    destroy(): void;
+    // (undocumented)
+    render(frame: ProjectionListFrame): void;
+    // (undocumented)
+    restoreViewState(state: ProjectionViewState): void;
+    // (undocumented)
+    revealNode(nodeId: NodeId): void;
+}
+
+// @public
+export interface ProjectionModelEdge {
+    // (undocumented)
+    readonly dst: NodeId;
+    // (undocumented)
+    readonly kind: string;
+    // (undocumented)
+    readonly multiplicity: number;
+    // (undocumented)
+    readonly src: NodeId;
+    // (undocumented)
+    readonly weight: number;
+}
+
+// @public
+export interface ProjectionModelIssue {
+    // (undocumented)
+    readonly attribute: string;
+    // (undocumented)
+    readonly code: string;
+    // (undocumented)
+    readonly message: string;
+    // (undocumented)
+    readonly nodeId: NodeId;
+}
+
+// @public
+export interface ProjectionModelNode {
+    // (undocumented)
+    readonly attrs: AttrBag;
+    // (undocumented)
+    readonly coveredLeaves: number;
+    // (undocumented)
+    readonly cutReason: string | null;
+    // (undocumented)
+    readonly depth: number | null;
+    // (undocumented)
+    readonly id: NodeId;
+    // (undocumented)
+    readonly kind: string;
+    // (undocumented)
+    readonly label: string;
+    readonly orderPath: readonly number[];
+    // (undocumented)
+    readonly parentId: NodeId | null;
+    // (undocumented)
+    readonly temporal: ProjectionTemporalExtent | null;
+}
+
+// @public
+export interface ProjectionModelView {
+    // (undocumented)
+    readonly cutLevel: number;
+    // (undocumented)
+    readonly diagnostics: readonly ProjectionModelIssue[];
+    // (undocumented)
+    readonly domainMeta: ProjectionDomainMeta;
+    // (undocumented)
+    readonly focus: ProjectionFocus;
+    // (undocumented)
+    readonly inducedEdges: readonly ProjectionModelEdge[];
+    // (undocumented)
+    readonly nodes: readonly ProjectionModelNode[];
+    // (undocumented)
+    readonly selection: ProjectionSelection;
+}
+
+// @public (undocumented)
+export type ProjectionNavigationIntent = {
+    readonly kind: 'focus' | 'expand' | 'collapse' | 'drill-in';
+    readonly nodeId: NodeId;
+} | {
+    readonly kind: 'drill-out';
+};
+
+// @public
+export interface ProjectionSelection {
+    // (undocumented)
+    readonly anchor?: {
+        readonly kind: 'node';
+        readonly id: NodeId;
+    } | {
+        readonly kind: 'edge';
+        readonly key: string;
+    };
+    readonly edges: readonly string[];
+    // (undocumented)
+    readonly nodes: readonly NodeId[];
+}
+
+// @public
+export interface ProjectionTemporalExtent {
+    // (undocumented)
+    readonly end: number;
+    // (undocumented)
+    readonly start: number;
+}
+
+// @public (undocumented)
+export interface ProjectionViewport {
+    // (undocumented)
+    readonly devicePixelRatio: number;
+    // (undocumented)
+    readonly height: number;
+    // (undocumented)
+    readonly width: number;
+}
+
+// @public
+export type ProjectionViewState = null | boolean | number | string | readonly ProjectionViewState[] | {
+    readonly [key: string]: ProjectionViewState;
+};
 
 // @public
 export interface ProposedGroup {
@@ -414,6 +720,69 @@ export interface TemporalPresentationHints {
     readonly laneAttribute?: string;
     // (undocumented)
     readonly startAttribute: string;
+}
+
+// @public
+export interface ViewProjectionDiagnostic {
+    // (undocumented)
+    readonly code: string;
+    // (undocumented)
+    readonly message: string;
+    // (undocumented)
+    readonly phase: ProjectionLifecyclePhase;
+    // (undocumented)
+    readonly projectionId: string;
+}
+
+// @public
+export interface ViewProjectionExport {
+    // (undocumented)
+    readonly id: string;
+    // (undocumented)
+    readonly label: string;
+    // (undocumented)
+    mount(host: ViewProjectionHost): Promise<ViewProjectionInstance>;
+    suitability(model: ProjectionModelView): number;
+}
+
+// @public
+export interface ViewProjectionHost {
+    // (undocumented)
+    readonly canvas2d: ProjectionCanvasMedium;
+    // (undocumented)
+    focusNode(nodeId: NodeId | null): void;
+    // (undocumented)
+    navigate(intent: ProjectionNavigationIntent): void;
+    // (undocumented)
+    now(): number;
+    // (undocumented)
+    reportDiagnostic(diagnostic: ViewProjectionDiagnostic): void;
+    selectEdges(keys: readonly string[], anchorKey?: string): void;
+    // (undocumented)
+    selectNode(nodeId: NodeId, mode: 'replace' | 'toggle'): void;
+    // (undocumented)
+    showDegraded(message: string): void;
+    // (undocumented)
+    viewport(): ProjectionViewport;
+    // (undocumented)
+    readonly virtualList: ProjectionListMedium;
+}
+
+// @public
+export interface ViewProjectionInstance {
+    // (undocumented)
+    applyFocus(focus: ProjectionFocus): void;
+    // (undocumented)
+    applySelection(selection: ProjectionSelection): void;
+    // (undocumented)
+    captureViewState(): ProjectionViewState;
+    destroy(): void;
+    // (undocumented)
+    render(model: ProjectionModelView): void;
+    // (undocumented)
+    restoreViewState(state: ProjectionViewState): void;
+    // (undocumented)
+    revealFocus(): void;
 }
 
 // (No @packageDocumentation comment for this package)

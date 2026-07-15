@@ -239,6 +239,12 @@ export class StudioSession {
     });
   }
 
+  /** Plugin-exported view projections in host resolution order (ADR-0037);
+   * the composition root bridges them into the projection registry. */
+  pluginViewProjections(): ReturnType<PluginHost['viewProjections']> {
+    return this.host.viewProjections();
+  }
+
   // --------------------------------------------------- AI trust: provenance view
 
   /** Toggle the provenance view predicate (ADR-0031) and republish accordingly. */

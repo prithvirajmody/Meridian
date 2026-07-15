@@ -17,6 +17,7 @@ import {
   type PluginManifest,
   type Progress,
   type SourceDescriptor,
+  type ViewProjectionExport,
 } from '@meridian/plugin-api';
 import { parseManifest } from './manifest.js';
 import { satisfies } from './semver.js';
@@ -25,6 +26,13 @@ import type { HostIssue } from './issues.js';
 export interface RegisteredPlugin {
   readonly manifest: PluginManifest;
   readonly parsers: readonly DomainParser[];
+  readonly viewProjections: readonly ViewProjectionExport[];
+}
+
+/** One plugin's exported projection, in deterministic resolution order. */
+export interface ViewProjectionRegistration {
+  readonly plugin: string;
+  readonly projection: ViewProjectionExport;
 }
 
 export type RegisterResult =
@@ -86,6 +94,7 @@ export class PluginHost {
   readonly #attrs = new Map<string, AttrSchema['type']>();
   readonly #attrOwner = new Map<string, string>();
   readonly #kinds = new Set<string>();
+  readonly #projectionOwner = new Map<string, string>();
   readonly #ctx: PluginContext;
   readonly #log: PluginLogger;
 
@@ -167,6 +176,44 @@ export class PluginHost {
       });
     }
 
+    // The view-projection capability mirrors the parser discipline (ADR-0037):
+    // declared ids and exported ids must agree, and an id is host-unique.
+    const declaredProjections = manifest.capabilities
+      .filter((c) => c.kind === 'view-projection')
+      .map((c) => c.id);
+    const viewProjections = exports?.viewProjections ?? [];
+    const exportedProjections = viewProjections.map((p) => p.id);
+    const missingProjections = declaredProjections.filter(
+      (id) => !exportedProjections.includes(id),
+    );
+    const undeclaredProjections = exportedProjections.filter(
+      (id) => !declaredProjections.includes(id),
+    );
+    if (missingProjections.length > 0 || undeclaredProjections.length > 0) {
+      return this.#refuse({
+        code: 'exports-mismatch',
+        message:
+          `plugin "${manifest.name}" exports must match declared view-projection capabilities` +
+          (missingProjections.length > 0
+            ? `; declared but not exported: ${missingProjections.join(', ')}`
+            : '') +
+          (undeclaredProjections.length > 0
+            ? `; exported but not declared: ${undeclaredProjections.join(', ')}`
+            : ''),
+        plugin: manifest.name,
+      });
+    }
+    for (const id of exportedProjections) {
+      const owner = this.#projectionOwner.get(id);
+      if (owner !== undefined) {
+        return this.#refuse({
+          code: 'capability-conflict',
+          message: `view-projection id "${id}" is already registered by ${owner}`,
+          plugin: manifest.name,
+        });
+      }
+    }
+
     for (const [key, schema] of Object.entries(manifest.attrSchemas ?? {})) {
       if (!this.#attrs.has(key)) {
         this.#attrs.set(key, schema.type);
@@ -174,8 +221,9 @@ export class PluginHost {
       }
     }
     for (const kind of manifest.kinds ?? []) this.#kinds.add(kind);
+    for (const id of exportedProjections) this.#projectionOwner.set(id, manifest.name);
 
-    const registered: RegisteredPlugin = { manifest, parsers };
+    const registered: RegisteredPlugin = { manifest, parsers, viewProjections };
     this.#plugins.set(manifest.name, registered);
     this.#log.info(`registered ${manifest.name}@${manifest.version}`);
     return { ok: true, plugin: registered };
@@ -183,6 +231,18 @@ export class PluginHost {
 
   plugins(): readonly RegisteredPlugin[] {
     return [...this.#plugins.values()];
+  }
+
+  /** Every exported view projection in deterministic order: registration
+   * order per plugin, export order within a plugin (ADR-0037). */
+  viewProjections(): readonly ViewProjectionRegistration[] {
+    const ordered: ViewProjectionRegistration[] = [];
+    for (const plugin of this.#plugins.values()) {
+      for (const projection of plugin.viewProjections) {
+        ordered.push({ plugin: plugin.manifest.name, projection });
+      }
+    }
+    return ordered;
   }
 
   vocabulary(): HostVocabulary {

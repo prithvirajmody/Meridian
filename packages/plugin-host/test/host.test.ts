@@ -387,3 +387,106 @@ describe('ingest', () => {
     expect(seen).toEqual(['parse', 'emit']);
   });
 });
+
+describe('view-projection capability (ADR-0037, 1.1.0)', () => {
+  const projection = (id: string): import('@meridian/plugin-api').ViewProjectionExport => ({
+    id,
+    label: id,
+    suitability: () => 0.5,
+    mount: async () => {
+      throw new Error('never mounted by the host');
+    },
+  });
+
+  function projectionPlugin(
+    name: string,
+    declared: readonly string[],
+    exported: readonly string[] = declared,
+  ): MeridianPlugin {
+    return {
+      manifest: manifest({
+        name,
+        capabilities: [
+          { kind: 'domain-parser', id: 'lines' },
+          ...declared.map((id) => ({ kind: 'view-projection' as const, id })),
+        ],
+      }),
+      activate: () => ({
+        parsers: [parser()],
+        viewProjections: exported.map(projection),
+      }),
+    };
+  }
+
+  it('registers declared projections and resolves them in deterministic order', () => {
+    const host = createPluginHost({ ids });
+    expect(host.register(projectionPlugin('p-one', ['sunburst', 'chord'])).ok).toBe(true);
+    expect(
+      host.register({
+        manifest: manifest({
+          name: 'p-two',
+          capabilities: [
+            { kind: 'domain-parser', id: 'other' },
+            { kind: 'view-projection', id: 'ribbon' },
+          ],
+        }),
+        activate: () => ({
+          parsers: [parser({ domain: 'other' })],
+          viewProjections: [projection('ribbon')],
+        }),
+      }).ok,
+    ).toBe(true);
+
+    expect(
+      host.viewProjections().map((r) => [r.plugin, r.projection.id]),
+    ).toEqual([
+      ['p-one', 'sunburst'],
+      ['p-one', 'chord'],
+      ['p-two', 'ribbon'],
+    ]);
+  });
+
+  it('refuses declared-but-not-exported and exported-but-not-declared projections', () => {
+    const host = createPluginHost({ ids });
+    const missing = host.register(projectionPlugin('p-missing', ['sunburst'], []));
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) {
+      expect(missing.issue.code).toBe('exports-mismatch');
+      expect(missing.issue.message).toContain('declared but not exported: sunburst');
+    }
+
+    const undeclared = host.register(projectionPlugin('p-undeclared', [], ['rogue']));
+    expect(undeclared.ok).toBe(false);
+    if (!undeclared.ok) {
+      expect(undeclared.issue.code).toBe('exports-mismatch');
+      expect(undeclared.issue.message).toContain('exported but not declared: rogue');
+    }
+    expect(host.viewProjections()).toHaveLength(0);
+  });
+
+  it('rejects a duplicate projection id across plugins without poisoning the host', () => {
+    const host = createPluginHost({ ids });
+    expect(host.register(projectionPlugin('p-first', ['sunburst'])).ok).toBe(true);
+    const duplicate = host.register({
+      manifest: manifest({
+        name: 'p-dup',
+        capabilities: [
+          { kind: 'domain-parser', id: 'other' },
+          { kind: 'view-projection', id: 'sunburst' },
+        ],
+      }),
+      activate: () => ({
+        parsers: [parser({ domain: 'other' })],
+        viewProjections: [projection('sunburst')],
+      }),
+    });
+    expect(duplicate.ok).toBe(false);
+    if (!duplicate.ok) {
+      expect(duplicate.issue.code).toBe('capability-conflict');
+      expect(duplicate.issue.message).toContain('"sunburst"');
+      expect(duplicate.issue.message).toContain('p-first');
+    }
+    expect(host.viewProjections()).toHaveLength(1);
+    expect(host.plugins().map((p) => p.manifest.name)).toEqual(['p-first']);
+  });
+});

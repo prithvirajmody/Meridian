@@ -279,6 +279,34 @@ h1 {
   font-size: 13px;
 }
 
+.mode-switcher {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #232c42;
+  border-radius: 8px;
+  background: #0c111d;
+}
+
+.mode-switcher button {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #8fa1c7;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.mode-switcher button:hover {
+  color: #dce7ff;
+}
+
+.mode-switcher button[aria-pressed='true'] {
+  background: #1d2740;
+  color: #f5f8ff;
+}
+
 .projection-surface-canvas2d {
   background: #101318;
 }

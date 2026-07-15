@@ -7,6 +7,7 @@ import { BreadcrumbBar } from './components/BreadcrumbBar.js';
 import { CanvasIsland } from './components/CanvasIsland.js';
 import { DebugHud } from './components/DebugHud.js';
 import { Minimap } from './components/Minimap.js';
+import { ModeSwitcher } from './components/ModeSwitcher.js';
 import { ProvenanceControls } from './components/ProvenanceControls.js';
 import { SearchBox } from './components/SearchBox.js';
 import { SelectedPanel } from './components/SelectedPanel.js';
@@ -75,6 +76,7 @@ export function App({ runtime }: AppProps) {
           </div>
         </div>
         <SearchBox runtime={runtime} />
+        <ModeSwitcher runtime={runtime} />
         <ProvenanceControls runtime={runtime} />
         <label className="file-button">
           <span>Open corpus</span>

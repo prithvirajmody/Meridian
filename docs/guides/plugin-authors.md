@@ -108,6 +108,52 @@ validated at the IR gate before it can touch anything.
   claim-your-corpus law without winning arbitrations you have no evidence
   for. Users select you explicitly (`--adapter <domain>`).
 
+## Writing a view projection (10F, ADR-0036/0037 — plugin-api 1.1)
+
+The `view-projection` capability renders the same semantic cut through a
+spatial metaphor of your choosing. You author against structural twins in
+`@meridian/plugin-api` — `ViewProjectionExport`, `ViewProjectionInstance`,
+and the capability-scoped `ViewProjectionHost` — and never see a DOM node,
+canvas element, store, or renderer object.
+
+1. **Declare and export.** Add `{ kind: 'view-projection', id: '<your-id>' }`
+   to `manifest.capabilities` and return the implementation from `activate`
+   as `viewProjections: [...]`. The host refuses a mismatch between declared
+   and exported ids (`exports-mismatch`) and a projection id another plugin
+   already claimed (`capability-conflict`).
+2. **Consume the model, not the graph.** `render(model)` receives a
+   `ProjectionModelView`: the visible cut members (with labels, kinds, attrs,
+   containment context, stable `orderPath` ordering, and normalized
+   `temporal` extents when the domain declares time), induced edges,
+   canonical selection, and navigation-owned focus. It is pure data — treat
+   it as immutable and derive everything per render.
+3. **Choose a medium port.** The host offers two: `virtualList` (the
+   renderer-owned virtualized DOM list — rows in, activate/toggle/key intents
+   out) and `canvas2d` (a retained draw list of rects/lines/labels in logical
+   pixels — pointer/wheel/resize inputs out). Mount at most what you need;
+   the WebGL node-link scene is not part of the public facade.
+4. **Honor the ADR-0036 lifecycle.** Selection and focus survive every mode
+   switch: apply what `applySelection`/`applyFocus` hand you, and make the
+   focused node (or the selection's node anchor) visible in `revealFocus`.
+   `captureViewState`/`restoreViewState` round-trip your projection-local
+   geometry (scroll, window, zoom) as plain JSON-safe data — validate on
+   restore and fall back to your deterministic default with a
+   `reportDiagnostic(...)` rather than throwing. `destroy` is idempotent;
+   every other method must fail after it.
+5. **Degrade with a message, never crash.** `suitability(model)` (0..1)
+   orders the mode menu but never forbids a choice — when your projection is
+   chosen anyway and the cut has nothing you can show, render your specific
+   explanation (`showDegraded` or an in-frame message) and keep selection
+   and the ability to switch away intact.
+6. **Fail safely.** A throw from `mount` is contained by the host: your
+   projection is destroyed, a located diagnostic is emitted, and Studio
+   falls back to the map. Don't rely on that as control flow.
+
+The built-in outline (virtual list), matrix, and timeline (canvas 2D)
+projections are the reference implementations, and
+`apps/studio/test/projection-twin.test.ts` pins your authoring surface to
+the internal contract at compile time.
+
 ## What you may not do
 
 No imports of any Meridian package other than `@meridian/plugin-api`

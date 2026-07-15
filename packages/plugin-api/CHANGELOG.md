@@ -18,9 +18,19 @@ remain compatible and unchanged plugins need no migration.
   silent coercion. Declared by the conversation adapter
   (`conv:timestamp` / `conv:role`); consumed by the Phase-10 timeline
   projection, which never checks a domain name.
-- (Lands with the 10F gate:) the dormant `view-projection` capability becomes
-  authorable — `PluginExports.viewProjections` and its structural host-facade
-  types.
+- The dormant `view-projection` capability becomes authorable (10F).
+  `PluginExports` gains optional `viewProjections?: readonly
+  ViewProjectionExport[]`; the new `projection` module declares the
+  structural twins a projection is authored against — `ViewProjectionExport`
+  / `ViewProjectionInstance`, the capability-scoped `ViewProjectionHost`
+  facade (virtual-list and 2D-canvas media ports, viewport/clock values,
+  selection/navigation intents, diagnostics), and the `ProjectionModelView`
+  slice of the semantic cut. Data-only throughout: no DOM node, GPU object,
+  store, renderer type, or node-link medium crosses the boundary (the map
+  remains a built-in). The host validates declared vs exported ids
+  (`exports-mismatch`), refuses duplicate ids across plugins
+  (`capability-conflict`), and resolves in deterministic order; the twin is
+  pinned by compile-time assignability tests in the Studio suite.
 
 Report regenerated via the documented `pnpm api:update`.
 

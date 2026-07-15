@@ -9,6 +9,7 @@ export {
   type RegisteredPlugin,
   type RegisterResult,
   type Resolution,
+  type ViewProjectionRegistration,
 } from './host.js';
 export type { HostIssue, HostIssueCode } from './issues.js';
 export { parseManifest, type ManifestParseResult } from './manifest.js';

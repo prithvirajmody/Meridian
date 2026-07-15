@@ -13,7 +13,8 @@ Phases 1–2 are built in the working tree (ADR-0005…0011, `graph-store`,
 `plugin-api`/`plugin-host`/`conformance-kit`, `adapters/markdown`, checklists
 and demos for both) but **uncommitted** — see subphase 2Z below.
 
-**Build progress (updated 2026-07-15).** Committed & tagged through
+**Build progress (updated 2026-07-15, evening: Phase 10 complete).**
+Committed & tagged through
 **Phase 4** (`phase-4`): 4A `f2b5f77`, 4B `9c845b2`, 4C `5d2897a`,
 4D `58298db`, 4E gate. The two human-judgment rows of the Phase 4 table
 (SVG quality review; pathology eyeball) are marked UNVERIFIED — HUMAN in
@@ -32,7 +33,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 7 | ✅ `7A`–`7H` — gate walked, tag `phase-7` awaits user | closing (domain track) |
 | 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
 | 9 | ✅ `9A`–`9E` built | M3 review + `phase-9`/`plugin-api@1.0` tags await user |
-| 10 | 🔨 `10A`–`10C` implementation built | stopped after `10C`; `10D` not started |
+| 10 | ✅ `10A`–`10F` built & committed per subphase | human rows (exploratory-mode tasks) + `phase-10` tag await user |
 | 11–12 | ⬜ not started | — |
 
 ---
@@ -583,19 +584,32 @@ keyboard navigation; layout becomes optional input to `ProjectionModel`.
 The browser gate covers markdown, conversation, and argument data; keyboard
 selection/readback; and a 100k-row bounded DOM pool above the 55fps floor.
 
-### 10D — MatrixProjection
+### 10D — MatrixProjection  ✅ DONE (2026-07-15)
 Canvas adjacency matrix, cluster-ordered.
 - **Tests:** ordering unit tests; 2k×2k render <500ms; selection mapping.
 - **Exit:** matrix works where meaningful, degrades with a message where
   not.
 
-### 10E — TimelineProjection
+Built on a new generic canvas-2D medium port (`Canvas2dMedium` in the host;
+renderer-owned `mountProjectionCanvas`). 2k×2k draw list 57 ms headless,
+67 ms switch+first-paint in-browser against the 500 ms budget; cell clicks
+select canonical induced-edge keys (`inducedEdgeKey` now exported from
+view-model); edgeless cuts degrade with a message.
+
+### 10E — TimelineProjection  ✅ DONE (2026-07-15)
 Timeline/swimlane for domains with temporal attrs (conversations first);
 `suitability()` drives the mode menu; atemporal domains degrade with a
 message, never crash.
 - **Exit:** timeline on conversations; graceful refusal elsewhere.
 
-### 10F — Mode switcher & phase gate
+Temporal normalization landed in `buildProjectionModel` (ISO-8601 /
+epoch-seconds → epoch-ms extents, descendant roll-up, located diagnostics);
+`PluginManifest` gained optional presentation hints — the first plugin-api
+1.1.0 additive change — and the conversation adapter declares
+`conv:timestamp`/`conv:role`; the timeline never names a domain. Swimlanes,
+UTC axis, wheel/drag time navigation, and three specific degraded messages.
+
+### 10F — Mode switcher & phase gate  ✅ BUILT (human rows + `phase-10` tag pending — checklists/phase-10.md)
 Studio switcher; per-projection view-state persistence; ADR-0036 survival
 rules wired (selection+focus always; camera map↔map; scroll→focus-node
 visibility). Property test over random switch sequences; the 4×3
@@ -603,6 +617,17 @@ mode-switch Playwright matrix; switch <200ms; switch-mid-transition;
 projection-throws-on-mount → host falls back to map. Verification table,
 projection-author guide section, DoD, tag `phase-10`.
 - **Exit:** phase gate closed; `view-projection` capability is public API.
+
+Topbar switcher ordered by suitability (`aria-pressed`, never forbids a
+choice); active id published to the store. The random-sequence property
+(fast-check, 60 runs) surfaced a real convergence bug — A→B→A during B's
+mount settled on stale B — fixed with a request-id guard and pinned. Switch
+p95 19–24 ms against the 200 ms budget; 12 screenshot baselines across the
+4×3 matrix. plugin-api 1.1.0 makes `view-projection` authorable
+(`PluginExports.viewProjections`, host id validation + duplicate refusal,
+structural twins pinned by compile-time assignability, author-guide
+section). The verification walk is `docs/checklists/phase-10.md`; the tag
+and the exploratory-mode judgement rows are the user's.
 
 ---
 
