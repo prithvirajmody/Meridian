@@ -90,6 +90,7 @@ function projectionModel(renderModel: RenderModel): ProjectionModel {
     selection: EMPTY_SELECTION,
     focus: EMPTY_FOCUS,
     domainMeta: { domain: 'test', label: 'Test' },
+    diagnostics: [],
     renderModel,
   };
 }

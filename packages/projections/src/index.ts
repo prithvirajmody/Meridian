@@ -39,5 +39,15 @@ export {
 } from './matrix.js';
 export type { MatrixCluster, MatrixOrdering } from './matrix.js';
 export { OUTLINE_PROJECTION, OutlineProjection } from './outline.js';
+export {
+  TIMELINE_AXIS_HEIGHT_PX,
+  TIMELINE_GUTTER_LEFT_PX,
+  TIMELINE_LANE_MAX_PX,
+  TIMELINE_LANE_MIN_PX,
+  TIMELINE_PROJECTION,
+  TimelineProjection,
+  timelineEvents,
+  timelineTickLabel,
+} from './timeline.js';
 export { ProjectionRegistry } from './registry.js';
 export type { RankedProjection } from './registry.js';

@@ -56,6 +56,7 @@ import {
   type Rect,
   type RenderModel,
   type SelectionState,
+  type TemporalDomainHints,
   type ViewportSize,
 } from '@meridian/view-model';
 import { layoutForLod, type StudioLayoutService } from '../pipeline/layout-cut.js';
@@ -129,6 +130,8 @@ export interface StudioNavigatorOptions {
   readonly cancelFrame?: (handle: number) => void;
   /** Called with the `#`-fragment when the linkable view state changes. */
   readonly onUrl?: (fragment: string) => void;
+  /** Domain-declared temporal hints for the projection waist (ADR-0037). */
+  readonly temporal?: TemporalDomainHints;
 }
 
 interface Settled {
@@ -408,6 +411,7 @@ export class StudioNavigator {
       layout: this.current.layout,
       selection,
       focus: createFocusState(this.controller.context().focus),
+      ...(this.options.temporal === undefined ? {} : { temporal: this.options.temporal }),
     });
   }
 

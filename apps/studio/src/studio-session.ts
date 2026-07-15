@@ -37,6 +37,7 @@ import {
   type ProjectionModel,
   type RenderModel,
   type SelectionState,
+  type TemporalDomainHints,
   type ViewportSize,
 } from '@meridian/view-model';
 import { AiTrustController } from './ai/ai-trust-controller.js';
@@ -90,15 +91,35 @@ const idFacade: IdFacade = {
     }),
 };
 
+const BUILTIN_PLUGINS = [markdownPlugin, conversationPlugin] as const;
+
 function buildHost(): PluginHost {
   const host = createPluginHost({ ids: idFacade });
-  for (const plugin of [markdownPlugin, conversationPlugin]) {
+  for (const plugin of BUILTIN_PLUGINS) {
     const registered = host.register(plugin);
     if (!registered.ok) {
       throw new Error(`Studio built-in plugin registration failed: ${registered.issue.message}`);
     }
   }
   return host;
+}
+
+/** Declared temporal hints of the plugin claiming `domain`, if any
+ * (ADR-0037): manifest metadata in, view-model vocabulary out. */
+function temporalHintsForDomain(domain: string): TemporalDomainHints | undefined {
+  for (const plugin of BUILTIN_PLUGINS) {
+    const claims = plugin.manifest.capabilities.some(
+      (capability) => capability.kind === 'domain-parser' && capability.id === domain,
+    );
+    const temporal = plugin.manifest.presentation?.temporal;
+    if (!claims || temporal === undefined) continue;
+    return {
+      startAttribute: temporal.startAttribute,
+      ...(temporal.endAttribute === undefined ? {} : { endAttribute: temporal.endAttribute }),
+      ...(temporal.laneAttribute === undefined ? {} : { laneAttribute: temporal.laneAttribute }),
+    };
+  }
+  return undefined;
 }
 
 function now(): number {
@@ -332,6 +353,7 @@ export class StudioSession {
         cutReason: null,
         coveredLeaves: model.nodeCoveredLeaves[index] ?? 1,
         orderPath: [index],
+        temporal: null,
       };
     });
     const inducedEdges = model.edgeKeys.map((_, index) => {
@@ -353,6 +375,7 @@ export class StudioSession {
       selection: this.store.getState().selection,
       focus: createFocusState(),
       domainMeta: { domain: 'test-fixture', label: 'Renderer fixture' },
+      diagnostics: [],
       layout: { positions, bounds: { ...model.bounds }, stability: 1 },
       renderModel: model,
     };
@@ -475,6 +498,9 @@ export class StudioSession {
       this.commands.stage('resolving', 'Resolving the visible abstraction…');
       const chain = buildLevelChain(space);
       const policy = canonicalPolicy(chain);
+      const resolvedDomain = this.store.getState().adapter?.domain;
+      const temporal =
+        resolvedDomain === undefined ? undefined : temporalHintsForDomain(resolvedDomain);
 
       this.commands.stage('layout', 'Laying out…');
       const navigator = new StudioNavigator({
@@ -486,6 +512,7 @@ export class StudioSession {
         store: this.store,
         clock: this.options.clock ?? realClock(),
         ...(this.options.onUrl !== undefined ? { onUrl: this.options.onUrl } : {}),
+        ...(temporal === undefined ? {} : { temporal }),
       });
       const { model, message } = await navigator.boot();
       if (!this.isCurrent(generation)) {

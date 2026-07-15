@@ -264,7 +264,7 @@ export interface MeridianPlugin {
 export const NAMESPACED_KEY_PATTERN: RegExp;
 
 // @public
-export const PLUGIN_API_VERSION = "1.0.0";
+export const PLUGIN_API_VERSION = "1.1.0";
 
 // @public (undocumented)
 export interface PluginContext {
@@ -302,6 +302,7 @@ export interface PluginManifest {
     readonly kinds?: readonly string[];
     readonly levelChain?: LevelChainSpec;
     readonly name: string;
+    readonly presentation?: PresentationHints;
     readonly version: string;
 }
 
@@ -311,6 +312,12 @@ export interface Point {
     readonly x: number;
     // (undocumented)
     readonly y: number;
+}
+
+// @public
+export interface PresentationHints {
+    // (undocumented)
+    readonly temporal?: TemporalPresentationHints;
 }
 
 // @public
@@ -397,6 +404,16 @@ export interface SourceDescriptor {
     // (undocumented)
     readonly text?: string;
     readonly uri: string;
+}
+
+// @public
+export interface TemporalPresentationHints {
+    // (undocumented)
+    readonly endAttribute?: string;
+    // (undocumented)
+    readonly laneAttribute?: string;
+    // (undocumented)
+    readonly startAttribute: string;
 }
 
 // (No @packageDocumentation comment for this package)

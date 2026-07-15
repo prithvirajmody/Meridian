@@ -26,6 +26,7 @@ function projectionModel(renderModel?: RenderModel): ProjectionModel {
     selection: EMPTY_SELECTION,
     focus: createFocusState(),
     domainMeta: { domain: 'test', label: 'Test' },
+    diagnostics: [],
     ...(renderModel === undefined ? {} : { renderModel }),
   };
 }

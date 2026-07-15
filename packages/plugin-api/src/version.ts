@@ -3,4 +3,4 @@
  * freeze. Manifests declare an `apiVersion` range checked against this at
  * registration. Breaking changes only at declared checkpoints (P7, P9).
  */
-export const PLUGIN_API_VERSION = '1.0.0';
+export const PLUGIN_API_VERSION = '1.1.0';

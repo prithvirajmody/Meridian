@@ -16,7 +16,15 @@ describe('@meridian/projections public surface', () => {
       'OUTLINE_PROJECTION',
       'OutlineProjection',
       'ProjectionRegistry',
+      'TIMELINE_AXIS_HEIGHT_PX',
+      'TIMELINE_GUTTER_LEFT_PX',
+      'TIMELINE_LANE_MAX_PX',
+      'TIMELINE_LANE_MIN_PX',
+      'TIMELINE_PROJECTION',
+      'TimelineProjection',
       'orderMatrixNodes',
+      'timelineEvents',
+      'timelineTickLabel',
     ]);
   });
 });

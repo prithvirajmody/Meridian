@@ -140,8 +140,13 @@ describe('buildProjectionModel', () => {
         depth: 1,
         cutReason: 'expand-parent',
         coveredLeaves: 4,
+        temporal: {
+          start: Date.parse('2026-07-15T00:00:00Z'),
+          end: Date.parse('2026-07-15T00:00:00Z'),
+        },
       },
     ]);
+    expect(model.diagnostics).toEqual([]);
     expect(model.inducedEdges).toEqual(nestedLod.inducedEdges);
     expect(model.selection).toEqual(selection);
     expect(model.selection).not.toBe(selection);

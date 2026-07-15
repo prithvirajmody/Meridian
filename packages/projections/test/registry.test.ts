@@ -14,6 +14,7 @@ const MODEL: ProjectionModel = {
   selection: EMPTY_SELECTION,
   focus: EMPTY_FOCUS,
   domainMeta: { domain: 'test', label: 'Test' },
+  diagnostics: [],
 };
 
 const INSTANCE: ProjectionInstance = {

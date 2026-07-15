@@ -2,6 +2,7 @@ import {
   MAP_PROJECTION,
   MATRIX_PROJECTION,
   OUTLINE_PROJECTION,
+  TIMELINE_PROJECTION,
   ProjectionRegistry,
   type Canvas2dInput,
   type Canvas2dSurface,
@@ -140,7 +141,12 @@ export class StudioProjectionCoordinator {
   ) {
     this.commands = new StudioStoreCommands(store);
     this.registry = new ProjectionRegistry(
-      options.projections ?? [MAP_PROJECTION, OUTLINE_PROJECTION, MATRIX_PROJECTION],
+      options.projections ?? [
+        MAP_PROJECTION,
+        OUTLINE_PROJECTION,
+        MATRIX_PROJECTION,
+        TIMELINE_PROJECTION,
+      ],
     );
     this.navigation = options.navigation ?? (() => null);
     this.focus = options.focus ?? (() => createFocusState());

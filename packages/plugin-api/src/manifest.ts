@@ -29,6 +29,23 @@ export interface AttrSchema {
   readonly description: string;
 }
 
+/**
+ * Domain-declared temporal vocabulary for presentation (ADR-0037). Values at
+ * the named attrs must be ISO-8601 strings or epoch-seconds numbers; the
+ * view-model normalizes them and presentation never hard-codes a domain.
+ */
+export interface TemporalPresentationHints {
+  readonly startAttribute: string;
+  readonly endAttribute?: string;
+  readonly laneAttribute?: string;
+}
+
+/** Optional presentation metadata a plugin may declare — plain data, never
+ * behavior. Consumed by the composition root when building projection input. */
+export interface PresentationHints {
+  readonly temporal?: TemporalPresentationHints;
+}
+
 export interface PluginManifest {
   /** Package-style unique name, e.g. `@meridian/adapter-<domain>`. */
   readonly name: string;
@@ -44,4 +61,6 @@ export interface PluginManifest {
   /** Optional named abstraction levels for this plugin's domain (§7.2.1). A
    * parser that declares none gets a default containment-depth chain (P3). */
   readonly levelChain?: LevelChainSpec;
+  /** Optional presentation hints for this plugin's domain (ADR-0037; 1.1.0). */
+  readonly presentation?: PresentationHints;
 }

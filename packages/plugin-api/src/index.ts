@@ -37,7 +37,13 @@ export type {
 } from './layout.js';
 export type { LevelChainSpec, LevelSpec } from './levels.js';
 export { NAMESPACED_KEY_PATTERN } from './manifest.js';
-export type { AttrSchema, CapabilityDeclaration, PluginManifest } from './manifest.js';
+export type {
+  AttrSchema,
+  CapabilityDeclaration,
+  PluginManifest,
+  PresentationHints,
+  TemporalPresentationHints,
+} from './manifest.js';
 export type {
   DeltaWire,
   DomainParser,

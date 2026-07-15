@@ -42,11 +42,13 @@ function createOutlineProjectionModel(rowCount: number): ProjectionModel {
       cutReason: null,
       coveredLeaves: 1,
       orderPath: [index],
+      temporal: null,
     })),
     inducedEdges: [],
     selection: EMPTY_SELECTION,
     focus: EMPTY_FOCUS,
     domainMeta: { domain: 'test-fixture', label: 'Outline performance fixture' },
+    diagnostics: [],
   };
 }
 
@@ -84,11 +86,13 @@ function createMatrixProjectionModel(size: number): ProjectionModel {
       cutReason: null,
       coveredLeaves: 1,
       orderPath: [Math.floor(index / clusterSize), index % clusterSize],
+      temporal: null,
     })),
     inducedEdges: edges,
     selection: EMPTY_SELECTION,
     focus: EMPTY_FOCUS,
     domainMeta: { domain: 'test-fixture', label: 'Matrix performance fixture' },
+    diagnostics: [],
   };
 }
 

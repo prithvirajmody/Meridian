@@ -55,6 +55,11 @@ export const manifest: PluginManifest = {
     domain: DOMAIN,
     levels: [{ name: 'session' }, { name: 'exchange' }, { name: 'message' }],
   },
+  // ADR-0037: presentation consumes declared metadata; the timeline never
+  // checks for the word "conversation" or imports this adapter.
+  presentation: {
+    temporal: { startAttribute: 'conv:timestamp', laneAttribute: 'conv:role' },
+  },
 };
 
 /**

@@ -5,6 +5,25 @@ authors are downstream consumers even while "plugin authors" means us.
 Versioning policy: ADR-0010 (semver; pre-1.0 minors may break, only at
 declared checkpoints P7/P9).
 
+## 1.1.0 — Phase 10 (view projections; ADR-0037)
+
+Additive minor under the ADR-0033 freeze policy; existing `^1.0.0` manifests
+remain compatible and unchanged plugins need no migration.
+
+- `PluginManifest` gains optional `presentation?: PresentationHints` — plain
+  domain-declared presentation metadata. Its first member,
+  `TemporalPresentationHints` (`startAttribute` / `endAttribute?` /
+  `laneAttribute?`), names the attrs that carry ISO-8601 or epoch-seconds
+  times; the view-model normalizes values and located diagnostics replace
+  silent coercion. Declared by the conversation adapter
+  (`conv:timestamp` / `conv:role`); consumed by the Phase-10 timeline
+  projection, which never checks a domain name.
+- (Lands with the 10F gate:) the dormant `view-projection` capability becomes
+  authorable — `PluginExports.viewProjections` and its structural host-facade
+  types.
+
+Report regenerated via the documented `pnpm api:update`.
+
 ## 1.0.0 — Phase 9E (the freeze; ADR-0033)
 
 **The contract is frozen.** `PLUGIN_API_VERSION` moves to `1.0.0` and the

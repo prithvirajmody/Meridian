@@ -36,6 +36,20 @@ export interface DomainMeta {
   readonly temporal?: TemporalDomainHints;
 }
 
+/** Normalized epoch-millisecond interval; a point event has start === end. */
+export interface TemporalExtent {
+  readonly start: number;
+  readonly end: number;
+}
+
+/** A located temporal-normalization repair. Returned as data, never logged. */
+export interface ProjectionModelDiagnostic {
+  readonly code: 'invalid-temporal-value';
+  readonly nodeId: NodeId;
+  readonly attribute: string;
+  readonly message: string;
+}
+
 /** One visible member of the cut, with its available containment context. */
 export interface ProjectionNode {
   readonly id: NodeId;
@@ -51,6 +65,12 @@ export interface ProjectionNode {
   readonly depth: number | null;
   readonly cutReason: CutReason | null;
   readonly coveredLeaves: number;
+  /**
+   * Declared time normalized per the domain's temporal hints, or the rolled-up
+   * extent of this node's descendants when it declares none (ADR-0037). Null
+   * when the domain is atemporal or no usable time exists.
+   */
+  readonly temporal: TemporalExtent | null;
 }
 
 /**
@@ -65,6 +85,7 @@ export interface ProjectionModel {
   readonly selection: SelectionState;
   readonly focus: FocusState;
   readonly domainMeta: DomainMeta;
+  readonly diagnostics: readonly ProjectionModelDiagnostic[];
   readonly layout?: LayoutResult;
   readonly renderModel?: RenderModel;
 }
@@ -73,6 +94,8 @@ export interface BuildProjectionModelOptions {
   readonly selection?: SelectionState;
   readonly focus?: FocusState;
   readonly domainMeta?: DomainMeta;
+  /** Declared temporal hints; overrides `domainMeta.temporal` when present. */
+  readonly temporal?: TemporalDomainHints;
   readonly layout?: LayoutResult;
 }
 
@@ -383,6 +406,121 @@ function cloneInducedEdge(edge: InducedEdge): InducedEdge {
   };
 }
 
+/**
+ * Normalize one declared temporal value to epoch milliseconds: a finite number
+ * is epoch seconds, a numeric string is epoch-seconds decimal, and any other
+ * string must parse as ISO-8601. Everything else is a located diagnostic.
+ */
+function parseTemporalValue(value: AttrValue): number | 'invalid' {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value * 1000 : 'invalid';
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      const seconds = Number(trimmed);
+      return Number.isFinite(seconds) ? seconds * 1000 : 'invalid';
+    }
+    const parsed = Date.parse(trimmed);
+    return Number.isNaN(parsed) ? 'invalid' : parsed;
+  }
+  return 'invalid';
+}
+
+interface TemporalIndex {
+  extentOf(nodeId: NodeId): TemporalExtent | null;
+  diagnostics(): readonly ProjectionModelDiagnostic[];
+}
+
+/**
+ * Per-node normalized extents with descendant roll-up: a node that declares no
+ * time inherits the aggregate extent of its detail subtree, so session- and
+ * exchange-level cuts remain plottable when only leaves carry timestamps.
+ */
+function buildTemporalIndex(
+  snapshot: GraphSpace,
+  indexed: ReadonlyMap<NodeId, IndexedSemanticNode>,
+  hints: TemporalDomainHints,
+): TemporalIndex {
+  const cache = new Map<NodeId, TemporalExtent | null>();
+  const visiting = new Set<NodeId>();
+  const reported = new Set<string>();
+  const collected: ProjectionModelDiagnostic[] = [];
+
+  const diagnose = (nodeId: NodeId, attribute: string, value: AttrValue): void => {
+    const key = `${nodeId} ${attribute}`;
+    if (reported.has(key)) return;
+    reported.add(key);
+    collected.push({
+      code: 'invalid-temporal-value',
+      nodeId,
+      attribute,
+      message: `Attribute "${attribute}" is not an ISO-8601 or epoch-seconds time: ${JSON.stringify(value)}`,
+    });
+  };
+
+  const ownExtent = (node: SemanticNode): TemporalExtent | null => {
+    const startRaw = node.attrs[hints.startAttribute];
+    if (startRaw === undefined) return null;
+    const start = parseTemporalValue(startRaw);
+    if (start === 'invalid') {
+      diagnose(node.id, hints.startAttribute, startRaw);
+      return null;
+    }
+    let end = start;
+    const endAttribute = hints.endAttribute;
+    if (endAttribute !== undefined) {
+      const endRaw = node.attrs[endAttribute];
+      if (endRaw !== undefined) {
+        const parsed = parseTemporalValue(endRaw);
+        if (parsed === 'invalid' || parsed < start) {
+          diagnose(node.id, endAttribute, endRaw);
+        } else {
+          end = parsed;
+        }
+      }
+    }
+    return { start, end };
+  };
+
+  const extentOf = (nodeId: NodeId): TemporalExtent | null => {
+    if (cache.has(nodeId)) return cache.get(nodeId)!;
+    if (visiting.has(nodeId)) return null;
+    const indexedNode = indexed.get(nodeId);
+    if (indexedNode === undefined) return null;
+    visiting.add(nodeId);
+    let result = ownExtent(indexedNode.node);
+    if (result === null) {
+      const detailGraphId = indexedNode.node.detail?.graph;
+      const graph = detailGraphId === undefined ? undefined : snapshot.graphs.get(detailGraphId);
+      if (graph !== undefined) {
+        let start = Infinity;
+        let end = -Infinity;
+        for (const childId of [...graph.nodes.keys()].sort(compareString)) {
+          const child = extentOf(childId);
+          if (child === null) continue;
+          start = Math.min(start, child.start);
+          end = Math.max(end, child.end);
+        }
+        if (start <= end) result = { start, end };
+      }
+    }
+    visiting.delete(nodeId);
+    cache.set(nodeId, result);
+    return result;
+  };
+
+  return {
+    extentOf,
+    diagnostics: () =>
+      [...collected].sort(
+        (left, right) =>
+          compareString(left.nodeId, right.nodeId) ||
+          compareString(left.attribute, right.attribute),
+      ),
+  };
+}
+
 /** Build a neutral projection model from the exact caller-provided cut. */
 export function buildProjectionModel(
   snapshot: GraphSpace,
@@ -394,7 +532,14 @@ export function buildProjectionModel(
   const orderPaths = deriveOrderPaths(snapshot, indexed, owners);
   const selection = cloneSelection(options.selection ?? EMPTY_SELECTION);
   const focus = createFocusState(options.focus?.node);
-  const domainMeta = cloneDomainMeta(options.domainMeta ?? deriveDomainMeta(snapshot));
+  const domainMeta = cloneDomainMeta({
+    ...(options.domainMeta ?? deriveDomainMeta(snapshot)),
+    ...(options.temporal === undefined ? {} : { temporal: options.temporal }),
+  });
+  const temporalIndex =
+    domainMeta.temporal === undefined
+      ? null
+      : buildTemporalIndex(snapshot, indexed, domainMeta.temporal);
   const unknownPath = [snapshot.graphs.size + 1] as const;
   const nodes = [...lodResult.cut.members]
     .sort(
@@ -418,8 +563,10 @@ export function buildProjectionModel(
         depth: trace?.depth ?? null,
         cutReason: trace?.reason ?? null,
         coveredLeaves: trace?.coveredLeaves ?? 1,
+        temporal: temporalIndex === null ? null : temporalIndex.extentOf(id),
       };
     });
+  const diagnostics = temporalIndex === null ? [] : temporalIndex.diagnostics();
   const inducedEdges = [...lodResult.inducedEdges]
     .sort(
       (left, right) =>
@@ -437,6 +584,7 @@ export function buildProjectionModel(
       selection,
       focus,
       domainMeta,
+      diagnostics,
     };
   }
 
@@ -447,6 +595,7 @@ export function buildProjectionModel(
     selection,
     focus,
     domainMeta,
+    diagnostics,
     layout: cloneLayout(options.layout),
     renderModel: buildRenderModel(snapshot, lodResult, options.layout, selection),
   };

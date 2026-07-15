@@ -39,6 +39,7 @@ function node(
     cutReason: null,
     coveredLeaves: 1,
     orderPath,
+    temporal: null,
     ...options,
   };
 }
@@ -57,6 +58,7 @@ function model(
     selection: options.selection ?? EMPTY_SELECTION,
     focus: { node: options.focus ?? null },
     domainMeta: { domain: 'test', label: 'Test' },
+    diagnostics: [],
   };
 }
 

@@ -93,6 +93,8 @@ export type {
   BuildProjectionModelOptions,
   DomainMeta,
   ProjectionModel,
+  ProjectionModelDiagnostic,
   ProjectionNode,
   TemporalDomainHints,
+  TemporalExtent,
 } from './projection-model.js';
