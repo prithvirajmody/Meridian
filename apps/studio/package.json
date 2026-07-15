@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@meridian/abstraction": "workspace:*",
+    "@meridian/adapter-conversation": "workspace:*",
     "@meridian/adapter-markdown": "workspace:*",
     "@meridian/graph-core": "workspace:*",
     "@meridian/graph-store": "workspace:*",

@@ -33,6 +33,12 @@ export interface ProposedGroup {
   readonly members: readonly string[];
   readonly rationale: string;
   readonly confidence?: number;
+  /** Namespaced node kind for the group node (Phase 9C, ADR-0034 — domains
+   * type their enrichment layers, e.g. `conv:topic`). Must be a kind the
+   * domain's manifest declares. Omitted = `core:cluster`, byte-identical to
+   * every pre-9C proposal. Type-only additive field: no runtime surface
+   * change, no version bump (ADR-0010). */
+  readonly kind?: string;
   /** AI-generated one-line summary for the rollup node (§8.4). */
   readonly summary?: string;
   /** Extra namespaced attributes to attach to the group node (e.g. `ai:*`). */

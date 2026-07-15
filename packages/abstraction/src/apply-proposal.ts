@@ -3,9 +3,10 @@
  * into ordinary op-based P1 deltas and commit them through the store's **one
  * write path** (`store.apply`) — AI and deterministic providers alike get no
  * second write channel (§8.1, ADR-0005). Each proposed group becomes a new
- * `core:cluster` node in the members' graph whose detail graph holds the
- * grouped nodes, so the new containment is immediately visible to a subsequent
- * cut.
+ * node in the members' graph — `core:cluster` by default, or the group's
+ * declared `kind` (Phase 9C: domains type their enrichment layers, e.g.
+ * `conv:topic`) — whose detail graph holds the grouped nodes, so the new
+ * containment is immediately visible to a subsequent cut.
  *
  * The transform relocates each member (and the edges *internal* to a group)
  * into the new detail graph. Because base edges are intra-graph (U1) and v1 has
@@ -225,7 +226,7 @@ export function applyProposal(
     for (const edge of internalEdges) ops.push({ t: 'edge:add', graph: detailGraph, edge });
     const groupNode: SemanticNode = {
       id: asNodeId(group.id),
-      kind: 'core:cluster',
+      kind: group.kind ?? 'core:cluster',
       label: group.label,
       detail: { graph: detailGraph },
       attrs: proposalAttrs(group),

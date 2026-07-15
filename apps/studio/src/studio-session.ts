@@ -5,6 +5,7 @@
  * enters React or Zustand state.
  */
 import { buildLevelChain, type LevelChain, type LodResult, type ZoomPolicy } from '@meridian/abstraction';
+import { conversationPlugin } from '@meridian/adapter-conversation';
 import { markdownPlugin } from '@meridian/adapter-markdown';
 import {
   createGraphSpace,
@@ -84,9 +85,11 @@ const idFacade: IdFacade = {
 
 function buildHost(): PluginHost {
   const host = createPluginHost({ ids: idFacade });
-  const registered = host.register(markdownPlugin);
-  if (!registered.ok) {
-    throw new Error(`Studio built-in plugin registration failed: ${registered.issue.message}`);
+  for (const plugin of [markdownPlugin, conversationPlugin]) {
+    const registered = host.register(plugin);
+    if (!registered.ok) {
+      throw new Error(`Studio built-in plugin registration failed: ${registered.issue.message}`);
+    }
   }
   return host;
 }
@@ -107,6 +110,25 @@ function initialZoom(chain: LevelChain): number {
   const bands = Math.max(1, chain.depth);
   const level = Math.min(1, bands - 1);
   return (level + 0.5) / bands;
+}
+
+/** A saved `.meridian` graph document (a store round-trip, not adapter IR):
+ * opened by decoding directly — the U8 vocabulary gate guards the *ingest*
+ * boundary between parser output and the store, not a snapshot round-trip
+ * (which may legitimately carry enrichment vocabulary such as `ai:*` attrs
+ * from Phase 8/9 passes that no single adapter manifest declares). */
+function looksLikeGraphDocument(name: string, text: string): boolean {
+  if (/\.meridian(\.json)?$/i.test(name)) return true;
+  const head = text.slice(0, 4096);
+  return head.includes('"formatVersion"') && head.includes('"graphs"');
+}
+
+function documentDomain(space: GraphSpace): string {
+  for (const rootId of space.roots) {
+    const domain = space.graphs.get(rootId)?.meta.domain;
+    if (domain !== undefined) return domain;
+  }
+  return 'core';
 }
 
 function mediaTypeFor(name: string): string | undefined {
@@ -303,21 +325,36 @@ export class StudioSession {
         text,
         ...(mediaTypeFor(name) !== undefined ? { mediaType: mediaTypeFor(name) } : {}),
       };
-      this.commands.stage('ingesting', 'Sniffing adapters and ingesting…');
-      const resolution = this.host.resolve(source);
-      const candidate = resolution.candidates[0];
-      if (candidate === undefined) throw new Error(`No adapter claims ${name}`);
+      let materialized: GraphSpace;
+      if (looksLikeGraphDocument(name, text)) {
+        this.commands.stage('ingesting', 'Decoding saved graph document…');
+        const decoded = decode(text);
+        if (!decoded.ok) {
+          const first = decoded.errors[0];
+          throw new Error(`Invalid graph document: [${first?.code ?? 'unknown'}] ${first?.message ?? ''}`);
+        }
+        materialized = decoded.space;
+        this.commands.adapterResolved({
+          domain: documentDomain(materialized),
+          plugin: 'meridian:document',
+          score: 1,
+        });
+      } else {
+        this.commands.stage('ingesting', 'Sniffing adapters and ingesting…');
+        const resolution = this.host.resolve(source);
+        const candidate = resolution.candidates[0];
+        if (candidate === undefined) throw new Error(`No adapter claims ${name}`);
 
-      const outcome = await this.host.ingest(source);
-      if (!this.isCurrent(generation)) return;
-      if (!outcome.ok) throw new Error(`[${outcome.issue.code}] ${outcome.issue.message}`);
-      this.commands.adapterResolved({
-        domain: outcome.domain,
-        plugin: outcome.plugin,
-        score: candidate.score,
-      });
-
-      const materialized = this.materialize(outcome);
+        const outcome = await this.host.ingest(source);
+        if (!this.isCurrent(generation)) return;
+        if (!outcome.ok) throw new Error(`[${outcome.issue.code}] ${outcome.issue.message}`);
+        this.commands.adapterResolved({
+          domain: outcome.domain,
+          plugin: outcome.plugin,
+          score: candidate.score,
+        });
+        materialized = this.materialize(outcome);
+      }
       const store = createStore(createGraphSpace());
       const delta = diffSpaces(store.snapshot(), materialized, { actor: 'studio:ingest' });
       if (delta.ops.length > 0) {

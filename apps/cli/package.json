@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "meridian — headless CLI proving the semantic core without pixels.",
+  "description": "meridian \u2014 headless CLI proving the semantic core without pixels.",
   "bin": {
     "meridian": "./dist/main.js"
   },
@@ -15,6 +15,7 @@
   "dependencies": {
     "@meridian/abstraction": "workspace:*",
     "@meridian/adapter-code": "workspace:*",
+    "@meridian/adapter-conversation": "workspace:*",
     "@meridian/adapter-markdown": "workspace:*",
     "@meridian/ai": "workspace:*",
     "@meridian/ai-services": "workspace:*",

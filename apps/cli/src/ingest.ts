@@ -7,6 +7,7 @@
  */
 import { readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
+import { conversationPlugin } from '@meridian/adapter-conversation';
 import { markdownPlugin } from '@meridian/adapter-markdown';
 import {
   CODE_PROJECT_MEDIA_TYPE,
@@ -83,7 +84,7 @@ export function buildHost(): BuiltHost {
   // the worker is lazy, so `plugins list` never spawns one.
   const parseHost = new ParseWorkerHost({ factory: codeWorkerFactory() });
   const mapper: CodeMapper = createWorkerMapper(parseHost);
-  const plugins = [markdownPlugin, createCodePlugin({ mapper })];
+  const plugins = [markdownPlugin, createCodePlugin({ mapper }), conversationPlugin];
   for (const plugin of plugins) {
     const r = host.register(plugin);
     if (!r.ok) {

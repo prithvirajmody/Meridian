@@ -195,6 +195,45 @@
           "description": "the grammar node type of a code:stmt/code:expr AST node (descriptive provenance)"
         }
       }
+    },
+    {
+      "name": "@meridian/adapter-conversation",
+      "version": "0.1.0",
+      "apiVersion": "^0.2.0",
+      "capabilities": [
+        {
+          "kind": "domain-parser",
+          "id": "conversation"
+        }
+      ],
+      "kinds": [
+        "conv:session",
+        "conv:topic",
+        "conv:exchange",
+        "conv:message",
+        "conv:claim",
+        "conv:replies-to",
+        "conv:refers-back",
+        "conv:about"
+      ],
+      "attrSchemas": {
+        "conv:index": {
+          "type": "number",
+          "description": "0-based order of an element within its graph"
+        },
+        "conv:role": {
+          "type": "string",
+          "description": "normalized message role: user | assistant | system | tool | <verbatim source token>"
+        },
+        "conv:source-id": {
+          "type": "string",
+          "description": "stable source identifier as the export recorded it (conversation uuid / message uuid / mapping-node id)"
+        },
+        "conv:timestamp": {
+          "type": "string",
+          "description": "source timestamp as written — ISO 8601 string or epoch-seconds decimal"
+        }
+      }
     }
   ]
 }

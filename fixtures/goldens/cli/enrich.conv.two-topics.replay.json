@@ -1,0 +1,30 @@
+{
+  "file": "fixtures/.cut-inputs/conv-two-topics.meridian.json",
+  "command": "enrich",
+  "domain": "conversation",
+  "mode": "replay",
+  "provider": "mock",
+  "model": "mock-model",
+  "topics": {
+    "sessions": 1,
+    "layered": 1,
+    "unchanged": 0,
+    "replaced": 0,
+    "floored": 0
+  },
+  "claims": {
+    "messages": 12,
+    "added": 12,
+    "unchanged": 0,
+    "replaced": 0,
+    "floored": 0
+  },
+  "budget": {
+    "spentTokens": 286,
+    "spentDollars": 0.000286,
+    "calls": 15,
+    "tripped": false,
+    "status": "ok"
+  },
+  "out": "fixtures/.cut-inputs/conv-two-topics.enriched.meridian.json"
+}

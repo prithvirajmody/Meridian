@@ -23,6 +23,7 @@ import {
 } from '@meridian/graph-core';
 import { isCodeLanguage, type CodeLanguage } from '@meridian/adapter-code';
 import { cmdAiCluster, cmdAiSummarize, type AiCommandOptions } from './ai.js';
+import { cmdAiEnrich } from './enrich.js';
 import { cmdCut } from './cut.js';
 import { splitCsv } from './globs.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
@@ -127,6 +128,20 @@ Usage:
                                              groups. --ai-mode mock (default) and
                                              replay are zero-network; live needs
                                              --ai-consent and a key from the env
+  meridian ai enrich <file> [--out <file>] [--ai-mode <mock|replay|record|live>]
+                  [--ai-fixtures <file>] [--ai-provider <id>] [--ai-model <id>]
+                  [--budget <dollars>] [--ai-consent] [--json]
+                                             Phase 9C enrichment pass over a
+                                             conversation document: embedding-
+                                             clustered conv:topic layers with AI
+                                             names, and conv:claim nodes anchored
+                                             to messages — all as ordinary tagged
+                                             deltas through the one write path.
+                                             Idempotent: a re-run with the same
+                                             inputHash changes nothing. --out
+                                             writes the enriched document;
+                                             --ai-fixtures is read in replay and
+                                             written in record mode
 
 Exit codes: 0 ok · 1 invalid input or rejected delta · 2 usage or I/O error
 `;
@@ -607,7 +622,7 @@ async function cmdWatch(
 
 // ---------------------------------------------------------------------- main
 
-const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang', '--budget', '--ai-provider', '--ai-model', '--ai-mode']);
+const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang', '--budget', '--ai-provider', '--ai-model', '--ai-mode', '--ai-fixtures']);
 const BOOL_FLAGS = new Set(['--worker', '--ai-consent']);
 
 interface Cli {
@@ -830,7 +845,7 @@ async function main(): Promise<void> {
       break;
     }
     case 'ai': {
-      allowFlags(cli, command, ['--budget', '--ai-provider', '--ai-model', '--ai-mode', '--ai-consent']);
+      allowFlags(cli, command, ['--budget', '--ai-provider', '--ai-model', '--ai-mode', '--ai-consent', '--ai-fixtures', '--out']);
       const sub = file; // 'summarize' | 'cluster'
       if (extra === undefined) usageError(`ai ${sub}: missing <file> argument`);
       let budgetDollars: number | undefined;
@@ -847,6 +862,7 @@ async function main(): Promise<void> {
         ...(cli.values.has('--ai-provider') ? { provider: cli.values.get('--ai-provider')! } : {}),
         ...(cli.values.has('--ai-model') ? { model: cli.values.get('--ai-model')! } : {}),
         ...(cli.values.has('--ai-mode') ? { mode: cli.values.get('--ai-mode')! } : {}),
+        ...(cli.values.has('--ai-fixtures') ? { fixtures: cli.values.get('--ai-fixtures')! } : {}),
       };
       switch (sub) {
         case 'summarize':
@@ -855,8 +871,16 @@ async function main(): Promise<void> {
         case 'cluster':
           process.exit(await cmdAiCluster(extra, await readDocument(extra), aiOpts));
           break;
+        case 'enrich':
+          process.exit(
+            await cmdAiEnrich(extra, await readDocument(extra), {
+              ...aiOpts,
+              ...(cli.values.has('--out') ? { out: cli.values.get('--out')! } : {}),
+            }),
+          );
+          break;
         default:
-          usageError(`ai: unknown subcommand "${sub}" (expected: summarize | cluster)`);
+          usageError(`ai: unknown subcommand "${sub}" (expected: summarize | cluster | enrich)`);
       }
       break;
     }

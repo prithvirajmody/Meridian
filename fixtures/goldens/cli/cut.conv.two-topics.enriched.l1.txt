@@ -1,0 +1,8 @@
+cut fixtures/.cut-inputs/conv-two-topics.enriched.meridian.json — level 1/3 · zoom 0.375
+  chain      conversation · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   33/33 leaves — covers ✓
+  nodes (2):
+    nctxdws73eo4pttjlulcutvhtga "Group: My loaves keep coming out flat instead of tall. Is my shaping technique t" (conv:topic) · level · covers 11
+    nwaoludimlb47alsbzvhet6ohzu "Group: My sourdough starter has stopped rising and smells like acetone. What is " (conv:topic) · level · covers 22
+  induced edges (0):
+  frontier   expandable 2 · collapsible 2

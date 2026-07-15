@@ -1,0 +1,93 @@
+[
+  {
+    "uuid": "conv-2topics-0001",
+    "name": "Sourdough and telescopes",
+    "created_at": "2026-06-01T09:00:00Z",
+    "chat_messages": [
+      {
+        "uuid": "msg-01",
+        "sender": "human",
+        "text": "My sourdough starter has stopped rising and smells like acetone. What is going wrong with it?",
+        "parent_message_uuid": null,
+        "created_at": "2026-06-01T09:00:00Z"
+      },
+      {
+        "uuid": "msg-02",
+        "sender": "assistant",
+        "text": "An acetone smell means the starter is hungry and has exhausted its food supply. Feed it twice daily at a one to one to one ratio until the smell fades and it doubles reliably.",
+        "parent_message_uuid": "msg-01",
+        "created_at": "2026-06-01T09:01:00Z"
+      },
+      {
+        "uuid": "msg-03",
+        "sender": "human",
+        "text": "How wet should the dough feel after the first mix, and does hydration change the crumb?",
+        "parent_message_uuid": "msg-02",
+        "created_at": "2026-06-01T09:02:00Z"
+      },
+      {
+        "uuid": "msg-04",
+        "sender": "assistant",
+        "text": "A seventy-five percent hydration dough feels tacky but releases from wet hands. Higher hydration opens the crumb but demands stronger gluten development through folds.",
+        "parent_message_uuid": "msg-03",
+        "created_at": "2026-06-01T09:03:00Z"
+      },
+      {
+        "uuid": "msg-05",
+        "sender": "human",
+        "text": "My loaves keep coming out flat instead of tall. Is my shaping technique the problem?",
+        "parent_message_uuid": "msg-04",
+        "created_at": "2026-06-01T09:04:00Z"
+      },
+      {
+        "uuid": "msg-06",
+        "sender": "assistant",
+        "text": "Flat loaves usually mean under-fermented dough or weak surface tension from shaping. Build tension by dragging the boule toward you on an unfloured patch of counter.",
+        "parent_message_uuid": "msg-05",
+        "created_at": "2026-06-01T09:05:00Z"
+      },
+      {
+        "uuid": "msg-07",
+        "sender": "human",
+        "text": "I want to buy my first telescope for viewing planets. Should I get a refractor or a reflector?",
+        "parent_message_uuid": "msg-06",
+        "created_at": "2026-06-01T09:06:00Z"
+      },
+      {
+        "uuid": "msg-08",
+        "sender": "assistant",
+        "text": "For planets a long focal-length refractor gives crisp high-contrast views with zero maintenance. A Dobsonian reflector gives more aperture per dollar if you also want faint galaxies.",
+        "parent_message_uuid": "msg-07",
+        "created_at": "2026-06-01T09:07:00Z"
+      },
+      {
+        "uuid": "msg-09",
+        "sender": "human",
+        "text": "What magnification do I actually need to see the rings of Saturn clearly?",
+        "parent_message_uuid": "msg-08",
+        "created_at": "2026-06-01T09:08:00Z"
+      },
+      {
+        "uuid": "msg-10",
+        "sender": "assistant",
+        "text": "Saturn's rings resolve clearly at around one hundred fifty times magnification on a steady night. The atmosphere limits most nights to two hundred times regardless of the eyepiece.",
+        "parent_message_uuid": "msg-09",
+        "created_at": "2026-06-01T09:09:00Z"
+      },
+      {
+        "uuid": "msg-11",
+        "sender": "human",
+        "text": "Is light pollution in a city a dealbreaker for planetary observing?",
+        "parent_message_uuid": "msg-10",
+        "created_at": "2026-06-01T09:10:00Z"
+      },
+      {
+        "uuid": "msg-12",
+        "sender": "assistant",
+        "text": "Planets are bright enough that city light pollution barely matters for them. Dark skies only become essential when you chase nebulae and galaxies.",
+        "parent_message_uuid": "msg-11",
+        "created_at": "2026-06-01T09:11:00Z"
+      }
+    ]
+  }
+]

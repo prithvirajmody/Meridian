@@ -1,0 +1,1041 @@
+{
+  "03c6086a554c1e991d54089b14cf44639c0eb309935ac5d36da6c2c111f7e075": {
+    "meta": {
+      "kind": "embedding",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "embedding",
+      "promptVersion": "embedding",
+      "inputHash": "03d23075f1ed74c1ce57ae55264f2d17f32af8f1f5efc96ae0b1539121844d6b",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "vectors": [
+        [
+          4.03125,
+          5.90625,
+          4.40625,
+          6.09375,
+          4.59375,
+          5.71875,
+          5.40625,
+          5.6875,
+          3.1875,
+          6.84375,
+          5.03125,
+          5.5625,
+          6.59375,
+          5.21875,
+          3.5,
+          5.8125
+        ],
+        [
+          5.125,
+          5.3125,
+          5.25,
+          5.375,
+          6.375,
+          5.03125,
+          5.9375,
+          5.21875,
+          4.40625,
+          4.75,
+          4.71875,
+          3.4375,
+          3.78125,
+          5.0625,
+          4.46875,
+          4.5
+        ],
+        [
+          3.25,
+          5.5625,
+          3.84375,
+          6.40625,
+          3.5625,
+          5.8125,
+          4.65625,
+          6.375,
+          4.28125,
+          5.59375,
+          4.65625,
+          4.53125,
+          4.34375,
+          5.34375,
+          6.375,
+          5.6875
+        ],
+        [
+          5.5,
+          5.15625,
+          4.53125,
+          4.375,
+          6.78125,
+          5.375,
+          5.46875,
+          3.96875,
+          2.875,
+          5.15625,
+          6.15625,
+          5.0625,
+          5.3125,
+          5.9375,
+          2.65625,
+          6.34375
+        ],
+        [
+          2.625,
+          4.875,
+          4.6875,
+          3.40625,
+          6,
+          4.75,
+          2.90625,
+          3.8125,
+          2.65625,
+          5.21875,
+          4.8125,
+          3.5625,
+          3.6875,
+          4.625,
+          4.28125,
+          4.09375
+        ],
+        [
+          5.3125,
+          4.78125,
+          4.9375,
+          7.0625,
+          5.15625,
+          5.53125,
+          5.65625,
+          6.09375,
+          6.125,
+          5.0625,
+          5.6875,
+          5.3125,
+          5.25,
+          5.8125,
+          5.71875,
+          4.625
+        ]
+      ],
+      "usage": {
+        "inputTokens": 6,
+        "outputTokens": 0
+      },
+      "raw": {
+        "vectors": [
+          [
+            4.03125,
+            5.90625,
+            4.40625,
+            6.09375,
+            4.59375,
+            5.71875,
+            5.40625,
+            5.6875,
+            3.1875,
+            6.84375,
+            5.03125,
+            5.5625,
+            6.59375,
+            5.21875,
+            3.5,
+            5.8125
+          ],
+          [
+            5.125,
+            5.3125,
+            5.25,
+            5.375,
+            6.375,
+            5.03125,
+            5.9375,
+            5.21875,
+            4.40625,
+            4.75,
+            4.71875,
+            3.4375,
+            3.78125,
+            5.0625,
+            4.46875,
+            4.5
+          ],
+          [
+            3.25,
+            5.5625,
+            3.84375,
+            6.40625,
+            3.5625,
+            5.8125,
+            4.65625,
+            6.375,
+            4.28125,
+            5.59375,
+            4.65625,
+            4.53125,
+            4.34375,
+            5.34375,
+            6.375,
+            5.6875
+          ],
+          [
+            5.5,
+            5.15625,
+            4.53125,
+            4.375,
+            6.78125,
+            5.375,
+            5.46875,
+            3.96875,
+            2.875,
+            5.15625,
+            6.15625,
+            5.0625,
+            5.3125,
+            5.9375,
+            2.65625,
+            6.34375
+          ],
+          [
+            2.625,
+            4.875,
+            4.6875,
+            3.40625,
+            6,
+            4.75,
+            2.90625,
+            3.8125,
+            2.65625,
+            5.21875,
+            4.8125,
+            3.5625,
+            3.6875,
+            4.625,
+            4.28125,
+            4.09375
+          ],
+          [
+            5.3125,
+            4.78125,
+            4.9375,
+            7.0625,
+            5.15625,
+            5.53125,
+            5.65625,
+            6.09375,
+            6.125,
+            5.0625,
+            5.6875,
+            5.3125,
+            5.25,
+            5.8125,
+            5.71875,
+            4.625
+          ]
+        ]
+      }
+    }
+  },
+  "0b58e3ec112eca24fc95b33304db01da5434d199864a8d961b888c8d950f05dd": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "553c68f34b0d3f5b781328eb490b50d32711fd5d0f6a57cd0e0948e679c8367f",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "For planets a long focal-length refractor gives crisp high-contrast views with zero maintenance."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "A Dobsonian reflector gives more aperture per dollar if you also want faint galaxies."
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "For planets a long focal-length refractor gives crisp high-contrast views with zero maintenance."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "A Dobsonian reflector gives more aperture per dollar if you also want faint galaxies."
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "0d0cd701dca2c103145919f54090518ac84a321efd97ee9046edb476f4c14f0a": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "d7c57d128fd85f9fa07a1148d3c05eb0d90fd7e25d2056163e316f2ae57c4b90",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "An acetone smell means the starter is hungry and has exhausted its food supply."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "Feed it twice daily at a one to one to one ratio until the smell fades and it doubles reliably."
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "An acetone smell means the starter is hungry and has exhausted its food supply."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "Feed it twice daily at a one to one to one ratio until the smell fades and it doubles reliably."
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "3867470135ee7775ef6d6609b9be8eb92b225fd0ccbe0c49dc56f02475d2f917": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "2fd7a821f59865b24c756ba91b3c543fc6f58bd71ad3bf278d61b8fce00f8863",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "A seventy-five percent hydration dough feels tacky but releases from wet hands."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "Higher hydration opens the crumb but demands stronger gluten development through folds."
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "A seventy-five percent hydration dough feels tacky but releases from wet hands."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "Higher hydration opens the crumb but demands stronger gluten development through folds."
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "4ddb39c1f4bc6a66fa5986782083cc6a307ea4ae7dd5b305b67f28fe6953ce5f": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "72a8bc99620cab44ef4a7ad9de85ccf56e21a86f86ec3f9216bad4c07f4e6b2d",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "Planets are bright enough that city light pollution barely matters for them."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "Dark skies only become essential when you chase nebulae and galaxies."
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "Planets are bright enough that city light pollution barely matters for them."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "Dark skies only become essential when you chase nebulae and galaxies."
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "5e3a64468df5966282d4b9c26461338f7d877bfafd5119c0f093eef3c5ffb364": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "fcbb89e747318c0d659455508ee454c634bb8554de81fcf091358b241ca63c23",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "Saturn's rings resolve clearly at around one hundred fifty times magnification on a steady night."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "The atmosphere limits most nights to two hundred times regardless of the eyepiece."
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "Saturn's rings resolve clearly at around one hundred fifty times magnification on a steady night."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "The atmosphere limits most nights to two hundred times regardless of the eyepiece."
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "6b575d6650c51be485b4ea1a01666fa9f4fe7ccf9f8adc27af117553630c3358": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:summarize-rollup",
+      "promptVersion": "1",
+      "inputHash": "9c4052c69e1f5d3458c10a8673c1887f84a2c70f90d132f7e980b77e8538a4e0",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "name": "Group: My loaves keep coming out flat instead of tall. Is my shaping technique t",
+          "summary": "Mock AI summary of a conversation group.",
+          "confidence": 0.9
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "name": "Group: My loaves keep coming out flat instead of tall. Is my shaping technique t",
+        "summary": "Mock AI summary of a conversation group.",
+        "confidence": 0.9
+      }
+    }
+  },
+  "7494829c3fc2939bdd23a8077c1c8c81e3ff8fa79ac54e6ea39b5d64fd45b429": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "96ef33a8f9b286772e61df9a4ff2813bde42c66593ed32ffa5ca653382751c90",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "Flat loaves usually mean under-fermented dough or weak surface tension from shaping."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "Build tension by dragging the boule toward you on an unfloured patch of counter."
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "Flat loaves usually mean under-fermented dough or weak surface tension from shaping."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "Build tension by dragging the boule toward you on an unfloured patch of counter."
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "776c899852c87b56e6207ff7d74173515678c8be9797e6f2e7b10028effcdf40": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "ddbe195ccbcabb5fd9bd8ed4b176e359e9a896b527eaaa57b6fc70912157fe8d",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "What magnification do I actually need to see the rings of Saturn clearly?"
+            }
+          ],
+          "edges": []
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "What magnification do I actually need to see the rings of Saturn clearly?"
+          }
+        ],
+        "edges": []
+      }
+    }
+  },
+  "809aaec20997f1809a24e7cc3c17878a4ee49a03a9857d521c96f8f62dc3aef3": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "c95c5c67569b9181c9689b7dcb8fa7acb8881da026cdda550e073a05bdff3485",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "My loaves keep coming out flat instead of tall."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "Is my shaping technique the problem?"
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "My loaves keep coming out flat instead of tall."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "Is my shaping technique the problem?"
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "bb04bd1188d4391bf5b8f5e155e875195887683a65c0719897592063271afb3b": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "9979c62a9661e1e49e0990d928e302818e07536f470ec7b1e91e7ffff67e0734",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "My sourdough starter has stopped rising and smells like acetone."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "What is going wrong with it?"
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "My sourdough starter has stopped rising and smells like acetone."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "What is going wrong with it?"
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "c2392aa31068cd53d8439450d2b78aa4943e89b99b23bff929e75f7870230e11": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "0d866f65fbc8f041a5c1fd9aad7c805963b67b6c507a979d6030a341caf84e26",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "I want to buy my first telescope for viewing planets."
+            },
+            {
+              "id": "conv:c-2",
+              "kind": "conv:claim",
+              "label": "Should I get a refractor or a reflector?"
+            }
+          ],
+          "edges": [
+            {
+              "id": "conv:r-1",
+              "src": "conv:c-2",
+              "dst": "conv:c-1",
+              "kind": "conv:refers-back"
+            }
+          ]
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "I want to buy my first telescope for viewing planets."
+          },
+          {
+            "id": "conv:c-2",
+            "kind": "conv:claim",
+            "label": "Should I get a refractor or a reflector?"
+          }
+        ],
+        "edges": [
+          {
+            "id": "conv:r-1",
+            "src": "conv:c-2",
+            "dst": "conv:c-1",
+            "kind": "conv:refers-back"
+          }
+        ]
+      }
+    }
+  },
+  "c7ffe4a49bd45d10b9c95050e8fc78e0d181b67bc53afef7e96a312508c6c17c": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "92e8c66fcb226bcef6773df18125e0a8593083f6821de3a5c48751f6fa033898",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "How wet should the dough feel after the first mix, and does hydration change the crumb?"
+            }
+          ],
+          "edges": []
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "How wet should the dough feel after the first mix, and does hydration change the crumb?"
+          }
+        ],
+        "edges": []
+      }
+    }
+  },
+  "e75b90cbce82c383be4d7ed75369ca373f36d06e428fe824957af757d1896ca7": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:summarize-rollup",
+      "promptVersion": "1",
+      "inputHash": "f8d98b351b4000448d539600ce1e314d658dc7cf838a9c2bbe7bbf1d4ab54727",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "name": "Group: My sourdough starter has stopped rising and smells like acetone. What is ",
+          "summary": "Mock AI summary of a conversation group.",
+          "confidence": 0.9
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "name": "Group: My sourdough starter has stopped rising and smells like acetone. What is ",
+        "summary": "Mock AI summary of a conversation group.",
+        "confidence": 0.9
+      }
+    }
+  },
+  "f2906cd6ff94944fbff6dcfbf44de37a5fdc0ac20924012fb1ed5bbc8b340af4": {
+    "meta": {
+      "kind": "completion",
+      "providerId": "mock",
+      "model": "mock-model",
+      "promptId": "ai-services:extract-structure",
+      "promptVersion": "1",
+      "inputHash": "2d17e231f23d3a5d4116605ffb72733c0b17c784f2324ca5e5eb525463cfeef0",
+      "attempt": "primary"
+    },
+    "value": {
+      "providerId": "mock",
+      "model": "mock-model",
+      "raw": {
+        "kind": "json",
+        "value": {
+          "nodes": [
+            {
+              "id": "conv:c-1",
+              "kind": "conv:claim",
+              "label": "Is light pollution in a city a dealbreaker for planetary observing?"
+            }
+          ],
+          "edges": []
+        }
+      },
+      "stopReason": "stop",
+      "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10
+      },
+      "structured": {
+        "nodes": [
+          {
+            "id": "conv:c-1",
+            "kind": "conv:claim",
+            "label": "Is light pollution in a city a dealbreaker for planetary observing?"
+          }
+        ],
+        "edges": []
+      }
+    }
+  }
+}

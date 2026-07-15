@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import type {
   AbstractionProposal,
   AbstractionProvider,
+  ProposedGroup,
   DetailGraphRef,
   DetailNode,
   DetailResolver,
@@ -64,6 +65,19 @@ describe('@meridian/plugin-api public surface', () => {
     };
     expect(manifest.levelChain?.levels.length).toBe(2);
     expect(provider.id).toBe('x');
+  });
+
+  it('the Phase 9C ProposedGroup.kind field is exported and shaped (compile-time)', () => {
+    // Type-only additive field (ADR-0010: no runtime surface change, no bump):
+    // a proposal may type its group node with a domain kind (ADR-0034).
+    const typed: ProposedGroup = {
+      id: 'g',
+      label: 'Topic',
+      members: ['a'],
+      rationale: 'r',
+      kind: 'conv:topic',
+    };
+    expect(typed.kind).toBe('conv:topic');
   });
 
   it('the Phase 7F detail-resolver type surface is exported and shaped (compile-time)', () => {

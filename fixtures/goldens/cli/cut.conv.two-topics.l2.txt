@@ -1,0 +1,24 @@
+cut fixtures/.cut-inputs/conv-two-topics.meridian.json — level 2/2 · zoom 0.8333
+  chain      conversation · 3 levels (level-0 → level-1 → level-2)
+  coverage   12/12 leaves — covers ✓
+  nodes (12):
+    n5ecpinhzhbmssemgcoafwnfxhq "An acetone smell means the starter is hungry and has exhausted its food supply. Feed it twice daily at a one to one to one ratio until the smell fades and it doubles reliably." (conv:message) · leaf · covers 1
+    na463q6xywtajaw3ikmzoya4ifu "Flat loaves usually mean under-fermented dough or weak surface tension from shaping. Build tension by dragging the boule toward you on an unfloured patch of counter." (conv:message) · leaf · covers 1
+    nam2gzmynj3sgjv4pjdaeys3mku "How wet should the dough feel after the first mix, and does hydration change the crumb?" (conv:message) · leaf · covers 1
+    nayu6t4jt5w37a62n5tsp5gja7e "My sourdough starter has stopped rising and smells like acetone. What is going wrong with it?" (conv:message) · leaf · covers 1
+    nfjqp36wfr6ujz5gvj7ahaqi334 "My loaves keep coming out flat instead of tall. Is my shaping technique the problem?" (conv:message) · leaf · covers 1
+    nfx2r5lbrpkcpulxaddeqzwjidi "A seventy-five percent hydration dough feels tacky but releases from wet hands. Higher hydration opens the crumb but demands stronger gluten development through folds." (conv:message) · leaf · covers 1
+    ngn3fo3y5tin6ar22jp4of2xvqi "For planets a long focal-length refractor gives crisp high-contrast views with zero maintenance. A Dobsonian reflector gives more aperture per dollar if you also want faint galaxies." (conv:message) · leaf · covers 1
+    nki4l5ck7ffantjnke6v3fvi2gu "Saturn's rings resolve clearly at around one hundred fifty times magnification on a steady night. The atmosphere limits most nights to two hundred times regardless of the eyepiece." (conv:message) · leaf · covers 1
+    nkmmzv3wkxbdjsxaakkbnqb6aa4 "Planets are bright enough that city light pollution barely matters for them. Dark skies only become essential when you chase nebulae and galaxies." (conv:message) · leaf · covers 1
+    nq445dtqa6jzdnlvrh6fvqjq2hi "I want to buy my first telescope for viewing planets. Should I get a refractor or a reflector?" (conv:message) · leaf · covers 1
+    nsigqtuvgtw2cjsaqmkc6j5wjlu "Is light pollution in a city a dealbreaker for planetary observing?" (conv:message) · leaf · covers 1
+    nzgvnu5qkd4rl5ctlagenax5yjm "What magnification do I actually need to see the rings of Saturn clearly?" (conv:message) · leaf · covers 1
+  induced edges (6):
+    n5ecpinhzhbmssemgcoafwnfxhq "An acetone smell means the starter is hungry and has exhausted its food supply. Feed it twice daily at a one to one to one ratio until the smell fades and it doubles reliably." → nayu6t4jt5w37a62n5tsp5gja7e "My sourdough starter has stopped rising and smells like acetone. What is going wrong with it?" [conv:replies-to] · weight 1 · ×1 (ehsfvqjxqvestlzdfqduwyeo4za)
+    na463q6xywtajaw3ikmzoya4ifu "Flat loaves usually mean under-fermented dough or weak surface tension from shaping. Build tension by dragging the boule toward you on an unfloured patch of counter." → nfjqp36wfr6ujz5gvj7ahaqi334 "My loaves keep coming out flat instead of tall. Is my shaping technique the problem?" [conv:replies-to] · weight 1 · ×1 (ejib222snqvk2mppnsmwgg56y5a)
+    nfx2r5lbrpkcpulxaddeqzwjidi "A seventy-five percent hydration dough feels tacky but releases from wet hands. Higher hydration opens the crumb but demands stronger gluten development through folds." → nam2gzmynj3sgjv4pjdaeys3mku "How wet should the dough feel after the first mix, and does hydration change the crumb?" [conv:replies-to] · weight 1 · ×1 (eenjpcuhgmho7cnkmssnj5wcc3e)
+    ngn3fo3y5tin6ar22jp4of2xvqi "For planets a long focal-length refractor gives crisp high-contrast views with zero maintenance. A Dobsonian reflector gives more aperture per dollar if you also want faint galaxies." → nq445dtqa6jzdnlvrh6fvqjq2hi "I want to buy my first telescope for viewing planets. Should I get a refractor or a reflector?" [conv:replies-to] · weight 1 · ×1 (eypjecqdwudo772nngzv6fvrvnm)
+    nki4l5ck7ffantjnke6v3fvi2gu "Saturn's rings resolve clearly at around one hundred fifty times magnification on a steady night. The atmosphere limits most nights to two hundred times regardless of the eyepiece." → nzgvnu5qkd4rl5ctlagenax5yjm "What magnification do I actually need to see the rings of Saturn clearly?" [conv:replies-to] · weight 1 · ×1 (eznh6m5hmfik53zpxmsdw3uykfq)
+    nkmmzv3wkxbdjsxaakkbnqb6aa4 "Planets are bright enough that city light pollution barely matters for them. Dark skies only become essential when you chase nebulae and galaxies." → nsigqtuvgtw2cjsaqmkc6j5wjlu "Is light pollution in a city a dealbreaker for planetary observing?" [conv:replies-to] · weight 1 · ×1 (ezlv52keko3tklki5ijempfolhq)
+  frontier   expandable 0 · collapsible 12

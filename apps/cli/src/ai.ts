@@ -43,12 +43,15 @@ import {
 } from '@meridian/ai-services';
 import { containmentRollupProvider } from '@meridian/abstraction';
 import { decode, encode } from '@meridian/graph-core';
+import { readFile, writeFile } from 'node:fs/promises';
 
 // ------------------------------------------------------------------- options
 
 /** The CLI-level AI mode (distinct from the gateway's `SessionMode`): `mock`
- * and `replay` are the two zero-network modes; `live` is gated behind consent. */
-export type AiCliMode = 'mock' | 'replay' | 'live';
+ * and `replay` are the two zero-network modes; `record` captures a fixture set
+ * (zero-network with the default mock provider, consent-gated otherwise);
+ * `live` is gated behind consent. */
+export type AiCliMode = 'mock' | 'replay' | 'record' | 'live';
 
 export interface AiCommandOptions {
   readonly json: boolean;
@@ -62,10 +65,13 @@ export interface AiCommandOptions {
   readonly mode?: string;
   /** Explicit consent to reach the network in `live` mode (`--ai-consent`). */
   readonly consent: boolean;
+  /** Response-fixture file (`--ai-fixtures`): read in `replay`, written in
+   * `record` (ADR-0030 — the durable record/replay store). */
+  readonly fixtures?: string;
 }
 
 /** A deterministic, user-facing failure with an intended process exit code. */
-class AiCliError extends Error {
+export class AiCliError extends Error {
   constructor(
     readonly code: number,
     message: string,
@@ -106,6 +112,34 @@ function mockSummaryOutcome(userText: string): MockOutcome {
   return { kind: 'json', value: { name, summary, confidence: 0.9 } };
 }
 
+/** Deterministic synthetic extraction: up to two claim-worthy sentences of the
+ * source text become `<domain>:claim` nodes; two claims get one refers-back
+ * edge. Stable and schema-valid (`extractedStructureSchema`) with no network. */
+function mockExtractOutcome(system: string, userText: string): MockOutcome {
+  const domain = /"([a-z][a-z0-9-]*):name"/.exec(system)?.[1] ?? 'core';
+  const sentences = userText
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 24);
+  const nodes = sentences.slice(0, 2).map((s, i) => ({
+    id: `${domain}:c-${i + 1}`,
+    kind: `${domain}:claim`,
+    label: s.length > 120 ? `${s.slice(0, 119)}…` : s,
+  }));
+  const edges =
+    nodes.length === 2
+      ? [{ id: `${domain}:r-1`, src: `${domain}:c-2`, dst: `${domain}:c-1`, kind: `${domain}:refers-back` }]
+      : [];
+  return { kind: 'json', value: { nodes, edges } };
+}
+
+/** Route a mock completion by prompt: the extract-structure prompt gets the
+ * synthetic extraction, everything else the synthetic summary. */
+function mockCompletionOutcome(system: string, userText: string): MockOutcome {
+  if (system.startsWith('You extract a small typed graph')) return mockExtractOutcome(system, userText);
+  return mockSummaryOutcome(userText);
+}
+
 // --------------------------------------------------------------- session build
 
 const DEFAULT_MODEL: Readonly<Record<string, Partial<Record<TaskClass, string>>>> = {
@@ -115,8 +149,8 @@ const DEFAULT_MODEL: Readonly<Record<string, Partial<Record<TaskClass, string>>>
 
 function parseMode(raw: string | undefined): AiCliMode {
   const mode = raw ?? 'mock';
-  if (mode !== 'mock' && mode !== 'replay' && mode !== 'live') {
-    throw new AiCliError(2, `ai: --ai-mode must be one of mock | replay | live, got "${raw}"`);
+  if (mode !== 'mock' && mode !== 'replay' && mode !== 'record' && mode !== 'live') {
+    throw new AiCliError(2, `ai: --ai-mode must be one of mock | replay | record | live, got "${raw}"`);
   }
   return mode;
 }
@@ -127,7 +161,10 @@ function toSessionMode(mode: AiCliMode): SessionMode {
 
 function providerIdFor(mode: AiCliMode, taskClass: TaskClass, opts: AiCommandOptions): string {
   if (opts.provider !== undefined) return opts.provider;
-  if (mode === 'mock') return 'mock';
+  // `mock` is in-process; `record` also defaults to the mock provider so the
+  // default record path stays zero-network (recording live needs an explicit
+  // --ai-provider plus consent, same as live mode).
+  if (mode === 'mock' || mode === 'record') return 'mock';
   // Anthropic is completion-only in the reference catalog, so the independent
   // embedding route defaults to OpenAI while completion defaults to Anthropic.
   return taskClass === 'embedding' ? 'openai' : 'anthropic';
@@ -135,7 +172,7 @@ function providerIdFor(mode: AiCliMode, taskClass: TaskClass, opts: AiCommandOpt
 
 function modelFor(mode: AiCliMode, providerId: string, taskClass: TaskClass, opts: AiCommandOptions): string {
   if (opts.model !== undefined) return opts.model;
-  if (mode === 'mock') return 'mock-model';
+  if (providerId === 'mock') return 'mock-model';
   return DEFAULT_MODEL[providerId]?.[taskClass] ?? 'claude-opus-4-8';
 }
 
@@ -149,17 +186,18 @@ function mockCapabilities(model: string): ProviderCapabilities {
   };
 }
 
-/** Build the provider instance for a mode. `mock` is in-process; `replay` uses a
- * never-invoked stand-in with the real provider's id/capabilities (routing and
- * cache keys need those, but replay reads the store and never calls it); `live`
- * builds the real adapter from the key edge. */
+/** Build the provider instance for a mode. `mock` (and mock-backed `record`) is
+ * in-process; `replay` uses a never-invoked stand-in with the real provider's
+ * id/capabilities (routing and cache keys need those, but replay reads the
+ * store and never calls it); `live` (and live `record`) builds the real
+ * adapter from the key edge. */
 function buildProvider(mode: AiCliMode, providerId: string, model: string): AiProvider {
-  if (mode === 'mock') {
+  if (providerId === 'mock' && mode !== 'replay') {
     return new MockProvider({
       id: providerId,
       capabilities: mockCapabilities(model),
       onComplete: (request) =>
-        mockSummaryOutcome(request.messages.map((m) => m.content).join('\n')),
+        mockCompletionOutcome(request.system ?? '', request.messages.map((m) => m.content).join('\n')),
       onEmbed: (request) => request.input.map(mockVector),
     });
   }
@@ -168,11 +206,15 @@ function buildProvider(mode: AiCliMode, providerId: string, model: string): AiPr
     // Cache-only: the store answers or a deterministic replay_miss is thrown
     // before dispatch, so this provider is never called (zero network).
     const capabilities =
-      providerId === 'openai' ? OPENAI_REFERENCE_CAPABILITIES : ANTHROPIC_REFERENCE_CAPABILITIES;
+      providerId === 'openai'
+        ? OPENAI_REFERENCE_CAPABILITIES
+        : providerId === 'mock'
+          ? mockCapabilities(model)
+          : ANTHROPIC_REFERENCE_CAPABILITIES;
     return new MockProvider({ id: providerId, capabilities });
   }
 
-  // live — the only mode that can reach the network.
+  // live (or live record) — the only paths that can reach the network.
   if (providerId === 'anthropic') {
     return new AnthropicProvider({
       id: 'anthropic',
@@ -187,64 +229,125 @@ function buildProvider(mode: AiCliMode, providerId: string, model: string): AiPr
       client: createOpenAiClient(),
     });
   }
-  throw new AiCliError(2, `ai: --ai-mode live needs --ai-provider anthropic | openai, got "${providerId}"`);
+  throw new AiCliError(2, `ai: --ai-mode ${mode} needs --ai-provider mock | anthropic | openai, got "${providerId}"`);
 }
 
-interface BuiltSession {
+export interface BuiltSession {
   readonly session: AiSession;
   readonly mode: AiCliMode;
   readonly providerId: string;
   readonly model: string;
+  /** The fixture store (present in `replay`/`record`; `record` persists it). */
+  readonly store?: MemoryResponseStore;
 }
 
-/** Wire a session for one task class. Throws {@link AiCliError} on any
- * deterministic setup problem (bad mode, missing consent/key, bad config). */
-function buildSession(taskClass: TaskClass, opts: AiCommandOptions): BuiltSession {
-  const mode = parseMode(opts.mode);
-  const providerId = providerIdFor(mode, taskClass, opts);
-  const model = modelFor(mode, providerId, taskClass, opts);
+/** Load a `--ai-fixtures` file into a fresh response store. A missing/corrupt
+ * file is a deterministic setup error, never a silent empty cache. */
+async function loadFixtureStore(path: string): Promise<MemoryResponseStore> {
+  let text: string;
+  try {
+    text = await readFile(path, 'utf8');
+  } catch (e) {
+    throw new AiCliError(2, `ai: cannot read --ai-fixtures ${path}: ${(e as Error).message}`);
+  }
+  try {
+    const store = new MemoryResponseStore();
+    store.load(JSON.parse(text) as Parameters<MemoryResponseStore['load']>[0]);
+    return store;
+  } catch (e) {
+    throw new AiCliError(2, `ai: --ai-fixtures ${path} is not a fixture snapshot: ${(e as Error).message}`);
+  }
+}
 
-  if (mode === 'live' && !opts.consent) {
+/** Persist a `record` session's captured responses to the `--ai-fixtures` file
+ * (stable key order, so a re-record with identical calls is byte-identical). */
+export async function persistFixtures(built: BuiltSession, path: string): Promise<void> {
+  const snapshot = built.store?.snapshot() ?? {};
+  const sorted = Object.fromEntries(Object.entries(snapshot).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+  await writeFile(path, JSON.stringify(sorted, null, 2) + '\n', 'utf8');
+}
+
+/** Wire one session covering `taskClasses`. Throws {@link AiCliError} on any
+ * deterministic setup problem (bad mode, missing consent/key, bad config).
+ * The reported `providerId`/`model` are the first task class's route. */
+export async function buildSessionFor(
+  taskClasses: readonly TaskClass[],
+  opts: AiCommandOptions,
+): Promise<BuiltSession> {
+  const mode = parseMode(opts.mode);
+
+  const canEgress = mode === 'live' || (mode === 'record' && providerIdFor(mode, taskClasses[0]!, opts) !== 'mock');
+  if (canEgress && !opts.consent) {
     throw new AiCliError(
       2,
-      'ai: --ai-mode live requires --ai-consent (no network call is made without explicit consent)',
+      `ai: --ai-mode ${mode} with a real provider requires --ai-consent (no network call is made without explicit consent)`,
     );
   }
 
-  let provider: AiProvider;
+  const routes: Record<string, { providerId: string; model: string }> = {};
+  const providers = new Map<string, AiProvider>();
   try {
-    provider = buildProvider(mode, providerId, model);
+    for (const taskClass of taskClasses) {
+      const providerId = providerIdFor(mode, taskClass, opts);
+      const model = modelFor(mode, providerId, taskClass, opts);
+      routes[taskClass] = { providerId, model };
+      if (!providers.has(providerId)) providers.set(providerId, buildProvider(mode, providerId, model));
+    }
   } catch (error) {
     if (error instanceof AiCliError) throw error;
     if (isAiError(error)) throw new AiCliError(2, `ai: ${error.message}`);
     throw error;
   }
 
+  let store: MemoryResponseStore | undefined;
+  if (mode === 'replay') {
+    // Replay reads a cache; without fixtures an empty one makes every miss a
+    // deterministic error (never a network fallback — ADR-0030).
+    store = opts.fixtures !== undefined ? await loadFixtureStore(opts.fixtures) : new MemoryResponseStore();
+  } else if (mode === 'record') {
+    store = new MemoryResponseStore();
+  }
+
   const config: AiConfig = {
     mode: toSessionMode(mode),
-    routes: { [taskClass]: { providerId, model } },
+    routes,
     ...(opts.budgetDollars !== undefined
       ? { budget: { maxDollars: opts.budgetDollars } }
       : {}),
-    ...(mode === 'live' ? { egressConsent: opts.consent } : {}),
+    // The gateway demands egressConsent for any mode that *could* dispatch to a
+    // provider (live/record). The CLI consent boundary is `canEgress` above: a
+    // real provider needs --ai-consent; a mock-backed record is in-process and
+    // cannot egress, so satisfying the gateway's flag grants nothing.
+    ...(mode === 'live' || mode === 'record' ? { egressConsent: canEgress ? opts.consent : true } : {}),
   };
 
+  const primary = routes[taskClasses[0]!]!;
   try {
     const session = createAiSession({
       config,
-      providers: [provider],
-      // replay reads a cache; an empty one makes every miss a deterministic error.
-      ...(mode === 'replay' ? { store: new MemoryResponseStore() } : {}),
+      providers: [...providers.values()],
+      ...(store !== undefined ? { store } : {}),
     });
-    return { session, mode, providerId, model };
+    return {
+      session,
+      mode,
+      providerId: primary.providerId,
+      model: primary.model,
+      ...(store !== undefined ? { store } : {}),
+    };
   } catch (error) {
     if (isAiError(error)) throw new AiCliError(2, `ai: ${error.message}`);
     throw error;
   }
 }
 
+/** Wire a session for one task class (the 8F commands' shape). */
+function buildSession(taskClass: TaskClass, opts: AiCommandOptions): Promise<BuiltSession> {
+  return buildSessionFor([taskClass], opts);
+}
+
 /** Map a thrown error to a printed line + exit code, deterministically. */
-function reportError(error: unknown): number {
+export function reportError(error: unknown): number {
   if (error instanceof AiCliError) {
     err(error.message);
     return error.code;
@@ -274,7 +377,7 @@ export async function cmdAiSummarize(
 
   let built: BuiltSession;
   try {
-    built = buildSession('summarization', opts);
+    built = await buildSession('summarization', opts);
   } catch (error) {
     return reportError(error);
   }
@@ -363,7 +466,7 @@ export async function cmdAiCluster(
 
   let built: BuiltSession;
   try {
-    built = buildSession('embedding', opts);
+    built = await buildSession('embedding', opts);
   } catch (error) {
     return reportError(error);
   }

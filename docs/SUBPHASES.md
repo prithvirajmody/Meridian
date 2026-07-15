@@ -31,7 +31,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 6 | ✅ `6A`–`6E` built | M2 review + human rows + tag pending |
 | 7 | ✅ `7A`–`7H` — gate walked, tag `phase-7` awaits user | closing (domain track) |
 | 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
-| 9 | ✅ `9A`–`9B` built | intentionally stopped after `9B`; `9C` next |
+| 9 | 🔨 `9A`–`9C` built | `9D` next |
 | 10–12 | ⬜ not started | — |
 
 ---
@@ -490,13 +490,13 @@ tag `phase-8`.
 
 ---
 
-## Phase 9 — Conversations & arguments (closes M3)  🔨 PAUSED AFTER 9B
+## Phase 9 — Conversations & arguments (closes M3)  🔨 IN PROGRESS
 
 One adapter per pair of sessions, then the freeze — the freeze is its own
 session because it's an audit, not a build. Roadmap refs: Phase 9 §1–13.
 
-Work stopped intentionally after the completed 9B skeleton on 2026-07-14.
-Subphases 9C–9E have not started.
+Work stopped intentionally after the completed 9B skeleton on 2026-07-14;
+9C built 2026-07-15. Subphases 9D–9E remain.
 
 ### 9A — ADR beat  ✅ DONE (ADR-0034 Accepted; ADR-0033 Proposed for 9E)
 Draft ADR-0034 (hybrid adapter pattern: deterministic skeleton + cacheable
@@ -513,7 +513,7 @@ skeleton; level-chain spec registered via manifest; conformance.
   message) with zero AI — the degraded mode is the foundation, per
   ADR-0034.
 
-### 9C — Conversation adapter: AI enrichment
+### 9C — Conversation adapter: AI enrichment  ✅ DONE
 Topic/claim layering via 8D/8E services as a separate cacheable pass;
 idempotent merge (re-run must not duplicate nodes — keyed by inputHash);
 recorded fixtures; goldens.

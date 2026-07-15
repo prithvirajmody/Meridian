@@ -35,6 +35,9 @@ importers:
       '@meridian/adapter-code':
         specifier: workspace:*
         version: link:../../packages/adapters/code
+      '@meridian/adapter-conversation':
+        specifier: workspace:*
+        version: link:../../packages/adapters/conversation
       '@meridian/adapter-markdown':
         specifier: workspace:*
         version: link:../../packages/adapters/markdown
@@ -78,6 +81,9 @@ importers:
       '@meridian/abstraction':
         specifier: workspace:*
         version: link:../../packages/abstraction
+      '@meridian/adapter-conversation':
+        specifier: workspace:*
+        version: link:../../packages/adapters/conversation
       '@meridian/adapter-markdown':
         specifier: workspace:*
         version: link:../../packages/adapters/markdown

@@ -74,6 +74,20 @@ describe('applyProposal — AI provenance & attrs threading (ADR-0031)', () => {
     expect(detail.meta.provenance.providerId).toBe('anthropic');
   });
 
+  it('types the group node with the proposal kind, defaulting to core:cluster (9C)', () => {
+    const store = createStore(flatSpace(['n1', 'n2', 'n3', 'n4']));
+    const r = applyProposal(store, {
+      groups: [
+        { id: 'g1', label: 'Topic', members: ['n1', 'n2'], rationale: '', kind: 'conv:topic' },
+        { id: 'g2', label: 'Plain', members: ['n3', 'n4'], rationale: '' },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    const root = store.snapshot().graphs.get(asGraphId('r'))!;
+    expect(root.nodes.get(asNodeId('g1'))!.kind).toBe('conv:topic');
+    expect(root.nodes.get(asNodeId('g2'))!.kind).toBe('core:cluster');
+  });
+
   it('maps summary → ai:summary and passes through provider attrs', () => {
     const store = createStore(flatSpace(['n1', 'n2']));
     const r = applyProposal(store, {

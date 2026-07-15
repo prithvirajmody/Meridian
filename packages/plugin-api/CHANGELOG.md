@@ -5,6 +5,17 @@ authors are downstream consumers even while "plugin authors" means us.
 Versioning policy: ADR-0010 (semver; pre-1.0 minors may break, only at
 declared checkpoints P7/P9).
 
+## Unreleased — Phase 9C (conversation enrichment)
+
+Additive, **type-only** — runtime surface unchanged, so no version bump per
+ADR-0010. `ProposedGroup` gains an optional `kind?: string`: the namespaced
+node kind for the group node a proposal materializes as (e.g. `conv:topic`),
+defaulting to `core:cluster` so every existing proposal is byte-identical.
+Motivated by ADR-0034: AI-native domains type their enrichment layers with
+manifest-declared kinds instead of the generic cluster kind. Flagged for the
+Phase-9 chafe report (the P3 rollup seam hard-coded `core:cluster` until a
+second domain needed otherwise — the rule-of-three at work).
+
 ## Unreleased — Phase 7G (incremental watch mode)
 
 Additive, **type-only** — runtime surface unchanged (`CAPABILITY_KINDS`,

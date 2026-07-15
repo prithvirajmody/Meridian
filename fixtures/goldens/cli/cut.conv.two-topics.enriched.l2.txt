@@ -1,0 +1,12 @@
+cut fixtures/.cut-inputs/conv-two-topics.enriched.meridian.json — level 2/3 · zoom 0.625
+  chain      conversation · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   33/33 leaves — covers ✓
+  nodes (6):
+    n5f76z22s3t75z4cgpbzt4uuel4 "Exchange 1" (conv:exchange) · level · covers 6
+    nag7yuvj63mbdmo5jfsda4rmn34 "Exchange 3" (conv:exchange) · level · covers 6
+    naldi64un7sarbisso4ocol2zle "Exchange 5" (conv:exchange) · level · covers 5
+    nv52rllug4djv4hlcwkwud5rqzm "Exchange 2" (conv:exchange) · level · covers 5
+    nw5dhr3e3d4gzzpfrnayvlxtufq "Exchange 6" (conv:exchange) · level · covers 5
+    nzivd4xdlfakvmbr747wgpiclha "Exchange 4" (conv:exchange) · level · covers 6
+  induced edges (0):
+  frontier   expandable 6 · collapsible 6

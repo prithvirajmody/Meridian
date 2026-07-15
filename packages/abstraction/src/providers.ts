@@ -34,6 +34,9 @@ export interface ProposedGroup {
   readonly members: readonly string[];
   readonly rationale: string;
   readonly confidence?: number;
+  /** Namespaced kind for the group node (9C, ADR-0034); `core:cluster` when
+   * omitted, so pre-9C proposals are byte-identical. */
+  readonly kind?: string;
   readonly summary?: string;
   readonly attrs?: Readonly<Record<string, AttrValue>>;
   readonly providerId?: string;

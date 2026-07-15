@@ -1,0 +1,7 @@
+cut fixtures/.cut-inputs/conv-two-topics.enriched.meridian.json — level 0/3 · zoom 0.125
+  chain      conversation · 4 levels (level-0 → level-1 → level-2 → level-3)
+  coverage   33/33 leaves — covers ✓
+  nodes (1):
+    nklbnjlks7pizfhnrix45vccxwm "Sourdough and telescopes" (conv:session) · level · covers 33
+  induced edges (0):
+  frontier   expandable 1 · collapsible 0
