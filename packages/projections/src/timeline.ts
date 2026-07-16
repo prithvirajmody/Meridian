@@ -7,7 +7,6 @@ import {
   type SelectionState,
 } from '@meridian/view-model';
 import type {
-  Canvas2dFrame,
   Canvas2dInput,
   Canvas2dLabel,
   Canvas2dLine,

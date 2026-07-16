@@ -12,6 +12,7 @@ import {
   type MeridianPlugin,
   type PluginManifest,
   type SourceDescriptor,
+  type ViewProjectionExport,
 } from '@meridian/plugin-api';
 import { describe, expect, it } from 'vitest';
 import { createPluginHost } from '../src/host.js';
@@ -389,7 +390,7 @@ describe('ingest', () => {
 });
 
 describe('view-projection capability (ADR-0037, 1.1.0)', () => {
-  const projection = (id: string): import('@meridian/plugin-api').ViewProjectionExport => ({
+  const projection = (id: string): ViewProjectionExport => ({
     id,
     label: id,
     suitability: () => 0.5,
