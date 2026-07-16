@@ -8,7 +8,7 @@ import type { AttrBag } from '@meridian/graph-core';
 import type { AttrValue } from '@meridian/graph-core';
 import type { EdgeId } from '@meridian/graph-core';
 import { GraphId } from '@meridian/graph-core';
-import type { GraphMeta } from '@meridian/graph-core';
+import { GraphMeta } from '@meridian/graph-core';
 import type { GraphRef } from '@meridian/graph-core';
 import { GraphSpace } from '@meridian/graph-core';
 import { NodeId } from '@meridian/graph-core';
@@ -98,6 +98,12 @@ export type DecodeDeltaResult = {
     readonly errors: readonly StoreIssue[];
 };
 
+// @public (undocumented)
+export const DEFAULT_LOW_WATER_RATIO = 0.85;
+
+// @public (undocumented)
+export const DEFAULT_MAX_RESIDENT_ELEMENTS = 200000;
+
 // @public
 export function deltaToWire(delta: PortableDelta): unknown;
 
@@ -125,6 +131,16 @@ export interface GraphDeltaInput {
     readonly ops: readonly GraphOpInput[];
     // (undocumented)
     readonly origin: OpOrigin;
+}
+
+// @public
+export interface GraphManifestEntry {
+    // (undocumented)
+    readonly edgeCount: number;
+    // (undocumented)
+    readonly meta: GraphMeta;
+    // (undocumented)
+    readonly nodeCount: number;
 }
 
 // @public (undocumented)
@@ -262,6 +278,70 @@ export interface GraphTransaction {
     setDetail(graph: GraphId, id: NodeId, ref: GraphRef | undefined): void;
     // (undocumented)
     setGraphMeta(id: GraphId, meta: GraphMeta): void;
+}
+
+// @public (undocumented)
+export const HYDRATION_ACTOR = "meridian:hydration";
+
+// @public (undocumented)
+export class HydrationManager {
+    constructor(opts: HydrationManagerOptions);
+    coldSet(): ReadonlySet<GraphId>;
+    // (undocumented)
+    dispose(): void;
+    evict(id: GraphId): boolean;
+    evictToBudget(exclude?: GraphId): number;
+    hydrate(id: GraphId, opts?: {
+        readonly signal?: AbortSignal;
+    }): Promise<void>;
+    // (undocumented)
+    pin(id: GraphId): void;
+    // (undocumented)
+    state(id: GraphId): HydrationState;
+    // (undocumented)
+    stats(): HydrationStats;
+    // (undocumented)
+    summary(id: GraphId): GraphManifestEntry | undefined;
+    touch(ids: Iterable<GraphId>): void;
+    // (undocumented)
+    unpin(id: GraphId): void;
+}
+
+// @public (undocumented)
+export interface HydrationManagerOptions {
+    // (undocumented)
+    readonly backend: StorageBackend;
+    // (undocumented)
+    readonly manifest: ReadonlyMap<GraphId, GraphManifestEntry>;
+    // (undocumented)
+    readonly policy?: HydrationPolicy;
+    // (undocumented)
+    readonly store: GraphStore;
+}
+
+// @public (undocumented)
+export interface HydrationPolicy {
+    readonly actor?: string;
+    readonly lowWaterRatio?: number;
+    readonly maxResidentElements?: number;
+}
+
+// @public (undocumented)
+export type HydrationState = 'cold' | 'hydrating' | 'live' | 'evictable';
+
+// @public (undocumented)
+export interface HydrationStats {
+    // (undocumented)
+    readonly coldGraphs: number;
+    // (undocumented)
+    readonly evictions: number;
+    // (undocumented)
+    readonly hydrations: number;
+    // (undocumented)
+    readonly liveGraphs: number;
+    readonly overBudget: boolean;
+    // (undocumented)
+    readonly residentElements: number;
 }
 
 // @public (undocumented)

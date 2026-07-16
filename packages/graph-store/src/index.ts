@@ -1,6 +1,19 @@
 export { decodeDelta, decodeDeltaInput, deltaToWire } from './decode.js';
 export type { DecodeCompleteDeltaResult, DecodeDeltaResult } from './decode.js';
 export { diffSpaces } from './diff.js';
+export {
+  DEFAULT_LOW_WATER_RATIO,
+  DEFAULT_MAX_RESIDENT_ELEMENTS,
+  HYDRATION_ACTOR,
+  HydrationManager,
+} from './hydration.js';
+export type {
+  GraphManifestEntry,
+  HydrationManagerOptions,
+  HydrationPolicy,
+  HydrationState,
+  HydrationStats,
+} from './hydration.js';
 export { tokenizeLabel } from './indices.js';
 export type { StoreIssue, StoreIssueCode } from './issues.js';
 export { composeDeltas, invertDelta, invertOp } from './ops.js';

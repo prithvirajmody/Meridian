@@ -5,9 +5,11 @@
  * a node with no descendable detail. Everything here is a pure walk over an
  * immutable snapshot (P8) — no I/O, no mutation, deterministic ordering.
  *
- * Cold/unhydrated detail (§4.7) does not exist yet (Phase 11); a node whose
- * detail graph is absent or empty is treated as a leaf, which is exactly how
- * a cold node will be treated ("collapsed by necessity").
+ * Cold/unhydrated detail (§4.7, ADR-0039): a cold graph is an empty shell in
+ * the space, so a node whose detail graph is absent or empty is a leaf here —
+ * "collapsed by necessity". The resolver distinguishes cold from genuinely
+ * childless via the `LodRequest.cold` input (pure — supplied by the P11
+ * hydration manager), never by looking at the shell itself.
  */
 import {
   derivedRootsOf,

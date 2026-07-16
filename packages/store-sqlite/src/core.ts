@@ -31,6 +31,7 @@ import {
   LOCAL_SITE,
   type ChangeSet,
   type GraphDelta,
+  type GraphManifestEntry,
   type GraphOp,
   type StorageBackend,
   type VersionStamp,
@@ -59,6 +60,12 @@ export const DEFAULT_CHECKPOINT_EVERY = 64;
 export interface CoreOptions {
   /** Materialize element tables every N committed deltas (ADR-0038 §5). */
   readonly checkpointEvery?: number;
+  /**
+   * Cold open (ADR-0039): the returned space is the top slab — root graphs
+   * hydrated, their children as empty shells — plus the full graph manifest
+   * for a `HydrationManager`, instead of the fully materialized space.
+   */
+  readonly cold?: boolean;
 }
 
 export interface OpenedState {
@@ -66,6 +73,8 @@ export interface OpenedState {
   readonly version: VersionStamp;
   /** Oplog tail deltas replayed beyond the checkpoint (0 = clean close). */
   readonly replayedDeltas: number;
+  /** Identity + summary metadata per graph — present on cold opens. */
+  readonly manifest?: ReadonlyMap<GraphId, GraphManifestEntry>;
 }
 
 /** Per-graph element counts — the ADR-0039 cold-graph summary manifest. */
@@ -137,15 +146,16 @@ export class SqliteBackendCore {
       );
     }
 
-    const space = loadSpace(db);
     const core = new SqliteBackendCore(db, opts, headSeq);
-    let finalSpace = space;
+    let fullSpace: GraphSpace | undefined;
     let replayed = 0;
 
     if (headSeq > checkpointSeq) {
       // Replay through a real store: one validation of the checkpoint, then
-      // op-level prev assertions guard every replayed delta.
-      const replayStore = createStore(space);
+      // op-level prev assertions guard every replayed delta. Recovery always
+      // works on the full space — after the checkpoint is finished, a cold
+      // open rereads the (now current) tables.
+      const replayStore = createStore(loadSpace(db));
       const tail = db.all('SELECT seq, ops FROM oplog WHERE seq > ? ORDER BY seq', [checkpointSeq]);
       for (const row of tail) {
         const parsed: unknown = JSON.parse(String(row.ops));
@@ -166,16 +176,19 @@ export class SqliteBackendCore {
         core.queue.push(applied.changes.ops);
         replayed += 1;
       }
-      finalSpace = replayStore.snapshot();
+      fullSpace = replayStore.snapshot();
       core.flushSync(); // finish the interrupted checkpoint
     }
 
+    const cold = opts.cold === true;
+    const space = cold ? loadColdSpine(db) : (fullSpace ?? loadSpace(db));
     return {
       core,
       opened: {
-        space: finalSpace,
+        space,
         version: { counter: lastCounter, site: LOCAL_SITE },
         replayedDeltas: replayed,
+        ...(cold ? { manifest: loadManifest(db) } : {}),
       },
     };
   }
@@ -204,8 +217,13 @@ export class SqliteBackendCore {
 
   /** Queue a committed change for materialization (write-behind checkpoint). */
   enqueueChange(change: ChangeSet): void {
+    this.enqueueOps(change.ops);
+  }
+
+  /** Same, from a bare op list (the worker wire form, ADR-0038 browser). */
+  enqueueOps(ops: readonly GraphOp[]): void {
     this.assertAlive();
-    this.queue.push(change.ops);
+    this.queue.push(ops);
     if (this.queue.length >= this.checkpointEvery) this.flushSync();
   }
 
@@ -413,6 +431,67 @@ export function loadSpace(db: SqlDriver): GraphSpace {
     if (!claimed.has(id)) roots.push(id);
   }
   roots.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  return { graphs, roots };
+}
+
+/** Full graph manifest: identity + summary counts (ADR-0039 cold sizing). */
+export function loadManifest(db: SqlDriver): Map<GraphId, GraphManifestEntry> {
+  const out = new Map<GraphId, GraphManifestEntry>();
+  for (const row of db.all('SELECT id, label, domain, provenance, node_count, edge_count FROM graphs')) {
+    out.set(String(row.id) as GraphId, {
+      meta: rowToMeta(row),
+      nodeCount: Number(row.node_count),
+      edgeCount: Number(row.edge_count),
+    });
+  }
+  return out;
+}
+
+/**
+ * The cold-open top slab (ADR-0039 §2): root graphs hydrated, each child
+ * graph their nodes claim present as an empty shell, deeper descendants
+ * absent entirely. Roots stay truthful and U1 holds.
+ */
+export function loadColdSpine(db: SqlDriver): GraphSpace {
+  const metas = new Map<GraphId, GraphMeta>();
+  for (const row of db.all('SELECT id, label, domain, provenance FROM graphs ORDER BY id')) {
+    metas.set(String(row.id) as GraphId, rowToMeta(row));
+  }
+  const claimed = new Set<string>();
+  for (const row of db.all('SELECT DISTINCT detail_graph AS g FROM nodes WHERE detail_graph IS NOT NULL')) {
+    claimed.add(String(row.g));
+  }
+  const roots = [...metas.keys()].filter((id) => !claimed.has(id)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  const graphs = new Map<GraphId, SemanticGraph>();
+  const shells = new Set<GraphId>();
+  for (const id of roots) {
+    const nodes = new Map<SemanticNode['id'], SemanticNode>();
+    for (const row of db.all(
+      'SELECT id, kind, label, detail_graph, attrs, provenance FROM nodes WHERE graph_id = ? ORDER BY id',
+      [id],
+    )) {
+      const node = rowToNode(row);
+      nodes.set(node.id, node);
+      if (node.detail) shells.add(node.detail.graph);
+    }
+    const edges = new Map<SemanticEdge['id'], SemanticEdge>();
+    for (const row of db.all(
+      'SELECT id, src, dst, kind, weight, attrs, provenance FROM edges WHERE graph_id = ? ORDER BY id',
+      [id],
+    )) {
+      const edge = rowToEdge(row);
+      edges.set(edge.id, edge);
+    }
+    graphs.set(id, { id, meta: metas.get(id)!, nodes, edges });
+  }
+  for (const id of shells) {
+    const meta = metas.get(id);
+    if (meta === undefined) {
+      throw new MeridianError('storage-corrupt', `cold open: node references graph "${id}" that has no graphs row`);
+    }
+    graphs.set(id, { id, meta, nodes: new Map(), edges: new Map() });
+  }
   return { graphs, roots };
 }
 

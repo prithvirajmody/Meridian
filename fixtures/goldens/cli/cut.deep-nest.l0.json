@@ -89,7 +89,8 @@
       "n-app",
       "n-lib"
     ],
-    "collapsible": []
+    "collapsible": [],
+    "needsHydration": []
   },
   "provenance": {
     "zoom": 0.1,

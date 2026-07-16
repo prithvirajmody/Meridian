@@ -94,7 +94,7 @@ export function lodOf(
     },
     inducedEdges: edges,
     cappedEdges: { edges, residuals: [] },
-    frontier: { expandable: [], collapsible: [] },
+    frontier: { expandable: [], collapsible: [], needsHydration: [] },
     provenance: {
       zoom: 0,
       nominalLevel: 0,

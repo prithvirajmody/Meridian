@@ -9,6 +9,10 @@ import * as store from '../src/index.js';
 describe('@meridian/graph-store public surface', () => {
   it('exports exactly the committed names', () => {
     expect(Object.keys(store).sort()).toEqual([
+      'DEFAULT_LOW_WATER_RATIO',
+      'DEFAULT_MAX_RESIDENT_ELEMENTS',
+      'HYDRATION_ACTOR',
+      'HydrationManager',
       'LOCAL_SITE',
       'applyDelta',
       'compareVersions',

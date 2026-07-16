@@ -93,7 +93,12 @@ inverse of a this-session delta finds its targets live — eviction can never
 make undo fail. Defense in depth: if an apply nonetheless references an
 evicted element (a host bug), it fails with the ordinary located
 `unknown-node`/`unknown-graph` issue — refusal, never corruption — and the
-host may hydrate and retry.
+host may hydrate and retry. *Noted at 11C:* because volatile commits advance
+the session counter, a **version-stamped** inverse of even the latest
+semantic commit is refused (`stale-delta`) once any cache movement has
+happened in between. Undo consumers must submit inverses **unstamped**
+(`{ origin, ops }`) — the completed `prev` payloads carry full conflict
+detection, which is exactly the ADR-0005 portable-delta discipline.
 
 **7. Cold-aware LOD (the "first interactive cut" enabler).** `LodRequest`
 gains an optional `cold: ReadonlySet<GraphId>` input (pure — the resolver

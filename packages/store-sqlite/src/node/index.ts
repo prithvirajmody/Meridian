@@ -9,12 +9,16 @@ import {
   createGraphSpace,
   CURRENT_FORMAT_VERSION,
   MeridianError,
+  type GraphId,
   type GraphSpace,
 } from '@meridian/graph-core';
 import {
   createStore,
+  HydrationManager,
   type CreateStoreOptions,
+  type GraphManifestEntry,
   type GraphStore,
+  type HydrationPolicy,
   type VersionStamp,
 } from '@meridian/graph-store';
 import { SqliteBackendCore, SqliteStorageBackend, type CoreOptions } from '../core.js';
@@ -37,8 +41,12 @@ export interface OpenProjectOptions extends CoreOptions {
 
 export interface MeridianProject {
   readonly path: string;
-  /** The materialized space at open (checkpoint + replayed tail). */
+  /** The materialized space at open (full — or the top-slab spine when the
+   * project was opened `cold`, ADR-0039). */
   readonly space: GraphSpace;
+  /** Identity + summary metadata per graph — present on cold opens; the
+   * `HydrationManager` manifest input. */
+  readonly manifest?: ReadonlyMap<GraphId, GraphManifestEntry>;
   /** Durable version seed for `createStore` (ADR-0007's P11 arrival). */
   readonly version: VersionStamp;
   readonly backend: SqliteStorageBackend;
@@ -112,8 +120,11 @@ export async function openProject(path: string, opts: OpenProjectOptions = {}): 
  */
 export async function openProjectStore(
   path: string,
-  opts: OpenProjectOptions & Pick<CreateStoreOptions, 'onListenerError' | 'onBackendError'> = {},
-): Promise<{ project: MeridianProject; store: GraphStore }> {
+  opts: OpenProjectOptions &
+    Pick<CreateStoreOptions, 'onListenerError' | 'onBackendError'> & {
+      readonly hydrationPolicy?: HydrationPolicy;
+    } = {},
+): Promise<{ project: MeridianProject; store: GraphStore; hydration?: HydrationManager }> {
   const project = await openProject(path, opts);
   const store = createStore(project.space, {
     backend: project.backend,
@@ -121,7 +132,14 @@ export async function openProjectStore(
     ...(opts.onListenerError ? { onListenerError: opts.onListenerError } : {}),
     ...(opts.onBackendError ? { onBackendError: opts.onBackendError } : {}),
   });
-  return { project, store };
+  if (project.manifest === undefined) return { project, store };
+  const hydration = new HydrationManager({
+    store,
+    backend: project.backend,
+    manifest: project.manifest,
+    ...(opts.hydrationPolicy ? { policy: opts.hydrationPolicy } : {}),
+  });
+  return { project, store, hydration };
 }
 
 /** Best-effort export of a damaged project file. Never writes to it. */
@@ -151,7 +169,12 @@ function wrap(
   path: string,
   db: BetterSqlite3Driver,
   core: SqliteBackendCore,
-  opened: { space: GraphSpace; version: VersionStamp; replayedDeltas: number },
+  opened: {
+    space: GraphSpace;
+    version: VersionStamp;
+    replayedDeltas: number;
+    manifest?: ReadonlyMap<GraphId, GraphManifestEntry>;
+  },
   migrated?: { from: number; to: number },
 ): MeridianProject {
   const backend = new SqliteStorageBackend(core);
@@ -162,6 +185,7 @@ function wrap(
     version: opened.version,
     backend,
     replayedDeltas: opened.replayedDeltas,
+    ...(opened.manifest ? { manifest: opened.manifest } : {}),
     ...(migrated ? { migrated } : {}),
     async flush(): Promise<void> {
       await backend.settle();

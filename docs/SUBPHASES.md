@@ -655,7 +655,7 @@ migrations per ADR-0004, durable op-log append (the P12 substrate);
   replay; corrupted db detected, refuses with message, offers export.
 - **Exit:** Node persistence round-trips everything; crash recovery proven.
 
-### 11C — Lazy hydration & eviction
+### 11C — Lazy hydration & eviction  ✅ DONE
 Per-graph hydration states (`cold|hydrating|live|evictable`) reusing the
 `DetailResolver` pattern from 7F; memory budgets; eviction of
 hydrated-but-unviewed subgraphs per ADR-0039; interaction with undo
@@ -664,6 +664,15 @@ history.
   load; memory ceiling under soak.
 - **Exit:** cold-open a big db → first interactive cut without full
   hydration.
+
+`HydrationManager` lives in graph-store (GraphStore interface untouched —
+api-extractor-proven); hydration/eviction are volatile deltas through the
+one write path; cold graphs are shells (top-slab invariant); the LOD
+resolver gained the pure `LodRequest.cold` input, the reserved `cold`
+trace reason went live, and `frontier.needsHydration` is the drill-in
+hydration trigger (two cut goldens regenerated via the documented
+command). One consequence folded back into ADR-0039 §6: version-stamped
+undo is refused after cache movements — submit inverses unstamped.
 
 ### 11D — Browser backend (wa-sqlite/OPFS)
 OPFS-backed browser build; parity suite (browser and Node run the same

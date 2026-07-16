@@ -70,6 +70,14 @@ export interface LodRequest {
   readonly viewportHint?: Budget;
   /** The prior base level, threaded in so hysteresis stays pure (ADR-0012). */
   readonly prevLevel?: number;
+  /**
+   * Graphs that are cold (unhydrated shells) or still hydrating (ADR-0039,
+   * §4.7). Pure input — the resolver does no I/O; the hydration manager
+   * supplies the set. A node whose detail graph is in it is "collapsed by
+   * necessity": emitted with reason `cold` where descent was warranted, and
+   * listed in `frontier.needsHydration`. Cuts never block on cold graphs.
+   */
+  readonly cold?: ReadonlySet<GraphId>;
 }
 
 /** An override that could not be honored, with a located reason (ADR-0012):
@@ -126,9 +134,15 @@ export interface LodResult {
   readonly inducedEdges: readonly InducedEdge[];
   /** The labeled fan-out cap over `inducedEdges` (presentation; ADR-0013). */
   readonly cappedEdges: CappedFanOut;
-  /** Expandable = descendable members; collapsible = members whose parent has
-   * no other reason to stay open (ADR-0012). */
-  readonly frontier: { readonly expandable: readonly NodeId[]; readonly collapsible: readonly NodeId[] };
+  /** Expandable = descendable members (including cold ones — descendable
+   * after hydration); collapsible = members whose parent has no other reason
+   * to stay open (ADR-0012); needsHydration = members whose detail graph is
+   * cold, i.e. expanding them requires a hydrate first (ADR-0039). */
+  readonly frontier: {
+    readonly expandable: readonly NodeId[];
+    readonly collapsible: readonly NodeId[];
+    readonly needsHydration: readonly NodeId[];
+  };
   /** Why each node is in/out, why this cut (ADR-0012/0014). */
   readonly provenance: CutTrace;
 }
@@ -249,6 +263,13 @@ export class LodResolver {
     const emit = (id: NodeId, graph: GraphId, depth: number, reason: CutReason): void => {
       trace.set(id, { node: id, graph, depth, reason, coveredLeaves: index.subtreeLeaves.get(id) ?? 1 });
     };
+    // Cold detail (ADR-0039, §4.7): the graph is an unhydrated shell, so the
+    // node is a leaf structurally — but where descent was *warranted*, the
+    // inclusion reason is `cold` (the ADR-0012 reserved tag), which is the
+    // navigation layer's hydration trigger. Cuts never block on cold graphs.
+    const coldSet = req.cold;
+    const coldDetail = (node: { readonly detail?: { readonly graph: GraphId } }): boolean =>
+      coldSet !== undefined && node.detail !== undefined && coldSet.has(node.detail.graph);
     const visit = (graph: SemanticGraph, depth: number): void => {
       for (const node of graph.nodes.values()) {
         const id = node.id;
@@ -259,7 +280,8 @@ export class LodResolver {
           continue;
         }
         if (ov === 'expand') {
-          if (leaf) emit(id, graph.id, depth, 'leaf');
+          if (coldDetail(node)) emit(id, graph.id, depth, 'cold');
+          else if (leaf) emit(id, graph.id, depth, 'leaf');
           else visit(detailGraphOf(this.space, node)!, depth + 1);
           continue;
         }
@@ -270,7 +292,8 @@ export class LodResolver {
         }
         // No override (rules 4/5).
         if (leaf) {
-          emit(id, graph.id, depth, 'leaf');
+          if (coldDetail(node) && depth < base) emit(id, graph.id, depth, 'cold');
+          else emit(id, graph.id, depth, 'leaf');
         } else if (depth < base || opensBelow(id)) {
           visit(detailGraphOf(this.space, node)!, depth + 1);
         } else {
@@ -299,7 +322,7 @@ export class LodResolver {
 
     // --- Frontier. ----------------------------------------------------------
     const memberSet = new Set(cut.members);
-    const frontier = this.frontier(memberSet, effective, req.focus);
+    const frontier = this.frontier(memberSet, effective, req.focus, coldSet);
 
     const reasons = new Map<NodeId, CutReason>();
     for (const [id, member] of trace) reasons.set(id, member.reason);
@@ -485,11 +508,23 @@ export class LodResolver {
     memberSet: ReadonlySet<NodeId>,
     effective: ReadonlyMap<NodeId, OverrideKind>,
     focus: NodeId | undefined,
-  ): { expandable: NodeId[]; collapsible: NodeId[] } {
+    coldSet: ReadonlySet<GraphId> | undefined,
+  ): { expandable: NodeId[]; collapsible: NodeId[]; needsHydration: NodeId[] } {
     const index = this.index;
+    // A cold member is structurally a leaf but semantically descendable —
+    // it belongs on the expandable frontier, flagged needs-hydration
+    // (ADR-0039): expanding it is the hydration trigger.
+    const memberCold = (m: NodeId): boolean => {
+      if (coldSet === undefined) return false;
+      const node = index.nodeOf.get(m);
+      return node?.detail !== undefined && coldSet.has(node.detail.graph);
+    };
     const expandable: NodeId[] = [];
+    const needsHydration: NodeId[] = [];
     for (const m of memberSet) {
-      if (!isLeafNode(index, m)) expandable.push(m);
+      const cold = memberCold(m);
+      if (cold) needsHydration.push(m);
+      if (!isLeafNode(index, m) || cold) expandable.push(m);
     }
 
     // A member is collapsible when its parent's whole child frontier is visible
@@ -523,7 +558,8 @@ export class LodResolver {
 
     expandable.sort(compareIds);
     collapsible.sort(compareIds);
-    return { expandable, collapsible };
+    needsHydration.sort(compareIds);
+    return { expandable, collapsible, needsHydration };
   }
 }
 
