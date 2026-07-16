@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Meridian persistence backend (ADR-0038): one SQLite file per project, op log first, element tables as checkpoint. Node binding: better-sqlite3; browser binding: wa-sqlite over OPFS. The only package importing sqlite bindings (§20).",
+  "description": "Meridian persistence backend (ADR-0038): one SQLite file per project, op log first, element tables as checkpoint. Node binding: better-sqlite3; browser binding: wa-sqlite over OPFS. The only package importing sqlite bindings (\u00a720).",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -12,6 +12,14 @@
     "./node": {
       "types": "./dist/node/index.d.ts",
       "default": "./dist/node/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "default": "./dist/browser/index.js"
+    },
+    "./browser-worker": {
+      "types": "./dist/browser/worker.d.ts",
+      "default": "./dist/browser/worker.js"
     }
   },
   "files": [
@@ -25,9 +33,12 @@
   "dependencies": {
     "@meridian/graph-core": "workspace:*",
     "@meridian/graph-store": "workspace:*",
-    "better-sqlite3": "^12.11.1"
+    "@sqlite.org/sqlite-wasm": "3.53.0-build1",
+    "better-sqlite3": "^12.11.1",
+    "comlink": "^4.4.2"
   },
   "devDependencies": {
+    "@meridian/abstraction": "workspace:*",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.0.0",
     "typescript": "^5.8.0",

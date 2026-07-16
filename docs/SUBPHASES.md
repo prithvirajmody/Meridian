@@ -34,7 +34,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
 | 9 | ✅ `9A`–`9E` built | M3 review + `phase-9`/`plugin-api@1.0` tags await user |
 | 10 | ✅ `10A`–`10F` built & committed per subphase | human rows (exploratory-mode tasks) + `phase-10` tag await user |
-| 11 | 🔨 `11A`–`11B` built (ADRs 0038–0040 Proposed — acceptance pending) | 11C next |
+| 11 | 🔨 `11A`–`11D` built (ADRs 0038–0040 Proposed — acceptance pending; 0038 amended at 11D) | 11E next |
 | 12 | ⬜ not started | — |
 
 ---
@@ -674,11 +674,22 @@ hydration trigger (two cut goldens regenerated via the documented
 command). One consequence folded back into ADR-0039 §6: version-stamped
 undo is refused after cache movements — submit inverses unstamped.
 
-### 11D — Browser backend (wa-sqlite/OPFS)
+### 11D — Browser backend (wa-sqlite/OPFS)  ✅ DONE
 OPFS-backed browser build; parity suite (browser and Node run the same
 scenarios); OPFS-unavailable → clean fallback to in-memory + document
 export (persistence is an enhancement, not a correctness requirement).
 - **Exit:** parity suite green in both runtimes; fallback tested.
+
+Built on `@sqlite.org/sqlite-wasm` (OPFS SyncAccessHandle pool, sync oo1
+API in a dedicated worker) rather than wa-sqlite — wa-sqlite 1.0's API is
+Promise-shaped even on its sync build and cannot implement the sync
+`SqlDriver` seam that lets both runtimes share the identical
+`SqliteBackendCore`; ADR-0038 amended in place, §15.1's parenthetical
+flagged for fold-back. Six shared parity scenarios (`parity.ts`) run in
+vitest over better-sqlite3 and in Playwright over real OPFS
+(`storage-parity.spec.ts`); the browser run caught two real defects
+(settle vs async round trips; SAH handle lifetime) now fixed. Fallback:
+`forceUnavailable` probe → in-memory session with working export.
 
 ### 11E — Streaming ingestion
 Adapters already emit deltas — the store now applies them in

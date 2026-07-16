@@ -58,7 +58,7 @@ module.exports = {
       from: { path: '^packages/store-sqlite/src' },
       to: {
         pathNot:
-          '^packages/store-sqlite/src|^packages/graph-core|^packages/graph-store|^node_modules/(\\.pnpm/)?(better-sqlite3|wa-sqlite)',
+          '^packages/store-sqlite/src|^packages/graph-core|^packages/graph-store|^node_modules/(\\.pnpm/)?(better-sqlite3|wa-sqlite|@sqlite\\.org|comlink)',
         dependencyTypesNot: ['type-only', 'core'],
       },
     },
@@ -68,7 +68,7 @@ module.exports = {
       comment:
         'store-sqlite is the only package importing sqlite bindings (ROADMAP Phase 11 §12 architecture row; §20).',
       from: { pathNot: '^packages/store-sqlite/(src|dist)' },
-      to: { path: '^node_modules/(\\.pnpm/)?(better-sqlite3|wa-sqlite)' },
+      to: { path: '^node_modules/(\\.pnpm/)?(better-sqlite3|wa-sqlite|@sqlite\\.org)' },
     },
     {
       name: 'store-sqlite-shared-core-isomorphic',
@@ -297,7 +297,7 @@ module.exports = {
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|abstraction|layout|view-model|projections|navigation|renderer|plugin-api|plugin-host|adapters/(markdown|conversation))',
+          '^packages/(graph-core|graph-store|store-sqlite|abstraction|layout|view-model|projections|navigation|renderer|plugin-api|plugin-host|adapters/(markdown|conversation))',
       },
     },
     {

@@ -22,10 +22,19 @@ sync log rides on what is decided here.
 
 **1. SQLite is the embedded store; one file per project.** Canonical extension
 `.meridian` (§15.1; CLI accepts any path). Bindings: **better-sqlite3** in Node
-(synchronous, WAL); **wa-sqlite** (sync build) in the browser, running in a
-dedicated worker over an **OPFS `AccessHandlePoolVFS`** (sync access handles,
-worker-only, no COOP/COEP requirement), fronted by an async Comlink facade —
-reusing the ADR-0017 worker-host pattern. Both bindings live **only** in
+(synchronous, WAL); **`@sqlite.org/sqlite-wasm`** in the browser, running in a
+dedicated worker over the **OPFS SyncAccessHandle pool VFS** (`opfs-sahpool`:
+sync access handles, worker-only, no COOP/COEP requirement), fronted by an
+async facade to the main thread — reusing the ADR-0017 worker-host pattern.
+*Amended 11D:* the draft named wa-sqlite here (following §15.1's parenthetical);
+at build time wa-sqlite 1.0's public API proved Promise-shaped even on its
+synchronous build, which cannot implement the synchronous `SqlDriver` seam
+below — and that seam is what lets Node and browser run the *identical*
+`SqliteBackendCore` (open/append/checkpoint/replay written once, parity by
+construction). The official WASM distribution's `oo1` API is fully synchronous
+inside a worker, so it wins on the criterion that matters; the swap surface
+remains one browser module either way, as this record always required.
+Flagged for fold-back into §15.1's wording. Both bindings live **only** in
 `@meridian/store-sqlite` (depcruise-gated; §20 already reserves the package:
 deps `graph-store`, `graph-core`). The package ships three entrypoints:
 `.` (isomorphic core: schema DDL, migrations, codec glue, replay, parity
@@ -133,10 +142,12 @@ requirement.
   hardening; §15.1 already chose SQLite.
 - **sql.js (in-memory WASM, no VFS).** Rejected: whole-file-in-memory defeats
   partial reads and lazy hydration.
-- **Official `@sqlite.org/sqlite-wasm` instead of wa-sqlite.** Viable;
-  wa-sqlite chosen because the constitution names it (§15.1), its VFS layer is
-  pluggable (AccessHandlePool today, coop-sync or IDB tomorrow), and the swap
-  is confined to one browser module if this call ever changes.
+- **wa-sqlite instead of the official `@sqlite.org/sqlite-wasm`.** The draft's
+  original choice (the constitution names it, §15.1, and its VFS layer is more
+  pluggable). Rejected at 11D: its public API is asynchronous even on the sync
+  build, which would force an async driver seam and a second (async) core —
+  two consistency implementations where the whole design wants one (see the
+  §1 amendment).
 - **Materialize element tables on every commit (checkpoint N=1).** Rejected as
   the default: doubles commit-path write amplification and makes the recovery
   path dead code that can silently rot; write-behind keeps the log the primary

@@ -117,6 +117,9 @@ importers:
       '@meridian/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
+      '@meridian/store-sqlite':
+        specifier: workspace:*
+        version: link:../../packages/store-sqlite
       '@meridian/view-model':
         specifier: workspace:*
         version: link:../../packages/view-model
@@ -575,10 +578,19 @@ importers:
       '@meridian/graph-store':
         specifier: workspace:*
         version: link:../graph-store
+      '@sqlite.org/sqlite-wasm':
+        specifier: 3.53.0-build1
+        version: 3.53.0-build1
       better-sqlite3:
         specifier: ^12.11.1
         version: 12.11.1
+      comlink:
+        specifier: ^4.4.2
+        version: 4.4.2
     devDependencies:
+      '@meridian/abstraction':
+        specifier: workspace:*
+        version: link:../abstraction
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -1277,6 +1289,10 @@ packages:
   '@sindresorhus/is@0.14.0':
     resolution: {integrity: sha512-9NET910DNaIPngYnLLPeg+Ogzqsi9uM4mSboU5y6p8S5DzMTVEsJZrawi+BoDNUVBa2DhJqQYUFvMDfgU062LQ==}
     engines: {node: '>=6'}
+
+  '@sqlite.org/sqlite-wasm@3.53.0-build1':
+    resolution: {integrity: sha512-PfWPWN2n+/37doa8oh2/oUXk4OOsRYZsxc1W1sDXIGb/Pu5Yrb+f2eyYpgQMGITVX7HVgxhs9P18Rc6I97ym/g==}
+    engines: {node: '>=22'}
 
   '@szmarczak/http-timer@1.1.2':
     resolution: {integrity: sha512-XIB2XbzHTN6ieIjfIMV9hlVcfPU26s2vafYWQcZHWXHOxiaRZYEDKEwdl129Zyg50+foYV2jCgtrqSA6qNuNSA==}
@@ -3645,6 +3661,8 @@ snapshots:
       - '@types/node'
 
   '@sindresorhus/is@0.14.0': {}
+
+  '@sqlite.org/sqlite-wasm@3.53.0-build1': {}
 
   '@szmarczak/http-timer@1.1.2':
     dependencies:

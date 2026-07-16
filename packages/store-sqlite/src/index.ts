@@ -17,6 +17,8 @@ export {
 export type { StorageMigration } from './schema.js';
 export {
   DEFAULT_CHECKPOINT_EVERY,
+  loadColdSpine,
+  loadManifest,
   loadSpace,
   SqliteBackendCore,
   SqliteStorageBackend,
@@ -24,3 +26,5 @@ export {
 export type { CoreOptions, GraphSummary, OpenedState } from './core.js';
 export { salvageToDocument } from './salvage.js';
 export type { SalvageResult } from './salvage.js';
+export { parityScenarioNames, paritySpace, runParityScenarios } from './parity.js';
+export type { ParityOpenOptions, ParityOutcome, ParitySession, ParityStack } from './parity.js';
