@@ -1,0 +1,36 @@
+{
+  "name": "@meridian/store-sqlite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Meridian persistence backend (ADR-0038): one SQLite file per project, op log first, element tables as checkpoint. Node binding: better-sqlite3; browser binding: wa-sqlite over OPFS. The only package importing sqlite bindings (§20).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "default": "./dist/node/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@meridian/graph-core": "workspace:*",
+    "@meridian/graph-store": "workspace:*",
+    "better-sqlite3": "^12.11.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

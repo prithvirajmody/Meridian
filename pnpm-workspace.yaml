@@ -7,3 +7,6 @@ allowBuilds:
   # postinstall is informational and not needed to regenerate Meridian's atlas.
   core-js: false
   esbuild: true
+  # Native SQLite binding for @meridian/store-sqlite (ADR-0038): ships
+  # prebuilds; the install script compiles from source only when none match.
+  better-sqlite3: true

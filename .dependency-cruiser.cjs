@@ -51,6 +51,34 @@ module.exports = {
       to: { dependencyTypes: ['core'] },
     },
     {
+      name: 'store-sqlite-only-store-and-core',
+      severity: 'error',
+      comment:
+        'store-sqlite imports graph-store (the backend seam) and graph-core only, plus its own sqlite bindings (§20; ADR-0038) — no domain, no presentation, no plugin packages.',
+      from: { path: '^packages/store-sqlite/src' },
+      to: {
+        pathNot:
+          '^packages/store-sqlite/src|^packages/graph-core|^packages/graph-store|^node_modules/(\\.pnpm/)?(better-sqlite3|wa-sqlite)',
+        dependencyTypesNot: ['type-only', 'core'],
+      },
+    },
+    {
+      name: 'sqlite-bindings-confined-to-store-sqlite',
+      severity: 'error',
+      comment:
+        'store-sqlite is the only package importing sqlite bindings (ROADMAP Phase 11 §12 architecture row; §20).',
+      from: { pathNot: '^packages/store-sqlite/(src|dist)' },
+      to: { path: '^node_modules/(\\.pnpm/)?(better-sqlite3|wa-sqlite)' },
+    },
+    {
+      name: 'store-sqlite-shared-core-isomorphic',
+      severity: 'error',
+      comment:
+        'ADR-0038: the shared open/append/checkpoint protocol is runtime-neutral; node builtins and the native binding live only under src/node (browser binding under src/browser).',
+      from: { path: '^packages/store-sqlite/src', pathNot: '^packages/store-sqlite/src/(node|browser)/' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
       name: 'abstraction-only-core-and-store',
       severity: 'error',
       comment:
@@ -252,12 +280,12 @@ module.exports = {
       name: 'cli-sees-only-core-packages',
       severity: 'error',
       comment:
-        'apps depend downward; cli is the composition root: graph-core, graph-store, abstraction, layout, plugin-api, plugin-host, built-in adapters (Phase 2/3/4/7), and the AI gateway + services (Phase 8).',
+        'apps depend downward; cli is the composition root: graph-core, graph-store, store-sqlite (Phase 11), abstraction, layout, plugin-api, plugin-host, built-in adapters (Phase 2/3/4/7), and the AI gateway + services (Phase 8).',
       from: { path: '^apps/cli/src' },
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|abstraction|layout|plugin-api|plugin-host|adapters/markdown|adapters/code|adapters/conversation|adapters/argument|ai-services|ai)(/|$)',
+          '^packages/(graph-core|graph-store|store-sqlite|abstraction|layout|plugin-api|plugin-host|adapters/markdown|adapters/code|adapters/conversation|adapters/argument|ai-services|ai)(/|$)',
       },
     },
     {

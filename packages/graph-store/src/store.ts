@@ -11,6 +11,7 @@ import {
   type GraphId,
   type GraphSpace,
   type NodeId,
+  type SemanticGraph,
 } from '@meridian/graph-core';
 import { Engine } from './engine.js';
 import {
@@ -47,6 +48,25 @@ export type ApplyResult =
   | { readonly ok: true; readonly delta: GraphDelta; readonly changes: ChangeSet }
   | { readonly ok: false; readonly errors: readonly StoreIssue[] };
 
+/**
+ * The injected persistence seam (ADR-0038, §12.2). After every committed
+ * non-volatile transaction the store notifies the backend — `appendOps`
+ * (durable op log) then `persist` (element materialization) — asynchronously,
+ * in commit order, off the write path's critical section. Backend failures
+ * are contained (routed to `onBackendError`) and never poison the store; the
+ * backend never mutates the store — hydration (ADR-0039) flows back through
+ * ordinary deltas.
+ */
+export interface StorageBackend {
+  loadGraph(id: GraphId): Promise<SemanticGraph | null>;
+  /** Called post-commit, async, in commit order. */
+  persist(change: ChangeSet): Promise<void>;
+  /** Durable op-log append (the P12 substrate). Called before `persist`. */
+  appendOps(delta: GraphDelta): Promise<void>;
+  /** Advisory, fire-and-forget (ADR-0039 eviction; backends may ignore). */
+  evictHint(ids: readonly GraphId[]): void;
+}
+
 export interface GraphStore {
   /** Immutable, structurally shared, O(1) (ADR-0006). */
   snapshot(): GraphSpace;
@@ -65,6 +85,18 @@ export interface CreateStoreOptions {
    * (no I/O in the semantic core); hosts install a real reporter.
    */
   readonly onListenerError?: (error: unknown) => void;
+  /** Persistence backend (ADR-0038). Absent = in-memory session, as ever. */
+  readonly backend?: StorageBackend;
+  /**
+   * Seed for the version counter — how durable stamps survive a reload
+   * (ADR-0007 assigned this to P11; ADR-0038 delivers it). Absent = v0.
+   */
+  readonly initialVersion?: VersionStamp;
+  /**
+   * Where contained backend failures go (same containment doctrine as
+   * listeners). The session stays valid; durability is the enhancement.
+   */
+  readonly onBackendError?: (error: unknown) => void;
 }
 
 class Store implements GraphStore {
@@ -77,13 +109,19 @@ class Store implements GraphStore {
   private flushScheduled = false;
   private dispatching = false;
   private readonly onListenerError: (error: unknown) => void;
+  private readonly backend: StorageBackend | undefined;
+  private readonly onBackendError: (error: unknown) => void;
+  /** FIFO chain so the backend sees commits in order (ADR-0038). */
+  private backendQueue: Promise<void> = Promise.resolve();
 
   constructor(space: GraphSpace, opts: CreateStoreOptions) {
     this.current = space;
-    this.stamp = initialVersion();
+    this.stamp = opts.initialVersion ?? initialVersion();
     this.engineIndices = buildEngineIndices(space);
     this.queryIndices = buildQueryIndices(space);
     this.onListenerError = opts.onListenerError ?? (() => {});
+    this.backend = opts.backend;
+    this.onBackendError = opts.onBackendError ?? (() => {});
   }
 
   snapshot(): GraphSpace {
@@ -213,6 +251,22 @@ class Store implements GraphStore {
         queueMicrotask(() => this.flush());
       }
     }
+    // Post-commit, async, FIFO: log first, then materialize (ADR-0038).
+    // Volatile commits are cache movements, never durability (ADR-0039).
+    // Failures are contained per commit so one error cannot stall the chain.
+    if (this.backend && origin.volatile !== true) {
+      const backend = this.backend;
+      this.backendQueue = this.backendQueue
+        .then(() => backend.appendOps(delta))
+        .then(() => backend.persist(changes))
+        .catch((e) => {
+          try {
+            this.onBackendError(e);
+          } catch {
+            // a throwing error hook must not poison later commits
+          }
+        });
+    }
     return { delta, changes };
   }
 
@@ -243,6 +297,15 @@ class Store implements GraphStore {
  * canonical (sorted) form so state equality is structural (ADR-0006).
  */
 export function createStore(space: GraphSpace, opts: CreateStoreOptions = {}): GraphStore {
+  if (opts.initialVersion !== undefined) {
+    const v = opts.initialVersion;
+    if (!Number.isInteger(v.counter) || v.counter < 0 || typeof v.site !== 'string' || v.site.length === 0) {
+      throw new MeridianError(
+        'invalid-version',
+        `createStore: initialVersion must be { counter: non-negative integer, site: non-empty string }, got ${JSON.stringify(v)}`,
+      );
+    }
+  }
   const result = validate(space);
   if (!result.ok) {
     const first = result.errors[0]!;

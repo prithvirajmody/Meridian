@@ -28,6 +28,7 @@ import { cmdCut } from './cut.js';
 import { splitCsv } from './globs.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
 import { cmdLayout } from './layout.js';
+import { cmdOpen } from './open.js';
 import { cmdWatchRepo } from './watch-repo.js';
 import {
   createStore,
@@ -61,6 +62,18 @@ Usage:
                                              (invertible) delta
   meridian invert <delta.json>               print the inverse of a completed
                                              delta (undo as data)
+  meridian open <project.meridian> [--import <doc.meridian.json>]
+                  [--export <out.meridian.json>] [--mutate <ops.json>]
+                  [--salvage <out.meridian.json>] [--json]
+                                             open (or create) a SQLite project
+                                             file (ADR-0038): checkpoint load +
+                                             op-log tail replay, durable version
+                                             seed. --import creates the project
+                                             from a document; --export writes the
+                                             current document; --mutate applies a
+                                             delta script durably; --salvage
+                                             best-effort-exports a damaged file
+                                             without writing to it
   meridian watch <file> [--apply <ops.json>[,<ops.json>…]] [--json]
                                              stream committed change events;
                                              with --apply, replay scripts and
@@ -626,7 +639,7 @@ async function cmdWatch(
 
 // ---------------------------------------------------------------------- main
 
-const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang', '--budget', '--ai-provider', '--ai-model', '--ai-mode', '--ai-fixtures']);
+const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang', '--budget', '--ai-provider', '--ai-model', '--ai-mode', '--ai-fixtures', '--import', '--export', '--mutate', '--salvage']);
 const BOOL_FLAGS = new Set(['--worker', '--ai-consent']);
 
 interface Cli {
@@ -736,6 +749,23 @@ async function main(): Promise<void> {
     case 'invert': {
       allowFlags(cli, command, []);
       process.exit(await cmdInvert(file));
+      break;
+    }
+    case 'open': {
+      allowFlags(cli, command, ['--import', '--export', '--mutate', '--salvage']);
+      process.exit(
+        await cmdOpen(
+          file,
+          {
+            json: cli.json,
+            ...(cli.values.has('--import') ? { importDoc: cli.values.get('--import')! } : {}),
+            ...(cli.values.has('--export') ? { exportDoc: cli.values.get('--export')! } : {}),
+            ...(cli.values.has('--mutate') ? { script: cli.values.get('--mutate')! } : {}),
+            ...(cli.values.has('--salvage') ? { salvage: cli.values.get('--salvage')! } : {}),
+          },
+          { out, err: (line) => process.stderr.write(line + '\n'), readDocument },
+        ),
+      );
       break;
     }
     case 'watch': {

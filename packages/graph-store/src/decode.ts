@@ -72,7 +72,10 @@ function decodeProvenance(v: unknown, path: string, e: Errors): SourceRef | unde
     origin: SourceRef['origin'];
     uri?: string;
     span?: readonly [number, number];
+    providerId?: string;
     model?: string;
+    promptVersion?: string;
+    inputHash?: string;
     confidence?: number;
   } = { origin };
   if (v.uri !== undefined) {
@@ -94,9 +97,21 @@ function decodeProvenance(v: unknown, path: string, e: Errors): SourceRef | unde
       out.span = [s[0] as number, s[1] as number];
     }
   }
+  if (v.providerId !== undefined) {
+    const providerId = str(v.providerId, `${path}.providerId`, e);
+    if (providerId !== undefined) out.providerId = providerId;
+  }
   if (v.model !== undefined) {
     const model = str(v.model, `${path}.model`, e);
     if (model !== undefined) out.model = model;
+  }
+  if (v.promptVersion !== undefined) {
+    const promptVersion = str(v.promptVersion, `${path}.promptVersion`, e);
+    if (promptVersion !== undefined) out.promptVersion = promptVersion;
+  }
+  if (v.inputHash !== undefined) {
+    const inputHash = str(v.inputHash, `${path}.inputHash`, e);
+    if (inputHash !== undefined) out.inputHash = inputHash;
   }
   if (v.confidence !== undefined) {
     if (typeof v.confidence !== 'number' || !(v.confidence >= 0 && v.confidence <= 1)) {
@@ -457,7 +472,10 @@ function provenanceToWire(p: SourceRef): Record<string, unknown> {
     origin: p.origin,
     ...(p.uri !== undefined ? { uri: p.uri } : {}),
     ...(p.span !== undefined ? { span: [p.span[0], p.span[1]] } : {}),
+    ...(p.providerId !== undefined ? { providerId: p.providerId } : {}),
     ...(p.model !== undefined ? { model: p.model } : {}),
+    ...(p.promptVersion !== undefined ? { promptVersion: p.promptVersion } : {}),
+    ...(p.inputHash !== undefined ? { inputHash: p.inputHash } : {}),
     ...(p.confidence !== undefined ? { confidence: p.confidence } : {}),
   };
 }

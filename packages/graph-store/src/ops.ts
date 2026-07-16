@@ -21,6 +21,14 @@ import { successorVersion, type VersionStamp } from './version.js';
 /** Who issued a delta (§3.1 History). Extended additively in later phases. */
 export interface OpOrigin {
   readonly actor: string;
+  /**
+   * Volatile commits are cache movements — hydration and eviction
+   * (ADR-0039) — not history: the version advances and subscriptions fire,
+   * but the commit is never forwarded to the storage backend and never
+   * enters the durable op log (ADR-0038). The flag does not cross the wire
+   * (`deltaToWire` drops it). Absent = durable.
+   */
+  readonly volatile?: boolean;
 }
 
 // ------------------------------------------------------------ canonical ops

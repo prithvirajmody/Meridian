@@ -25,6 +25,7 @@
     "@meridian/layout": "workspace:*",
     "@meridian/plugin-api": "workspace:*",
     "@meridian/plugin-host": "workspace:*",
+    "@meridian/store-sqlite": "workspace:*",
     "comlink": "^4.4.2"
   },
   "devDependencies": {

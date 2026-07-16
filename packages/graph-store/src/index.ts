@@ -20,6 +20,7 @@ export type {
   ChangeSet,
   CreateStoreOptions,
   GraphStore,
+  StorageBackend,
   Unsubscribe,
 } from './store.js';
 export type { GraphTransaction, TxEdgeInit, TxGraphInit, TxNodeInit } from './transaction.js';

@@ -34,7 +34,8 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
 | 9 | ✅ `9A`–`9E` built | M3 review + `phase-9`/`plugin-api@1.0` tags await user |
 | 10 | ✅ `10A`–`10F` built & committed per subphase | human rows (exploratory-mode tasks) + `phase-10` tag await user |
-| 11–12 | ⬜ not started | — |
+| 11 | 🔨 `11A`–`11B` built (ADRs 0038–0040 Proposed — acceptance pending) | 11C next |
+| 12 | ⬜ not started | — |
 
 ---
 
@@ -637,13 +638,13 @@ Backend first in Node where debugging is sane, then hydration semantics,
 then the browser port, then the two big integration wires, then the
 benchmark gate. Roadmap refs: Phase 11 §1–13.
 
-### 11A — ADR beat
+### 11A — ADR beat  ✅ DONE (`d9bfc10`; ADRs Proposed — user acceptance pending)
 Draft ADR-0038 (SQLite embedded store, OPFS strategy, single-writer),
 ADR-0039 (hydration & eviction policy). ADR-0040 (WASM go/no-go) is
 *decided in 11G from measured data* — draft only its criteria now. Stop
 for approval.
 
-### 11B — StorageBackend & store-sqlite (Node)
+### 11B — StorageBackend & store-sqlite (Node)  ✅ DONE
 `StorageBackend` constructor param on `GraphStore` (interface otherwise
 unchanged — api-extractor proves it); `@meridian/store-sqlite` on
 better-sqlite3: versioned schema (graphs/nodes/edges/ops-log/indices),
