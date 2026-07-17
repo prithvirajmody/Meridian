@@ -34,6 +34,7 @@ export function oversizeReason(text: string): 'oversize' | undefined {
 export async function mapFileToModule(
   mapper: Pick<CodeMapper, 'mapModule'>,
   file: BundleFile,
+  opts: { readonly signal?: AbortSignal } = {},
 ): Promise<RawModule | undefined> {
   const language = languageForPath(file.path);
   if (language === undefined || !isCodeLanguage(language)) return undefined;
@@ -53,5 +54,5 @@ export async function mapFileToModule(
       excluded,
     };
   }
-  return mapper.mapModule({ language, source, label, text: file.text });
+  return mapper.mapModule({ language, source, label, text: file.text }, opts);
 }

@@ -33,9 +33,10 @@ import type { IngestSink, SourceChange } from '@meridian/plugin-api';
 import type { CodeLanguage } from '@meridian/adapter-code';
 import { buildCodeMapper, idFacade, isCodeFile, readCodeFiles, type CodeWalkOptions } from './ingest.js';
 import { buildPathFilter } from './globs.js';
+import { stderrLine, stdoutLine } from './io.js';
 
 function out(line: string): void {
-  process.stdout.write(line + '\n');
+  stdoutLine(line);
 }
 
 const codeVocabulary: VocabularyRegistry = {
@@ -64,12 +65,12 @@ async function applyChange(
     if (d.ops.length === 0) continue; // empty delta: nothing to commit (ADR-0028)
     const decoded = decodeDeltaInput(d);
     if (!decoded.ok) {
-      process.stderr.write(`  delta did not decode (adapter bug): ${JSON.stringify(decoded.errors)}\n`);
+      stderrLine(`  delta did not decode (adapter bug): ${JSON.stringify(decoded.errors)}`);
       continue;
     }
     const applied = store.apply(decoded.delta); // fires the change subscription
     if (!applied.ok) {
-      process.stderr.write(`  delta rejected by store: ${JSON.stringify(applied.errors)}\n`);
+      stderrLine(`  delta rejected by store: ${JSON.stringify(applied.errors)}`);
       continue;
     }
     ops += decoded.delta.ops.length;
@@ -128,7 +129,7 @@ export async function cmdWatchRepo(
       return 1;
     }
     const store = createStore(gate.space, {
-      onListenerError: (e) => process.stderr.write(`listener error: ${String(e)}\n`),
+      onListenerError: (e) => stderrLine(`listener error: ${String(e)}`),
     });
     store.subscribe(printChange);
     out(
@@ -156,7 +157,7 @@ async function replayEdits(
   try {
     script = JSON.parse(await readFile(scriptPath, 'utf8')) as ScriptedEdit[];
   } catch (e) {
-    process.stderr.write(`cannot read edits ${scriptPath}: ${(e as Error).message}\n`);
+    stderrLine(`cannot read edits ${scriptPath}: ${(e as Error).message}`);
     return 2;
   }
   let empties = 0;

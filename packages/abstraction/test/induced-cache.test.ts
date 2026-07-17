@@ -195,4 +195,58 @@ describe('InducedEdgeCache — churn property', () => {
       { numRuns: 150 },
     );
   });
+
+  it('converges to the from-scratch induced result under arbitrary interleavings', () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            src: fc.constantFrom('A', 'C', 'E'),
+            dst: fc.constantFrom('A', 'C', 'E'),
+            kind: fc.constantFrom('rel:a', 'rel:b'),
+            priority: fc.integer(),
+          }),
+          { minLength: 1, maxLength: 16 },
+        ),
+        (specs) => {
+          const run = (order: readonly number[]) => {
+            const initial = wideSpace();
+            const cut = buildCut(initial, buildLevelChain(initial), 0);
+            const cache = new InducedEdgeCache(initial, cut);
+            const store = createStore(initial);
+            for (const index of order) {
+              const spec = specs[index]!;
+              const result = store.apply({
+                origin: ORIGIN,
+                ops: [{
+                  t: 'edge:add',
+                  graph: asGraphId('g'),
+                  edge: {
+                    id: asEdgeId(`interleave-${index}`),
+                    src: nid(spec.src),
+                    dst: nid(spec.dst),
+                    kind: spec.kind,
+                    attrs: {},
+                    provenance: SRC,
+                  },
+                }],
+              });
+              expect(result.ok).toBe(true);
+              if (result.ok) cache.applyChange(result.changes, store.snapshot());
+            }
+            const fromScratch = aggregateEdges(store.snapshot(), cut);
+            expect(cache.resolve()).toEqual(fromScratch);
+            return fromScratch;
+          };
+
+          const original = specs.map((_, index) => index);
+          const interleaved = [...original].sort(
+            (left, right) => specs[left]!.priority - specs[right]!.priority || left - right,
+          );
+          expect(run(interleaved)).toEqual(run(original));
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
 });

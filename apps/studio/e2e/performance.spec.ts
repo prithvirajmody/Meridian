@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { boot, settleFrames, UI_BUDGETS } from './support.js';
+import { boot, recordStudioBenchmarkMetrics, settleFrames, UI_BUDGETS } from './support.js';
 
 test('10k labelled fixture keeps the frame budget: draw p95 <= 18ms, >= 55fps sustained', async ({ page }) => {
   test.setTimeout(90_000);
@@ -28,6 +28,12 @@ test('10k labelled fixture keeps the frame budget: draw p95 <= 18ms, >= 55fps su
   expect(1000 / result.meanFrameTimeMs).toBeGreaterThanOrEqual(
     UI_BUDGETS['renderer-throughput-min-fps'],
   );
+  recordStudioBenchmarkMetrics([
+    { id: 'renderer-frame-p95-ms', value: result.p95DrawTimeMs, unit: 'ms', sampleCount: result.frames },
+    { id: 'renderer-throughput-min-fps', value: 1000 / result.meanFrameTimeMs, unit: 'fps', sampleCount: result.frames },
+    { id: 'renderer-first-render-ms', value: first.metrics.firstRenderMs!, unit: 'ms', sampleCount: 1 },
+    { id: 'renderer-max-live-labels', value: result.liveLabels, unit: 'count', sampleCount: result.frames },
+  ]);
 });
 
 test('10k viewport culling drops visible work and draw calls at close zoom', async ({ page }) => {

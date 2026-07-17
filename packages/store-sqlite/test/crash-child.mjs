@@ -11,10 +11,18 @@ import { openProjectStore } from '../dist/node/index.js';
 const path = process.argv[2];
 const { store } = await openProjectStore(path, { checkpointEvery: 4 });
 
-process.stdout.write('started\n');
+if (process.send === undefined) {
+  throw new Error('crash-test child requires an IPC channel');
+}
+await new Promise((resolve, reject) => {
+  process.send({ type: 'started' }, (error) => {
+    if (error) reject(error);
+    else resolve();
+  });
+});
 
 const base = store.version().counter;
-for (let i = base; i < 10_000; i++) {
+for (let i = base; ; i++) {
   const result = store.apply({
     origin: { actor: 'crash-child' },
     ops: [

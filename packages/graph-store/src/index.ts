@@ -37,6 +37,15 @@ export type {
   Unsubscribe,
 } from './store.js';
 export type { GraphTransaction, TxEdgeInit, TxGraphInit, TxNodeInit } from './transaction.js';
+export { stageDeltaStream } from './stream.js';
+export type {
+  StageDeltaStreamFailure,
+  StageDeltaStreamFailureCode,
+  StageDeltaStreamOptions,
+  StageDeltaStreamProgress,
+  StageDeltaStreamResult,
+  StageDeltaStreamStats,
+} from './stream.js';
 export {
   compareVersions,
   formatVersion,

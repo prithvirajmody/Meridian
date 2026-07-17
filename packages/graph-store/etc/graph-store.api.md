@@ -387,6 +387,70 @@ export interface PortableDelta {
 }
 
 // @public
+export function stageDeltaStream(initialSpace: GraphSpace, source: Iterable<GraphDeltaInput> | AsyncIterable<GraphDeltaInput>, options?: StageDeltaStreamOptions): Promise<StageDeltaStreamResult>;
+
+// @public (undocumented)
+export interface StageDeltaStreamFailure {
+    readonly cause?: unknown;
+    // (undocumented)
+    readonly code: StageDeltaStreamFailureCode;
+    readonly emissionIndex?: number;
+    readonly errors?: readonly StoreIssue[];
+    // (undocumented)
+    readonly message: string;
+    readonly opOffset?: number;
+}
+
+// @public (undocumented)
+export type StageDeltaStreamFailureCode = 'invalid-options' | 'aborted' | 'source-failed' | 'apply-failed' | 'storage-failed' | 'progress-failed';
+
+// @public (undocumented)
+export interface StageDeltaStreamOptions {
+    readonly backend?: StorageBackend;
+    readonly initialVersion?: VersionStamp;
+    readonly maxOpsPerBatch?: number;
+    // (undocumented)
+    readonly onBackendError?: (error: unknown) => void;
+    // (undocumented)
+    readonly onListenerError?: (error: unknown) => void;
+    readonly onProgress?: (progress: StageDeltaStreamProgress) => void | Promise<void>;
+    readonly settle?: () => void | Promise<void>;
+    // (undocumented)
+    readonly signal?: AbortSignal;
+}
+
+// @public
+export interface StageDeltaStreamProgress extends StageDeltaStreamStats {
+    readonly emissionIndex: number;
+    readonly opOffset: number;
+    // (undocumented)
+    readonly version: VersionStamp;
+}
+
+// @public (undocumented)
+export type StageDeltaStreamResult = {
+    readonly ok: true;
+    readonly store: GraphStore;
+    readonly space: GraphSpace;
+    readonly stats: StageDeltaStreamStats;
+} | {
+    readonly ok: false;
+    readonly failure: StageDeltaStreamFailure;
+    readonly stats: StageDeltaStreamStats;
+};
+
+// @public
+export interface StageDeltaStreamStats {
+    readonly appliedOps: number;
+    readonly batches: number;
+    readonly emissions: number;
+    readonly inputOps: number;
+    readonly peakBufferedOps: number;
+    readonly settledBatches: number;
+    readonly storageSettles: number;
+}
+
+// @public
 export interface StorageBackend {
     appendOps(delta: GraphDelta): Promise<void>;
     evictHint(ids: readonly GraphId[]): void;

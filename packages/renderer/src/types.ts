@@ -1,4 +1,10 @@
-import type { CameraState, NodeId, Point, RenderModel } from '@meridian/view-model';
+import type {
+  CameraState,
+  NodeId,
+  Point,
+  RenderModel,
+  RenderModelPatch,
+} from '@meridian/view-model';
 
 export type Unsubscribe = () => void;
 
@@ -17,6 +23,8 @@ export type PickResult =
     };
 
 export interface RendererStats {
+  /** Revision whose pixels these counters describe (Phase 11 edit→pixel gate). */
+  readonly modelRevision?: string | null;
   readonly frameTimeMs: number;
   readonly drawCalls: number;
   readonly frameCount: number;
@@ -43,6 +51,10 @@ export interface RendererStats {
   readonly pickQueryTimeMs: number;
   readonly contextLosses: number;
   readonly bufferUploadBytes: number;
+  readonly renderPatches?: number;
+  readonly fullModelRebuilds?: number;
+  readonly patchChangedNodes?: number;
+  readonly patchChangedEdges?: number;
 }
 
 export type RendererFaultCode =
@@ -81,6 +93,9 @@ export interface SceneOptions {
 export interface SceneAdapter {
   mount(canvas: HTMLCanvasElement): Promise<void>;
   render(model: RenderModel, camera: CameraState): void;
+  /** Additive Phase 11 fast path. Hosts fall back to `render(patch.next)`
+   * when an adapter does not implement it. */
+  patch?(patch: RenderModelPatch, camera: CameraState): void;
   pick(screen: Point): PickResult | null;
   on<E extends keyof SceneEventPayloads>(
     event: E,

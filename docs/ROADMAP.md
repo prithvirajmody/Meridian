@@ -279,7 +279,7 @@ phase fills in the same table rather than reinventing process:
 | App shell | **React 18 + Vite + zustand** | React for chrome (panels, search, breadcrumbs) only; the canvas is an imperative island receiving a view-model. zustand over Redux: minimal ceremony, store lives outside React (workers/canvas need it too). |
 | Parsing (code domain) | **web-tree-sitter (WASM)** grammars | Incremental, error-tolerant, runs in browser and Node identically, one API across languages. Compiler-grade type resolution deliberately out of scope until proven necessary. |
 | AI | Our own **`AiProvider` interface** with **two first-class built-in adapters — Anthropic (`@anthropic-ai/sdk`) and OpenAI (`openai`)** — each confined to its own adapter module; provider and model are **configuration** (default completion split `claude-opus-4-8`/GPT-class for extraction/summarization, an economy model for bulk short labels), resolved by a task-role policy table with per-project overrides. Every graph-shaped response uses **structured outputs** validated by the same zod schema (each adapter maps its vendor mechanism); **batch** endpoints for whole-corpus jobs and **prompt caching** for the shared graph-context prefix are adapter features, not commitments; embeddings route independently via a pluggable provider (e.g. Voyage) since the core only needs vectors | The provider interface — not the vendor — is the architectural commitment (ADR-0029); two built-in adapters prove it by construction rather than assertion. Structured outputs eliminate an entire class of "AI returned malformed graph" failures; record/replay caching keyed by `(providerId, model, promptVersion, inputHash)` (Phase 8, ADR-0030) makes AI paths deterministic in CI. |
-| Persistence | **JSON graph documents** (Phases 0–10) → **SQLite** (wa-sqlite/OPFS in browser, better-sqlite3 in Node) with lazy per-graph hydration (Phase 11) | Start with dumb, diffable, git-friendly files; adopt a real store only when scale demands, behind the same `GraphStore` interface. |
+| Persistence | **JSON graph documents** (Phases 0–10) → **SQLite** (`@sqlite.org/sqlite-wasm`/OPFS in browser, better-sqlite3 in Node) with lazy per-graph hydration (Phase 11) | Start with dumb, diffable, git-friendly files; adopt a real store only when scale demands, behind the same `GraphStore` interface. |
 | Collaboration | **Deferred decision** (ADR in Phase 12): server-authoritative op-log sequencer (recommended) vs CRDT (Yjs) | Phase 1's op-based deltas keep both doors open. Recommendation recorded now: op-log + server sequencing is dramatically simpler and sufficient unless offline editing becomes a requirement — the ADR must revisit with real requirements. |
 | Testing | **Vitest, fast-check, Playwright, tinybench, dependency-cruiser, api-extractor** | See §5.2. |
 | CI | **GitHub Actions**: lint → typecheck → depcruise → unit/integration → benchmarks → Playwright | The phase gate, mechanized. |
@@ -1476,6 +1476,22 @@ section added to the plugin docs (the capability is public API now).
 
 ### Phase 11 — Scale, persistence & incremental hardening
 
+**Build status (2026-07-16).** Phase 11's implementation, every benchmark
+owner, and the complete local automated gate are built in the working tree.
+The exact 1M-line code fixture now runs through Studio's worker with bounded
+progress/heap and responsiveness checks; arbitrary label/structural edit
+interleavings converge across cut/layout/render; 500k storage plus the 50k
+hydrated navigation/soak/eviction scenario is owned; and the final local
+dashboard passed all 39 absolute rows across 12 scenarios. Root regression was
+40/40 tasks, Playwright 63/63, and evals 1/1. The phase remains **open only for
+external acceptance evidence**: a complete pinned-CI dashboard, three-run
+same-commit baseline calibration and relative-gate activation, the manual
+external-file working session and recording, ADR review/ADR-0040's retained-
+data decision, and the user-owned tag. The live ledger and runbook are
+[`checklists/phase-11.md`](checklists/phase-11.md) and
+[`demos/phase-11.md`](demos/phase-11.md); no local timing in those documents is
+presented as reference-CI evidence.
+
 **1. Goal.** Raise the ceilings and make them contractual: 500k nodes
 *stored*, 50k *renderable working set*, persistent storage (SQLite) with
 lazy per-graph hydration behind the unchanged `GraphStore` interface,
@@ -1490,7 +1506,8 @@ persistence backend also creates the durability layer P12's sync log
 requires.
 
 **3. Deliverables.** `@meridian/store-sqlite` (better-sqlite3 in Node,
-wa-sqlite/OPFS in browser; schema: graphs, nodes, edges, ops-log, indices;
+`@sqlite.org/sqlite-wasm`/OPFS in browser; schema: graphs, nodes, edges,
+ops-log, indices;
 `DetailResolver`-style lazy hydration of subgraphs on drill-in); streaming
 ingestion (adapters already emit deltas — the store now applies them in
 bounded-memory batches with progress); incremental pipeline plumbing
@@ -1517,7 +1534,7 @@ interface StorageBackend {
 ```
 
 **6. Public APIs.** `createStore(space, { backend })`;
-`meridian open <project.meridian-db>`; `meridian bench` (runs the suite locally
+`meridian open <project.meridian>`; `meridian bench` (runs the suite locally
 against the thresholds).
 
 **7. Data structures.** SQLite schema (versioned, migration hooks per
@@ -1535,9 +1552,10 @@ performance promise in this roadmap lives, reviewed like code).
   (likely induced-edge aggregation or layout) gets a Rust/WASM port — and
   the decision made from this phase's numbers.
 
-**9. Risks.** (a) OPFS/wa-sqlite browser maturity — fallback path: in-memory
-+ document export remains fully supported (persistence is an enhancement,
-not a new requirement for correctness). (b) Incremental pipeline correctness
+**9. Risks.** (a) OPFS/`@sqlite.org/sqlite-wasm` browser maturity — fallback
+path: in-memory + document export remains fully supported (persistence is an
+enhancement, not a new requirement for correctness). (b) Incremental pipeline
+correctness
 under rapid-fire edits — property test: any interleaving of edits eventually
 converges to the from-scratch result (I6 extended). (c) Benchmark hardware
 variance in CI — pinned runner class + relative-regression gating (±15%)
@@ -1548,7 +1566,7 @@ sharding, GPU layout, >1M-node ambitions (explicitly re-scoped when a real
 need appears).
 
 **11. Acceptance criteria.** The pinned ~1M-LOC monorepo ingests streamed
-(bounded memory, progress UI), opens from cold `.meridian-db` < 3s to first
+(bounded memory, progress UI), opens from cold `.meridian` < 3s to first
 interactive cut, zooms fluidly; file edit propagates to pixels < 1s p95;
 kill -9 during ingest → reopen recovers to a consistent version (op log
 replay); all budgets in `budgets.json` green.

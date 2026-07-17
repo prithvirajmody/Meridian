@@ -29,6 +29,13 @@ import { GraphQueryImpl, type GraphQuery } from './query.js';
 import { GraphTransactionImpl, type GraphTransaction } from './transaction.js';
 import { initialVersion, successorVersion, versionsEqual, type VersionStamp } from './version.js';
 
+/**
+ * Internal-only access to a store's persistence queue. Keeping this in a
+ * WeakMap lets the Phase-11 staging orchestrator apply real backpressure
+ * without adding a persistence method to the public GraphStore contract.
+ */
+const backendSettlers = new WeakMap<GraphStore, () => Promise<void>>();
+
 /** One committed transaction, as delivered to subscribers (ADR-0008). */
 export interface ChangeSet {
   readonly fromVersion: VersionStamp;
@@ -122,6 +129,7 @@ class Store implements GraphStore {
     this.onListenerError = opts.onListenerError ?? (() => {});
     this.backend = opts.backend;
     this.onBackendError = opts.onBackendError ?? (() => {});
+    backendSettlers.set(this, () => this.backendQueue);
   }
 
   snapshot(): GraphSpace {
@@ -288,6 +296,15 @@ class Store implements GraphStore {
       this.dispatching = false;
     }
   }
+}
+
+/** @internal Await every backend notification queued by this store so far. */
+export function settleStoreBackend(store: GraphStore): Promise<void> {
+  const settle = backendSettlers.get(store);
+  if (settle === undefined) {
+    return Promise.reject(new MeridianError('invalid-store', 'cannot settle a store not created by createStore'));
+  }
+  return settle();
 }
 
 /**

@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { boot, percentile95, settleFrames, UI_BUDGETS } from './support.js';
+import { boot, percentile95, recordStudioBenchmarkMetrics, settleFrames, UI_BUDGETS } from './support.js';
 
 const markdown = readFileSync(
   new URL('../../../fixtures/corpora/markdown/basic.md', import.meta.url),
@@ -128,6 +128,9 @@ for (const [name, text, domain] of [
       `[10F switch] domain=${domain} switches=${durations.length} p95=${p95.toFixed(1)}ms max=${Math.max(...durations).toFixed(1)}ms`,
     );
     expect(p95).toBeLessThanOrEqual(UI_BUDGETS['projection-switch-ms']);
+    recordStudioBenchmarkMetrics([
+      { id: 'projection-switch-ms', value: p95, unit: 'ms', sampleCount: durations.length },
+    ]);
   });
 }
 

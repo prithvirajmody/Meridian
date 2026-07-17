@@ -23,24 +23,20 @@ import {
 } from '@meridian/adapter-code';
 import { buildPathFilter } from './globs.js';
 import { codeWorkerFactory } from './code-worker.js';
+import { stderrLine, stdoutLine, writeStderr } from './io.js';
 import {
-  decode,
   deriveEdgeId,
   deriveGraphId,
   deriveNodeId,
-  createGraphSpace,
-  encode,
   encodePretty,
   stats,
-  type DocumentProducer,
   type GraphId,
   type GraphSpace,
-  type Issue,
   type NodeId,
 } from '@meridian/graph-core';
-import { createStore, decodeDeltaInput } from '@meridian/graph-store';
 import { PLUGIN_API_VERSION, type IdFacade, type SourceDescriptor } from '@meridian/plugin-api';
 import { createPluginHost, type PluginHost } from '@meridian/plugin-host';
+import { materializeStreamedSource } from './stream-ingest.js';
 
 const MEDIA_TYPES: Readonly<Record<string, string>> = {
   md: 'text/markdown',
@@ -51,12 +47,7 @@ const MEDIA_TYPES: Readonly<Record<string, string>> = {
 };
 
 function out(line: string): void {
-  process.stdout.write(line + '\n');
-}
-
-function formatIssue(issue: Issue): string {
-  const location = issue.path !== undefined ? `at ${issue.path}: ` : '';
-  return `[${issue.code}] ${location}${issue.message}`;
+  stdoutLine(line);
 }
 
 export const idFacade: IdFacade = {
@@ -90,7 +81,7 @@ export function buildHost(): BuiltHost {
     const r = host.register(plugin);
     if (!r.ok) {
       // A built-in that cannot register is a build defect, not a user error.
-      process.stderr.write(`built-in plugin failed to register: ${r.issue.message}\n`);
+      stderrLine(`built-in plugin failed to register: ${r.issue.message}`);
       process.exit(2);
     }
   }
@@ -182,14 +173,14 @@ async function readSource(path: string, walk: CodeWalkOptions): Promise<SourceDe
   try {
     if ((await stat(path)).isDirectory()) return await readCodeProject(path, walk);
   } catch (e) {
-    process.stderr.write(`cannot read ${path}: ${(e as Error).message}\n`);
+    stderrLine(`cannot read ${path}: ${(e as Error).message}`);
     process.exit(2);
   }
   let raw: Buffer;
   try {
     raw = await readFile(path);
   } catch (e) {
-    process.stderr.write(`cannot read ${path}: ${(e as Error).message}\n`);
+    stderrLine(`cannot read ${path}: ${(e as Error).message}`);
     process.exit(2);
   }
   const ext = path.includes('.') ? path.slice(path.lastIndexOf('.') + 1).toLowerCase() : '';
@@ -200,11 +191,6 @@ async function readSource(path: string, walk: CodeWalkOptions): Promise<SourceDe
     ...(mediaType !== undefined ? { mediaType } : {}),
     ...(isBinary ? { bytes: new Uint8Array(raw) } : { text: raw.toString('utf8') }),
   };
-}
-
-interface MaterializeResult {
-  readonly space: GraphSpace;
-  readonly producer: DocumentProducer;
 }
 
 export interface IngestOptions {
@@ -233,81 +219,40 @@ async function runIngest(host: PluginHost, sourcePath: string, opts: IngestOptio
     ...(opts.langs !== undefined ? { langs: opts.langs } : {}),
   };
   const src = await readSource(sourcePath, walk);
-  const outcome = await host.ingest(src, {
+  const progress = new TerminalIngestProgress(!opts.json && process.stderr.isTTY === true);
+  const streamed = await materializeStreamedSource(host, src, {
     ...(opts.adapter !== undefined ? { parser: opts.adapter } : {}),
+    maxOpsPerBatch: 512,
+    onParserProgress: (event) => progress.parser(event.stage, event.done, event.total),
+    onStageProgress: (event) => progress.stage(event.appliedOps, event.batches),
   });
+  progress.finish();
 
-  if (!outcome.ok) {
-    if (opts.json) {
-      out(JSON.stringify({ source: sourcePath, ok: false, issue: outcome.issue }, null, 2));
-    } else {
-      out(`INGEST FAILED ${sourcePath}`);
-      out(`  [${outcome.issue.code}] ${outcome.issue.message}`);
-    }
-    return 1;
-  }
+  if (!streamed.ok) return reportStreamFailure(sourcePath, opts.json, streamed);
 
-  // The IR gate (§6.4): everything a parser emits is decoded and validated
-  // against the registered vocabulary before it counts as ingested.
-  const vocabulary = host.vocabulary();
-  const gated: MaterializeResult[] = [];
-  for (const doc of outcome.documents) {
-    const result = decode(doc, { vocabulary });
-    if (!result.ok) {
-      out(`GATE REJECTED ${sourcePath} — the "${outcome.domain}" parser emitted an invalid document (parser bug)`);
-      for (const issue of result.errors) out(`    ${formatIssue(issue)}`);
-      return 1;
-    }
-    gated.push({ space: result.space, producer: doc.producer });
-  }
-
-  let materialized: MaterializeResult;
-  if (gated.length === 1 && outcome.deltas.length === 0) {
-    materialized = gated[0]!;
-  } else if (gated.length === 0 && outcome.deltas.length > 0) {
-    // Delta-streaming parsers (contract v1, exercised fully in P7): replay
-    // through a real store — the ops pass the same validation as any delta.
-    const store = createStore(createGraphSpace());
-    for (const [i, delta] of outcome.deltas.entries()) {
-      const decoded = decodeDeltaInput(delta);
-      if (!decoded.ok) {
-        out(`GATE REJECTED ${sourcePath} — delta ${i} does not parse (parser bug)`);
-        return 1;
-      }
-      const applied = store.apply(decoded.delta);
-      if (!applied.ok) {
-        out(`GATE REJECTED ${sourcePath} — delta ${i} rejected by the store (parser bug)`);
-        return 1;
-      }
-    }
-    const gate = decode(encode(store.snapshot()), { vocabulary });
-    if (!gate.ok) {
-      out(`GATE REJECTED ${sourcePath} — replayed deltas violate the registered vocabulary`);
-      for (const issue of gate.errors) out(`    ${formatIssue(issue)}`);
-      return 1;
-    }
-    const plugin = host.plugins().find((p) => p.manifest.name === outcome.plugin)!;
-    materialized = {
-      space: gate.space,
-      producer: { name: plugin.manifest.name, version: plugin.manifest.version },
-    };
-  } else {
-    out(`INGEST FAILED ${sourcePath}`);
-    out(
-      `  [unsupported-emission] the "${outcome.domain}" parser emitted ${outcome.documents.length} documents and ${outcome.deltas.length} deltas — this CLI materializes exactly one document, or a pure delta stream`,
-    );
-    return 1;
-  }
+  const { outcome, materialized } = streamed;
 
   const { space, producer } = materialized;
   const s = stats(space);
   const written: string[] = [];
   if (opts.out !== undefined) {
-    await writeFile(opts.out, encodePretty(space, { producer }), 'utf8');
+    try {
+      await writeFile(opts.out, encodePretty(space, { producer }), 'utf8');
+    } catch (cause) {
+      const message = `cannot write ${opts.out}: ${cause instanceof Error ? cause.message : String(cause)}`;
+      if (opts.json) {
+        out(JSON.stringify({ source: sourcePath, ok: false, issue: { code: 'storage-io', message } }, null, 2));
+      } else {
+        out(`INGEST FAILED ${sourcePath}`);
+        out(`  [storage-io] ${message}`);
+      }
+      return 1;
+    }
     written.push(opts.out);
   }
 
   const report = outcome.report;
+  const provenance = tallyProvenance(space);
   if (opts.json) {
     out(
       JSON.stringify(
@@ -319,7 +264,7 @@ async function runIngest(host: PluginHost, sourcePath: string, opts: IngestOptio
           report: {
             documents: report.documents,
             deltas: report.deltas,
-            provenance: report.provenance,
+            provenance,
             warnings: report.warnings,
           },
           stats: s,
@@ -337,13 +282,97 @@ async function runIngest(host: PluginHost, sourcePath: string, opts: IngestOptio
   out(`  adapter    ${outcome.domain} (${outcome.plugin})`);
   out(`  emitted    ${report.documents} document${report.documents === 1 ? '' : 's'} · ${report.deltas} delta${report.deltas === 1 ? '' : 's'}`);
   out(`  graphs ${s.graphs} · nodes ${s.nodes} · edges ${s.edges} · roots ${s.roots} · max depth ${s.maxDepth}`);
-  out(`  provenance source ${report.provenance.source} · derived ${report.provenance.derived} · ai ${report.provenance.ai}`);
+  out(`  provenance source ${provenance.source} · derived ${provenance.derived} · ai ${provenance.ai}`);
   if (report.warnings.length > 0) {
     out(`  warnings (${report.warnings.length}):`);
     for (const w of report.warnings) out(`    ${w}`);
   }
   for (const w of written) out(`  wrote ${w}`);
   return 0;
+}
+
+class TerminalIngestProgress {
+  private visible = false;
+
+  constructor(private readonly enabled: boolean) {}
+
+  parser(stage: string, done: number, total?: number): void {
+    const suffix = total === undefined ? `${done}` : `${done}/${total}`;
+    this.render(`ingest ${stage} ${suffix}`);
+  }
+
+  stage(appliedOps: number, batches: number): void {
+    this.render(`ingest apply ${appliedOps} ops · ${batches} batches`);
+  }
+
+  finish(): void {
+    if (!this.enabled || !this.visible) return;
+    writeStderr('\r\x1b[2K');
+    this.visible = false;
+  }
+
+  private render(message: string): void {
+    if (!this.enabled) return;
+    writeStderr(`\r\x1b[2K${message}`);
+    this.visible = true;
+  }
+}
+
+function tallyProvenance(space: GraphSpace): { source: number; derived: number; ai: number } {
+  const tally = { source: 0, derived: 0, ai: 0 };
+  const add = (origin: 'source' | 'derived' | 'ai'): void => {
+    tally[origin] += 1;
+  };
+  for (const graph of space.graphs.values()) {
+    add(graph.meta.provenance.origin);
+    for (const node of graph.nodes.values()) add(node.provenance.origin);
+    for (const edge of graph.edges.values()) add(edge.provenance.origin);
+  }
+  return tally;
+}
+
+function reportStreamFailure(
+  sourcePath: string,
+  json: boolean,
+  failure: Extract<Awaited<ReturnType<typeof materializeStreamedSource>>, { readonly ok: false }>,
+): number {
+  if (failure.reason === 'host' && !failure.outcome.ok) {
+    if (json) out(JSON.stringify({ source: sourcePath, ok: false, issue: failure.outcome.issue }, null, 2));
+    else {
+      out(`INGEST FAILED ${sourcePath}`);
+      out(`  [${failure.outcome.issue.code}] ${failure.outcome.issue.message}`);
+    }
+    return 1;
+  }
+
+  const selectedReport = 'report' in failure.outcome ? failure.outcome.report : undefined;
+  const domain = selectedReport?.domain ?? 'selected';
+  if (failure.reason === 'document-gate') {
+    out(`GATE REJECTED ${sourcePath} — the "${domain}" parser emitted an invalid document (parser bug)`);
+  } else if (failure.reason === 'delta-gate') {
+    out(`GATE REJECTED ${sourcePath} — delta ${failure.deltaIndex ?? 0} does not parse (parser bug)`);
+  } else if (failure.reason === 'final-gate') {
+    out(`GATE REJECTED ${sourcePath} — replayed deltas violate the registered vocabulary`);
+  } else if (failure.reason === 'stage' && failure.stageFailure?.code === 'apply-failed') {
+    out(`GATE REJECTED ${sourcePath} — delta ${failure.stageFailure.emissionIndex ?? 0} rejected by the store (parser bug)`);
+  } else if (failure.reason === 'unsupported-emission') {
+    const report = selectedReport;
+    out(`INGEST FAILED ${sourcePath}`);
+    out(
+      `  [unsupported-emission] the "${domain}" parser emitted ${report?.documents ?? 0} documents and ${report?.deltas ?? 0} deltas — this CLI materializes exactly one document, or a pure delta stream`,
+    );
+    return 1;
+  } else {
+    const code = failure.stageFailure?.code ?? 'ingest-failed';
+    if (json) out(JSON.stringify({ source: sourcePath, ok: false, issue: { code, message: failure.message } }, null, 2));
+    else {
+      out(`INGEST FAILED ${sourcePath}`);
+      out(`  [${code}] ${failure.message}`);
+    }
+    return 1;
+  }
+  for (const issue of failure.issues ?? []) out(`    [${issue.code}] ${issue.message}`);
+  return 1;
 }
 
 export function cmdPlugins(json: boolean): number {

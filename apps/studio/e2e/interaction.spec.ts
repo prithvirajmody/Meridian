@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { boot, openCorpus, percentile95, settleFrames, UI_BUDGETS } from './support.js';
+import { boot, openCorpus, percentile95, recordStudioBenchmarkMetrics, settleFrames, UI_BUDGETS } from './support.js';
 
 test('hover promotes a label and click populates attrs/provenance in <16ms p95', async ({ page }) => {
   await boot(page);
@@ -47,7 +47,11 @@ test('hover promotes a label and click populates attrs/provenance in <16ms p95',
 
   await expect(page.getByTestId('selected-attrs')).toBeVisible();
   await expect(page.getByTestId('selected-provenance')).toContainText('source');
-  expect(percentile95(latencies)).toBeLessThan(UI_BUDGETS['renderer-interaction-p95-ms']);
+  const p95 = percentile95(latencies);
+  expect(p95).toBeLessThan(UI_BUDGETS['renderer-interaction-p95-ms']);
+  recordStudioBenchmarkMetrics([
+    { id: 'renderer-interaction-p95-ms', value: p95, unit: 'ms', sampleCount: latencies.length },
+  ]);
 });
 
 test('HUD is absent normally and exposes FPS/heap only behind debug=1', async ({ page }) => {

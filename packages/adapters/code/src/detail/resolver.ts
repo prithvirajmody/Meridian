@@ -85,6 +85,7 @@ export function createCodeDetailResolver(deps: CodeDetailResolverDeps): DetailRe
       }
       const { delta, detail } = buildBodyDelta(ids, node, body);
       sink.emitDelta(delta);
+      await sink.drain?.();
       return detail;
     },
   };

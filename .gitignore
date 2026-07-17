@@ -39,3 +39,7 @@ fixtures/oss/clones/
 
 # api-extractor scratch
 packages/*/temp/
+
+# Per-run benchmark dashboards/logs are CI artifacts. Studio may place its
+# browser measurement input in this directory before the collector runs.
+benchmarks/results/

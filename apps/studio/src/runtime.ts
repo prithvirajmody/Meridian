@@ -10,6 +10,7 @@ import {
 import type { AutoAcceptRule, PendingProposal, ProvenanceView } from './store.js';
 import { BrowserStudioLayoutService } from './browser-layout-worker.js';
 import type {
+  IncrementalPipelineRecord,
   NavigatorRenderer,
   StudioNavigator,
   TransitionRecord,
@@ -100,6 +101,7 @@ export interface StudioTestState {
   readonly phase: string;
   readonly message: string;
   readonly adapter: ReturnType<StudioStore['getState']>['adapter'];
+  readonly ingestProgress: ReturnType<StudioStore['getState']>['ingestProgress'];
   readonly panel: ReturnType<StudioStore['getState']>['panel'];
   readonly hover: ReturnType<StudioStore['getState']>['hover'];
   readonly selection: ReturnType<StudioStore['getState']>['selection'];
@@ -160,6 +162,7 @@ export interface MeridianStudioTestApi {
   navUrl(): string;
   navRestore(fragment: string): { ok: boolean; errors: readonly string[] };
   transitionTelemetry(): readonly TransitionRecord[];
+  incrementalTelemetry(): readonly IncrementalPipelineRecord[];
   transitionActive(): boolean;
   mutateNodeLabel(nodeId: string, label: string): boolean;
   /** Manual clock only: advance the injected clock and tick the player. */
@@ -344,6 +347,7 @@ export class StudioRuntime {
           phase: state.phase,
           message: state.message,
           adapter: state.adapter,
+          ingestProgress: state.ingestProgress,
           panel: state.panel,
           hover: state.hover,
           selection: state.selection,
@@ -386,6 +390,7 @@ export class StudioRuntime {
       navUrl: () => nav().urlFragment(),
       navRestore: (fragment) => nav().restoreFromFragment(fragment),
       transitionTelemetry: () => nav().telemetry(),
+      incrementalTelemetry: () => nav().incrementalTelemetry(),
       transitionActive: () => nav().inFlight(),
       mutateNodeLabel: (nodeId, label) => this.session.mutateNodeLabel(nodeId, label),
       clockAdvance: (ms) => {

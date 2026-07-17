@@ -1,5 +1,18 @@
 # @meridian/cli
 
+## Unreleased — Phase 11E
+
+- `ingest` now consumes `PluginHost.ingestStreaming` through bounded private
+  graph-store staging, publishes only after the IR/storage gates succeed, and
+  reports TTY progress plus located storage failures. Code monorepos emit
+  dependency-safe 512-op deltas with real drain backpressure. CLI writes use
+  synchronous descriptors so Node cannot truncate piped output on exit.
+
+## Unreleased — Phase 11G
+
+- Added `meridian bench`, which runs the same budget-owned scenarios as CI
+  and writes a machine-readable JSON result plus a Markdown dashboard.
+
 ## Unreleased — Phase 7H
 
 - **Adapter options (ROADMAP Phase 7 §6)** on `ingest <dir>` and `watch <dir>`:

@@ -11,14 +11,21 @@ import type { SqlDriver, SqlRow, SqlValue } from '../driver.js';
 function mapError(e: unknown): never {
   const code = (e as { code?: string }).code ?? '';
   const message = e instanceof Error ? e.message : String(e);
-  if (code.startsWith('SQLITE_BUSY') || code === 'SQLITE_LOCKED') {
+  if (code.startsWith('SQLITE_BUSY') || code.startsWith('SQLITE_LOCKED')) {
     throw new MeridianError('storage-busy', `database is locked by another writer — Meridian projects are single-writer (ADR-0038): ${message}`);
   }
-  if (code === 'SQLITE_CORRUPT' || code === 'SQLITE_NOTADB') {
+  if (code.startsWith('SQLITE_CORRUPT') || code === 'SQLITE_NOTADB') {
     throw new MeridianError('storage-corrupt', `database is corrupted or not SQLite: ${message}`);
   }
-  if (code === 'SQLITE_FULL' || code === 'SQLITE_IOERR' || code.startsWith('SQLITE_IOERR')) {
+  if (code === 'SQLITE_FULL') {
     throw new MeridianError('storage-io', `I/O failure (disk full?): ${message}`);
+  }
+  if (
+    code.startsWith('SQLITE_IOERR') ||
+    code.startsWith('SQLITE_CANTOPEN') ||
+    code.startsWith('SQLITE_READONLY')
+  ) {
+    throw new MeridianError('storage-io', `I/O failure (storage unavailable or read-only?): ${message}`);
   }
   throw e;
 }
@@ -77,7 +84,9 @@ export class BetterSqlite3Driver implements SqlDriver {
     }
     this.inTransaction = true;
     try {
-      return this.db.transaction(fn)();
+      // Acquire the SQLite writer lease before any callback work. This is the
+      // executable half of ADR-0038's one-writer-per-project contract.
+      return this.db.transaction(fn).immediate();
     } catch (e) {
       if (e instanceof MeridianError) throw e;
       mapError(e);

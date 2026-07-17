@@ -5,6 +5,14 @@ authors are downstream consumers even while "plugin authors" means us.
 Versioning policy: ADR-0010 (semver; pre-1.0 minors may break, only at
 declared checkpoints P7/P9).
 
+## Unreleased — Phase 11 streaming backpressure
+
+Additive, optional, type-only `IngestSink.drain?(): Promise<void>` and
+`IngestSink.signal?: AbortSignal`. Streaming hosts use them as an awaited
+emission boundary and per-ingest lifetime; buffered hosts may omit both and
+all existing parsers remain source-compatible. Runtime exports and
+`PLUGIN_API_VERSION` are unchanged.
+
 ## 1.1.0 — Phase 10 (view projections; ADR-0037)
 
 Additive minor under the ADR-0033 freeze policy; existing `^1.0.0` manifests

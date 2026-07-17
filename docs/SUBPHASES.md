@@ -13,7 +13,8 @@ Phases 1–2 are built in the working tree (ADR-0005…0011, `graph-store`,
 `plugin-api`/`plugin-host`/`conformance-kit`, `adapters/markdown`, checklists
 and demos for both) but **uncommitted** — see subphase 2Z below.
 
-**Build progress (updated 2026-07-15, evening: Phase 10 complete).**
+**Build progress (updated 2026-07-16: Phase 11 implementation and local owner
+gate complete; external acceptance gate open).**
 Committed & tagged through
 **Phase 4** (`phase-4`): 4A `f2b5f77`, 4B `9c845b2`, 4C `5d2897a`,
 4D `58298db`, 4E gate. The two human-judgment rows of the Phase 4 table
@@ -34,7 +35,7 @@ Status legend: ✅ done (committed/tagged) · 🔨 in progress (uncommitted) ·
 | 8 | 🔨 `8A`–`8F` implementation built | live/human/policy rows + `phase-8` tag pending |
 | 9 | ✅ `9A`–`9E` built | M3 review + `phase-9`/`plugin-api@1.0` tags await user |
 | 10 | ✅ `10A`–`10F` built & committed per subphase | human rows (exploratory-mode tasks) + `phase-10` tag await user |
-| 11 | 🔨 `11A`–`11D` built (ADRs 0038–0040 Proposed — acceptance pending; 0038 amended at 11D) | 11E next |
+| 11 | 🔨 `11A` drafted; `11B`–`11G` implementation and local owners built (ADRs 0038–0040 Proposed) | external closure: pinned dashboards + baseline, reference/manual external-file session, recording, ADR review/0040 decision, and tag pending |
 | 12 | ⬜ not started | — |
 
 ---
@@ -649,7 +650,7 @@ for approval.
 unchanged — api-extractor proves it); `@meridian/store-sqlite` on
 better-sqlite3: versioned schema (graphs/nodes/edges/ops-log/indices),
 migrations per ADR-0004, durable op-log append (the P12 substrate);
-`meridian open <project.meridian-db>`.
+`meridian open <project.meridian>`.
 - **Tests:** backend CRUD + migration; full golden corpus passes against
   the sqlite backend; kill -9 during write → reopen recovers via op-log
   replay; corrupted db detected, refuses with message, offers export.
@@ -674,7 +675,7 @@ hydration trigger (two cut goldens regenerated via the documented
 command). One consequence folded back into ADR-0039 §6: version-stamped
 undo is refused after cache movements — submit inverses unstamped.
 
-### 11D — Browser backend (wa-sqlite/OPFS)  ✅ DONE
+### 11D — Browser backend (`@sqlite.org/sqlite-wasm`/OPFS)  ✅ DONE
 OPFS-backed browser build; parity suite (browser and Node run the same
 scenarios); OPFS-unavailable → clean fallback to in-memory + document
 export (persistence is an enhancement, not a correctness requirement).
@@ -684,14 +685,14 @@ Built on `@sqlite.org/sqlite-wasm` (OPFS SyncAccessHandle pool, sync oo1
 API in a dedicated worker) rather than wa-sqlite — wa-sqlite 1.0's API is
 Promise-shaped even on its sync build and cannot implement the sync
 `SqlDriver` seam that lets both runtimes share the identical
-`SqliteBackendCore`; ADR-0038 amended in place, §15.1's parenthetical
-flagged for fold-back. Six shared parity scenarios (`parity.ts`) run in
+`SqliteBackendCore`; the ruling is folded back into ADR-0038 and the
+roadmap. Six shared parity scenarios (`parity.ts`) run in
 vitest over better-sqlite3 and in Playwright over real OPFS
 (`storage-parity.spec.ts`); the browser run caught two real defects
 (settle vs async round trips; SAH handle lifetime) now fixed. Fallback:
 `forceUnavailable` probe → in-memory session with working export.
 
-### 11E — Streaming ingestion
+### 11E — Streaming ingestion  ✅ BUILT; LOCAL CONTRACT GREEN (reference evidence pending)
 Adapters already emit deltas — the store now applies them in
 bounded-memory batches with progress; progress UI in Studio; disk-full
 handling.
@@ -701,7 +702,22 @@ handling.
 - **Exit:** the monorepo fixture ingests on reference hardware without
   memory blowup.
 
-### 11F — Incremental pipeline end-to-end
+`stageDeltaStream` stages bounded chunks into a private store, awaits durable
+settlement, reports progress, and publishes nothing on parser, storage, abort,
+or apply failure. `IngestSink.drain()` carries backpressure through the host;
+its optional cancellation signal now reaches the worker, so a superseded open
+cannot keep parsing or overwrite the new source's progress. The code adapter's
+hash-pinned literal 1,000-file × 1,000-line fixture runs both headlessly (512-op
+peak, retained heap below 256 MiB) and through Studio's dedicated tree-sitter
+worker. The browser scenario asserts visible progress, a ≤1,024-op queue,
+task heartbeats, a <250 ms maximum heartbeat gap, and the same retained-heap
+ceiling. Tree-sitter runtime/grammar assets are absent from Studio's main
+bundle. Real-SQLite SIGKILL recovers an exact durable prefix; quota/ENOSPC are
+typed and contain publication. The dashboard owns streamed throughput
+(10,000 nodes/s floor; 59,146 nodes/s locally). The remaining row is retained
+evidence from the declared reference runner, not missing implementation.
+
+### 11F — Incremental pipeline end-to-end  ✅ BUILT; LOCAL CONTRACT GREEN (external-file session pending)
 Wire and measure ChangeSet → affected-cut diff → layout patch → render
 patch; edit-storm coalescing (100 edits/s).
 - **Tests:** file edit propagates to pixels <1s p95; convergence property —
@@ -709,7 +725,21 @@ patch; edit-storm coalescing (100 edits/s).
   (I6 extended).
 - **Exit:** the "edit a file, watch the map update" demo works live.
 
-### 11G — Benchmark dashboard & phase gate
+GraphStore ChangeSets feed a single-flight bounded `BatchCoalescer`, affected
+cut/induced-edge caches, layout patches, pure render patches, and
+`SceneAdapter.patch`; telemetry closes at the first presented canvas frame.
+The storm gates cover a synchronous 100-edit burst, a sustained 100 edits/s,
+rejection recovery, and hard-cap compaction. The full-pipeline fast-check
+oracle interleaves label edits with real op-based structural grouping commits
+that change cut membership and absorb induced edges, then compares LOD,
+positions, routes, bounds, and RenderModel to a cold rebuild. Pixi also guards
+late spatial-index replies by revision. The complete browser producer applies
+24 edits over 25,000 sections and measured 891.2 ms edit→pixel p95 locally
+(1,000 ms budget). `meridian watch` proves external file→delta and Studio
+proves delta→pixel; composing those in the required human external-file
+working session remains an acceptance activity, not a missing pipeline stage.
+
+### 11G — Benchmark dashboard & phase gate  ✅ BUILD/HARNESS COMPLETE; EXTERNAL PHASE GATE OPEN
 `benchmarks/` promoted: dashboard artifact per CI run; every promise in
 `budgets.json` green (500k stored / 50k working set / cold open <3s /
 edit→pixel <1s p95); pinned runner class + relative-regression gating
@@ -717,6 +747,22 @@ edit→pixel <1s p95); pinned runner class + relative-regression gating
 full-matrix regression (highest-regression-risk phase — everything, both
 backends). DoD, tag `phase-11`.
 - **Exit:** phase gate closed; every performance promise is a CI gate.
+
+Every numeric promise now has a versioned owner and unit contract. The runner
+executes 11 Node scenarios plus Studio's 14 browser-owned metrics, validates
+absolute and ±15% relative policies, and writes JSON, Markdown, and raw logs;
+`meridian bench` reaches the same runner. Phase-11 scale owns 500k stored,
+50,450 resident, cold/fine-cut latency, 200 navigation resolves, post-GC soak
+growth, and forced-eviction reclaim. CI is pinned to Ubuntu 24.04/x64/Node 24,
+requires runner/external/all rows, attempts the dashboard after any post-install
+failure, and always uploads it. The final local run passed all 39 absolute rows
+across 12 scenarios; the full root suite passed 40/40 tasks, Playwright 63/63,
+and evals 1/1. The checked-in baseline remains honestly `unmeasured`: three
+independent green pinned runs of the same known commit must be reviewed before
+calibration and activation. Pinned artifacts, ADR acceptance/0040's data
+decision, the human session/recording, and the user-owned tag remain external
+phase-close work; see `docs/checklists/phase-11.md` and
+`docs/demos/phase-11.md`.
 
 ---
 

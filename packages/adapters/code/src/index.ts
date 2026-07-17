@@ -69,10 +69,8 @@ export {
   normalizePosixPath,
 } from './bundle.js';
 export type { BundleFile, CodeProjectBundle } from './bundle.js';
-export {
-  createInProcessMapper,
-  createWorkerMapper,
-} from './mapper.js';
+export { createInProcessMapper } from './in-process-mapper.js';
+export { createWorkerMapper } from './worker-mapper.js';
 export type { CodeMapper, MapModuleRequest, ResolveBodyRequest } from './mapper.js';
 export { languageForPath } from './languages.js';
 export { createCodePlugin, manifest as codeManifest } from './plugin.js';

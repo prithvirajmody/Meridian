@@ -6,6 +6,13 @@
  */
 import { buildLevelChain, type LevelChain, type LodResult, type ZoomPolicy } from '@meridian/abstraction';
 import { conversationPlugin } from '@meridian/adapter-conversation';
+import {
+  CODE_PROJECT_MEDIA_TYPE,
+  createCodePlugin,
+  createWorkerMapper,
+  ParseWorkerHost,
+  type CodeMapper,
+} from '@meridian/adapter-code/worker-host';
 import { markdownPlugin } from '@meridian/adapter-markdown';
 import {
   createGraphSpace,
@@ -13,7 +20,7 @@ import {
   deriveEdgeId,
   deriveGraphId,
   deriveNodeId,
-  encode,
+  validate,
   type EdgeId,
   type GraphId,
   type GraphSpace,
@@ -22,10 +29,11 @@ import {
   type SemanticGraph,
 } from '@meridian/graph-core';
 import {
-  createStore,
   decodeDeltaInput,
   diffSpaces,
   formatVersion,
+  stageDeltaStream,
+  type GraphDeltaInput,
   type GraphStore,
 } from '@meridian/graph-store';
 import { BUILTIN_LAYOUT_PROVIDERS, type LayoutInput, type LayoutResult } from '@meridian/layout';
@@ -41,12 +49,14 @@ import {
   type ViewportSize,
 } from '@meridian/view-model';
 import { AiTrustController } from './ai/ai-trust-controller.js';
+import { browserCodeWorkerFactory } from './browser-code-worker.js';
 import {
   aiOriginNodesInModel,
   collectAiOriginNodeIds,
   filterRenderModelNodes,
 } from './ai/provenance.js';
 import { StudioNavigator } from './navigation/studio-navigator.js';
+import { BoundedAsyncQueue } from './pipeline/async-queue.js';
 import type { StudioLayoutService } from './pipeline/layout-cut.js';
 import { realClock, type StudioClock } from './transition/clock.js';
 import {
@@ -93,9 +103,9 @@ const idFacade: IdFacade = {
 
 const BUILTIN_PLUGINS = [markdownPlugin, conversationPlugin] as const;
 
-function buildHost(): PluginHost {
+function buildHost(codeMapper: CodeMapper): PluginHost {
   const host = createPluginHost({ ids: idFacade });
-  for (const plugin of BUILTIN_PLUGINS) {
+  for (const plugin of [...BUILTIN_PLUGINS, createCodePlugin({ mapper: codeMapper })]) {
     const registered = host.register(plugin);
     if (!registered.ok) {
       throw new Error(`Studio built-in plugin registration failed: ${registered.issue.message}`);
@@ -124,6 +134,13 @@ function temporalHintsForDomain(domain: string): TemporalDomainHints | undefined
 
 function now(): number {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+/** Yield at every settled chunk so paint/input tasks can run during a large
+ * open. A zero-delay task is used instead of a microtask because the browser
+ * cannot paint between an uninterrupted microtask chain. */
+function yieldPipelineControl(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 function canonicalPolicy(chain: LevelChain): ZoomPolicy {
@@ -163,6 +180,7 @@ function mediaTypeFor(name: string): string | undefined {
   const extension = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : '';
   if (extension === 'md' || extension === 'markdown' || extension === 'mdown') return 'text/markdown';
   if (extension === 'txt') return 'text/plain';
+  if (extension === 'meridian-code-project') return CODE_PROJECT_MEDIA_TYPE;
   return undefined;
 }
 
@@ -184,6 +202,8 @@ function findBaseEdge(space: GraphSpace, id: EdgeId): SemanticEdge | undefined {
 
 export interface StudioSessionOptions {
   readonly layoutService?: StudioLayoutService;
+  /** Test/composition seam; production defaults to the dedicated browser worker. */
+  readonly codeMapper?: CodeMapper;
   /** Canvas viewport at navigator-boot time (defaults to 1280×800 headless). */
   readonly viewportProvider?: () => ViewportSize;
   /** Injected transition clock (ADR-0023). Defaults to `performance.now`. */
@@ -197,6 +217,7 @@ export interface StudioSessionOptions {
 export class StudioSession {
   private readonly commands: StudioStoreCommands;
   private readonly host: PluginHost;
+  private readonly codeMapper: CodeMapper;
   private readonly layoutService: StudioLayoutService;
   private readonly options: StudioSessionOptions;
   private generation = 0;
@@ -205,6 +226,8 @@ export class StudioSession {
   private readonly unsubscribeSelection: () => void;
   private readonly unsubscribeModel: () => void;
   private unsubscribeGraphStore: (() => void) | null = null;
+  private readonly mutationSourceAt = new Map<number, number>();
+  private openController: AbortController | null = null;
   private disposed = false;
 
   /**
@@ -225,7 +248,9 @@ export class StudioSession {
     options: StudioSessionOptions = {},
   ) {
     this.commands = new StudioStoreCommands(store);
-    this.host = buildHost();
+    this.codeMapper = options.codeMapper
+      ?? createWorkerMapper(new ParseWorkerHost({ factory: browserCodeWorkerFactory() }));
+    this.host = buildHost(this.codeMapper);
     this.options = options;
     this.layoutService = options.layoutService ?? new DirectStudioLayoutService();
     this.aiTrust = new AiTrustController(store, () => this.artifacts?.store ?? null);
@@ -419,33 +444,42 @@ export class StudioSession {
   async openFile(file: Pick<File, 'name' | 'size' | 'text'>): Promise<void> {
     const generation = ++this.generation;
     this.resetPipeline();
+    const controller = new AbortController();
+    this.openController = controller;
     this.commands.beginOpen({ generation, name: file.name, bytes: file.size });
     try {
       const text = await file.text();
       if (!this.isCurrent(generation)) return;
-      await this.openTextInternal(generation, file.name, text);
+      await this.openTextInternal(generation, file.name, text, controller.signal);
     } catch (error) {
-      this.commands.fail(generation, 'file-read-failed', errorMessage(error));
+      if (this.isCurrent(generation)) {
+        this.commands.fail(generation, 'file-read-failed', errorMessage(error));
+      }
     }
   }
 
   async openText(name: string, text: string): Promise<void> {
     const generation = ++this.generation;
     this.resetPipeline();
+    const controller = new AbortController();
+    this.openController = controller;
     this.commands.beginOpen({
       generation,
       name,
       bytes: new TextEncoder().encode(text).byteLength,
     });
-    await this.openTextInternal(generation, name, text);
+    await this.openTextInternal(generation, name, text, controller.signal);
   }
 
   private resetPipeline(): void {
+    this.openController?.abort();
+    this.openController = null;
     this.unsubscribeGraphStore?.();
     this.unsubscribeGraphStore = null;
     this.navigator?.destroy();
     this.navigator = null;
     this.artifacts = null;
+    this.mutationSourceAt.clear();
     // AI trust view resets per corpus (the store slice is reset by beginOpen).
     this.aiTrust.clear();
     this.fullModel = null;
@@ -454,14 +488,20 @@ export class StudioSession {
     this.aiSpaceRef = null;
   }
 
-  private async openTextInternal(generation: number, name: string, text: string): Promise<void> {
+  private async openTextInternal(
+    generation: number,
+    name: string,
+    text: string,
+    signal: AbortSignal,
+  ): Promise<void> {
     try {
       const source: SourceDescriptor = {
         uri: name,
         text,
         ...(mediaTypeFor(name) !== undefined ? { mediaType: mediaTypeFor(name) } : {}),
       };
-      let materialized: GraphSpace;
+      let store: GraphStore;
+      let space: GraphSpace;
       if (looksLikeGraphDocument(name, text)) {
         this.commands.stage('ingesting', 'Decoding saved graph document…');
         const decoded = decode(text);
@@ -469,9 +509,17 @@ export class StudioSession {
           const first = decoded.errors[0];
           throw new Error(`Invalid graph document: [${first?.code ?? 'unknown'}] ${first?.message ?? ''}`);
         }
-        materialized = decoded.space;
+        const delta = diffSpaces(createGraphSpace(), decoded.space, { actor: 'studio:document-open' });
+        const staged = await this.stageDeltas(
+          generation,
+          delta.ops.length === 0 ? [] : [delta],
+          signal,
+        );
+        if (!staged.ok) throw new Error(`[${staged.failure.code}] ${staged.failure.message}`);
+        store = staged.store;
+        space = staged.space;
         this.commands.adapterResolved({
-          domain: documentDomain(materialized),
+          domain: documentDomain(space),
           plugin: 'meridian:document',
           score: 1,
         });
@@ -481,26 +529,76 @@ export class StudioSession {
         const candidate = resolution.candidates[0];
         if (candidate === undefined) throw new Error(`No adapter claims ${name}`);
 
-        const outcome = await this.host.ingest(source);
+        const queue = new BoundedAsyncQueue<GraphDeltaInput>(1);
+        const stagedPromise = this.stageDeltas(generation, queue, signal);
+        void stagedPromise.then((result) => {
+          if (!result.ok) queue.fail(new Error(result.failure.message));
+        });
+        const vocabulary = this.host.vocabulary();
+        let emissionKind: 'document' | 'delta' | null = null;
+        let documentCount = 0;
+        const outcome = await this.host.ingestStreaming(source, {
+          emitDocument: async (document) => {
+            signal.throwIfAborted();
+            if (emissionKind === 'delta' || documentCount > 0) {
+              throw new Error('Studio streaming accepts one document or a delta stream, not mixed emissions');
+            }
+            emissionKind = 'document';
+            documentCount += 1;
+            const gated = decode(document, { vocabulary });
+            if (!gated.ok) {
+              throw new Error(`Adapter emitted invalid IR: ${gated.errors[0]?.message ?? 'unknown issue'}`);
+            }
+            const delta = diffSpaces(createGraphSpace(), gated.space, { actor: 'studio:stream-document' });
+            if (delta.ops.length > 0) await queue.push(delta);
+          },
+          emitDelta: async (wire) => {
+            signal.throwIfAborted();
+            if (emissionKind === 'document') {
+              throw new Error('Studio streaming accepts one document or a delta stream, not mixed emissions');
+            }
+            emissionKind = 'delta';
+            const decoded = decodeDeltaInput(wire);
+            if (!decoded.ok) throw new Error('Adapter emitted an invalid delta');
+            await queue.push(decoded.delta);
+          },
+          progress: async (progress) => {
+            if (!this.isCurrent(generation)) throw new Error('stale Studio open');
+            signal.throwIfAborted();
+            const current = this.store.getState().ingestProgress;
+            this.commands.ingestProgress({
+              stage: progress.stage,
+              done: progress.done,
+              total: progress.total ?? null,
+              emissions: current?.emissions ?? 0,
+              appliedOps: current?.appliedOps ?? 0,
+              batches: current?.batches ?? 0,
+              peakBufferedOps: current?.peakBufferedOps ?? 0,
+            });
+            await yieldPipelineControl();
+          },
+        }, { signal });
+        if (outcome.ok) queue.close();
+        else queue.fail(new Error(outcome.issue.message));
+        const staged = await stagedPromise;
         if (!this.isCurrent(generation)) return;
         if (!outcome.ok) throw new Error(`[${outcome.issue.code}] ${outcome.issue.message}`);
+        if (!staged.ok) throw new Error(`[${staged.failure.code}] ${staged.failure.message}`);
+        const finalGate = validate(staged.space, { vocabulary });
+        if (!finalGate.ok) {
+          throw new Error(`Delta stream emitted invalid IR: ${finalGate.errors[0]?.message ?? 'unknown issue'}`);
+        }
         this.commands.adapterResolved({
           domain: outcome.domain,
           plugin: outcome.plugin,
           score: candidate.score,
         });
-        materialized = this.materialize(outcome);
+        store = staged.store;
+        space = staged.space;
       }
-      const store = createStore(createGraphSpace());
-      const delta = diffSpaces(store.snapshot(), materialized, { actor: 'studio:ingest' });
-      if (delta.ops.length > 0) {
-        const applied = store.apply(delta);
-        if (!applied.ok) {
-          throw new Error(`Store rejected adapter output: ${applied.errors[0]?.message ?? 'unknown error'}`);
-        }
-      }
-      const space = store.snapshot();
 
+      if (!this.isCurrent(generation)) return;
+      signal.throwIfAborted();
       this.commands.stage('resolving', 'Resolving the visible abstraction…');
       const chain = buildLevelChain(space);
       const policy = canonicalPolicy(chain);
@@ -519,6 +617,9 @@ export class StudioSession {
         clock: this.options.clock ?? realClock(),
         ...(this.options.onUrl !== undefined ? { onUrl: this.options.onUrl } : {}),
         ...(temporal === undefined ? {} : { temporal }),
+        onMutationError: (error) => {
+          this.commands.fail(generation, 'incremental-update-failed', errorMessage(error));
+        },
       });
       const { model, message } = await navigator.boot();
       if (!this.isCurrent(generation)) {
@@ -530,16 +631,22 @@ export class StudioSession {
       this.navigator = navigator;
       // P1 subscription (roadmap 6D failure case): a committed delta forces a
       // replan — mid-transition included.
-      this.unsubscribeGraphStore = store.subscribe(() => {
+      this.unsubscribeGraphStore = store.subscribe((change) => {
         const artifacts = this.artifacts;
         if (artifacts === null || this.navigator !== navigator) return;
         artifacts.space = store.snapshot();
-        navigator.spaceMutated(artifacts.space);
+        const sourceAtMs = this.mutationSourceAt.get(change.toVersion.counter) ?? performance.now();
+        this.mutationSourceAt.delete(change.toVersion.counter);
+        navigator.spaceMutated(artifacts.space, change, sourceAtMs);
       });
       this.commands.publishModel(model, formatVersion(store.version()), layoutReadyAtMs, message);
       this.options.onNavigatorReady?.(navigator);
     } catch (error) {
-      this.commands.fail(generation, 'open-failed', errorMessage(error));
+      if (this.isCurrent(generation)) {
+        this.commands.fail(generation, 'open-failed', errorMessage(error));
+      }
+    } finally {
+      if (this.openController?.signal === signal) this.openController = null;
     }
   }
 
@@ -568,34 +675,35 @@ export class StudioSession {
     const modified: GraphSpace = { ...current, graphs };
     const delta = diffSpaces(current, modified, { actor: 'studio:6d-mutation' });
     if (delta.ops.length === 0) return false;
-    return artifacts.store.apply(delta).ok;
+    const sourceAtMs = performance.now();
+    const applied = artifacts.store.apply(delta);
+    if (applied.ok) this.mutationSourceAt.set(applied.changes.toVersion.counter, sourceAtMs);
+    return applied.ok;
   }
 
-  private materialize(outcome: Awaited<ReturnType<PluginHost['ingest']>>): GraphSpace {
-    if (!outcome.ok) throw new Error(outcome.issue.message);
-    const vocabulary = this.host.vocabulary();
-    if (outcome.documents.length === 1 && outcome.deltas.length === 0) {
-      const gated = decode(outcome.documents[0]!, { vocabulary });
-      if (!gated.ok) {
-        throw new Error(`Adapter emitted invalid IR: ${gated.errors[0]?.message ?? 'unknown issue'}`);
-      }
-      return gated.space;
-    }
-    if (outcome.documents.length === 0 && outcome.deltas.length > 0) {
-      const store = createStore(createGraphSpace());
-      for (const wire of outcome.deltas) {
-        const decoded = decodeDeltaInput(wire);
-        if (!decoded.ok) throw new Error('Adapter emitted an invalid delta');
-        const applied = store.apply(decoded.delta);
-        if (!applied.ok) throw new Error(`Adapter delta rejected: ${applied.errors[0]?.message ?? ''}`);
-      }
-      const gated = decode(encode(store.snapshot()), { vocabulary });
-      if (!gated.ok) throw new Error(`Delta stream emitted invalid IR: ${gated.errors[0]?.message ?? ''}`);
-      return gated.space;
-    }
-    throw new Error(
-      `Unsupported adapter emission: ${outcome.documents.length} documents and ${outcome.deltas.length} deltas`,
-    );
+  private stageDeltas(
+    generation: number,
+    source: Iterable<GraphDeltaInput> | AsyncIterable<GraphDeltaInput>,
+    signal: AbortSignal,
+  ) {
+    return stageDeltaStream(createGraphSpace(), source, {
+      maxOpsPerBatch: 1024,
+      signal,
+      onProgress: async (progress) => {
+        if (!this.isCurrent(generation)) throw new Error('stale Studio open');
+        const current = this.store.getState().ingestProgress;
+        this.commands.ingestProgress({
+          stage: current?.stage ?? 'staging',
+          done: current?.done ?? progress.appliedOps,
+          total: current?.total ?? null,
+          emissions: progress.emissions,
+          appliedOps: progress.appliedOps,
+          batches: progress.batches,
+          peakBufferedOps: progress.peakBufferedOps,
+        });
+        await yieldPipelineControl();
+      },
+    });
   }
 
   private selectionChanged(selection: SelectionState): void {
@@ -669,5 +777,6 @@ export class StudioSession {
     this.unsubscribeModel();
     this.resetPipeline();
     await this.layoutService.dispose();
+    await this.codeMapper.dispose();
   }
 }

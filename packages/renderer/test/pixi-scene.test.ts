@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { RenderModel } from '@meridian/view-model';
+import { diffRenderModels, type RenderModel } from '@meridian/view-model';
+import { buildSpatialIndex } from '../src/spatial-index/build.js';
+import type { SpatialIndexWorkerEndpoint } from '../src/spatial-index/host.js';
+import type { SpatialIndexWorkerRequest } from '../src/spatial-index/protocol.js';
 import type {
   PickResult,
   RendererFault,
@@ -158,6 +161,7 @@ vi.mock('pixi.js', () => {
 });
 
 const { createScene } = await import('../src/index.js');
+const { PixiScene } = await import('../src/pixi/pixi-scene.js');
 
 type FrameCallback = (time: number) => void;
 type NodeId = RenderModel['nodeIds'][number];
@@ -332,6 +336,69 @@ afterEach(() => {
 });
 
 describe('PixiScene public rendering seam', () => {
+  it('applies a same-topology style patch without rebuilding scene geometry', async () => {
+    const { canvas, flushFrames } = fakeCanvas();
+    const scene = trackedScene();
+    await scene.mount(canvas);
+    flushFrames();
+    const previous = modelOf('patch-before', [[0, 0, 10, 10]]);
+    scene.render(previous, CLOSE_UP_CAMERA);
+    flushFrames();
+    const geometryCreations = gpuLog.geometryCreations;
+
+    const flags = previous.nodeFlags.slice();
+    flags[0] = 1;
+    const next: RenderModel = { ...previous, revision: 'patch-after', nodeFlags: flags };
+    scene.patch!(diffRenderModels(previous, next), CLOSE_UP_CAMERA);
+    flushFrames();
+
+    expect(gpuLog.geometryCreations).toBe(geometryCreations);
+    expect(scene.stats()).toMatchObject({
+      modelRevision: 'patch-after',
+      fullModelRebuilds: 1,
+      renderPatches: 1,
+      patchChangedNodes: 1,
+      patchChangedEdges: 0,
+    });
+  });
+
+  it('restarts a pending spatial-index build when a style patch changes its revision', async () => {
+    const requests: SpatialIndexWorkerRequest[] = [];
+    let postToHost: (message: unknown) => void = () => undefined;
+    const endpoint: SpatialIndexWorkerEndpoint = {
+      postMessage: (message) => { requests.push(message); },
+      onMessage: (listener) => {
+        postToHost = listener;
+        return () => { if (postToHost === listener) postToHost = () => undefined; };
+      },
+      onError: () => () => undefined,
+      terminate: () => undefined,
+    };
+    const scene = new PixiScene({}, () => endpoint);
+    activeScenes.push(scene);
+    const { canvas, flushFrames } = fakeCanvas();
+    await scene.mount(canvas);
+    flushFrames();
+
+    const previous = modelOf('pending-index-before', [[0, 0, 10, 10]]);
+    scene.render(previous, { center: { x: 0, y: 0 }, scale: 1 });
+    expect(scene.pick({ x: 155, y: 55 })).toBeNull();
+    const flags = previous.nodeFlags.slice();
+    flags[0] = 1;
+    const next = { ...previous, revision: 'pending-index-after', nodeFlags: flags };
+    scene.patch!(diffRenderModels(previous, next), { center: { x: 0, y: 0 }, scale: 1 });
+
+    const builds = requests.filter((request) => request.type === 'build');
+    expect(builds.map((request) => request.modelRevision)).toEqual([
+      'pending-index-before',
+      'pending-index-after',
+    ]);
+    expect(requests.some((request) => request.type === 'cancel')).toBe(true);
+    postToHost(buildSpatialIndex(builds.at(-1)!));
+    await Promise.resolve();
+    expect(scene.pick({ x: 155, y: 55 })).toMatchObject({ kind: 'node', nodeId: 'n-0' });
+  });
+
   it('reports fewer public draw calls and visible primitives from overview to close-up', async () => {
     const { canvas, flushFrames } = fakeCanvas();
     const scene: SceneAdapter = trackedScene({ maxBatchSize: 1 });

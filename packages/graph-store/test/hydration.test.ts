@@ -301,6 +301,28 @@ describe('protected sets refuse eviction', () => {
     expect(manager.evict(gA)).toBe(false);
   });
 
+  it('refuses eviction in the no-await window before semantic protection is delivered', async () => {
+    const { manager, store } = setup();
+    await manager.hydrate(gA);
+    expect(manager.state(gA)).toBe('evictable');
+
+    const r = store.apply({
+      origin: ORIGIN,
+      ops: [{ t: 'node:attr', graph: gA, id: nC, key: 'test:pending', next: true }],
+    });
+    expect(r.ok).toBe(true);
+
+    // No await here: the store has committed, but HydrationManager's async
+    // subscription has not yet populated the undo-protection set. The version
+    // watermark must close this otherwise-evictable window.
+    expect(manager.state(gA)).toBe('live');
+    expect(manager.evict(gA)).toBe(false);
+    expect(store.snapshot().graphs.get(gA)!.nodes.get(nC)!.attrs['test:pending']).toBe(true);
+
+    await flush();
+    expect(manager.evict(gA)).toBe(false); // now refused by history protection
+  });
+
   it('roots are never evictable', () => {
     const { manager } = setup();
     expect(manager.evict(gR)).toBe(false);
@@ -362,6 +384,100 @@ describe('budget: correctness over budget, LRU drain to low water', () => {
     expect(manager.state(gA)).toBe('evictable');
     expect(manager.evictToBudget()).toBe(1);
     expect(manager.stats()).toMatchObject({ residentElements: 3, overBudget: false });
+  });
+
+  it('evicts the LRU graph before loading a cold graph that would cross high water', async () => {
+    const root = asGraphId('g-budget-root');
+    const childA = asGraphId('g-budget-a');
+    const childB = asGraphId('g-budget-b');
+    const childC = asGraphId('g-budget-c');
+
+    let full = createGraphSpace();
+    for (const [id, label] of [
+      [root, 'root'],
+      [childA, 'a'],
+      [childB, 'b'],
+      [childC, 'c'],
+    ] as const) {
+      full = addGraph(full, { id, label, domain: 'demo', provenance: SRC });
+    }
+    full = addNode(full, childA, {
+      id: asNodeId('n-budget-a-leaf'), kind: 'demo:step', label: 'a', provenance: SRC,
+    });
+    full = addNode(full, childB, {
+      id: asNodeId('n-budget-b-leaf'), kind: 'demo:step', label: 'b', provenance: SRC,
+    });
+    full = addNode(full, childC, {
+      id: asNodeId('n-budget-c-leaf'), kind: 'demo:step', label: 'c', provenance: SRC,
+    });
+    full = addNode(full, root, {
+      id: asNodeId('n-budget-root-a'), kind: 'demo:module', label: 'a',
+      detail: { graph: childA }, provenance: SRC,
+    });
+    full = addNode(full, root, {
+      id: asNodeId('n-budget-root-b'), kind: 'demo:module', label: 'b',
+      detail: { graph: childB }, provenance: SRC,
+    });
+    full = addNode(full, root, {
+      id: asNodeId('n-budget-root-c'), kind: 'demo:module', label: 'c',
+      detail: { graph: childC }, provenance: SRC,
+    });
+
+    const shell = (id: GraphId): SemanticGraph => ({
+      ...full.graphs.get(id)!, nodes: new Map(), edges: new Map(),
+    });
+    const spine: GraphSpace = {
+      graphs: new Map([
+        [root, full.graphs.get(root)!],
+        [childA, shell(childA)],
+        [childB, shell(childB)],
+        [childC, shell(childC)],
+      ]),
+      roots: [root],
+    };
+    const { backend, hints, state } = testBackend(full);
+    const store = createStore(spine, { backend });
+    const manager = new HydrationManager({
+      store,
+      backend,
+      manifest: manifestFor(full),
+      // Root=3, then A=1 and B=1 exactly fill high water. C's manifest says
+      // one more element, so one LRU graph must leave before C is loaded.
+      policy: { maxResidentElements: 5, lowWaterRatio: 1 },
+    });
+
+    await manager.hydrate(childA);
+    await manager.hydrate(childB); // B is newer; A is the LRU candidate.
+    expect(manager.stats().residentElements).toBe(5);
+
+    const seen: ChangeSet[] = [];
+    store.subscribe((change) => seen.push(change));
+    let atLoad: { residentElements: number; aNodes: number; bNodes: number } | undefined;
+    state.loadGraph = (id) => {
+      if (id === childC) {
+        atLoad = {
+          residentElements: manager.stats().residentElements,
+          aNodes: store.snapshot().graphs.get(childA)!.nodes.size,
+          bNodes: store.snapshot().graphs.get(childB)!.nodes.size,
+        };
+      }
+      return Promise.resolve(full.graphs.get(id) ?? null);
+    };
+
+    await manager.hydrate(childC);
+    await flush();
+
+    // The eviction commit happens before loadGraph returns C's resident data:
+    // predicted peak is 4 existing + 1 incoming, never 6.
+    expect(atLoad).toEqual({ residentElements: 4, aNodes: 0, bNodes: 1 });
+    expect(manager.state(childA)).toBe('cold');
+    expect(manager.state(childB)).toBe('evictable');
+    expect(manager.state(childC)).toBe('evictable');
+    expect(hints.at(-1)).toEqual([childA]);
+    expect(manager.stats()).toMatchObject({ residentElements: 5, evictions: 1, overBudget: false });
+    expect(seen).toHaveLength(2);
+    expect(seen[0]!.ops.map((op) => op.t)).toEqual(['node:remove']);
+    expect(seen[1]!.ops.map((op) => op.t)).toEqual(['node:add']);
   });
 });
 

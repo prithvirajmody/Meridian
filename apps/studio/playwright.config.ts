@@ -5,6 +5,7 @@ const port = 4173;
 export default defineConfig({
   testDir: './e2e',
   outputDir: './test-results',
+  globalSetup: './e2e/phase11-global-setup.ts',
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
   fullyParallel: false,
   workers: 1,

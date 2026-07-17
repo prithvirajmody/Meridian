@@ -44,11 +44,13 @@ also supplies the summary metadata (§4.7) that sizes a closed node.
 
 **3. `HydrationManager` orchestrates; the store stays dumb.** A new exported
 class in `@meridian/graph-store` (deps unchanged: graph-core only) owning
-`{ store, backend, policy }`. `GraphStore`'s interface is untouched — the
-§4.7 "read API makes state visible" obligation is discharged by the manager:
-`state(id): HydrationState`, `summary(id)`, `hydrate(id, {signal}):
-Promise<void>`, `touch(ids)`, `pin(id)/unpin(id)`, `stats()`. It is
-plain-TS, isomorphic, and I/O-free except through the injected backend.
+`{ store, backend, manifest, policy }`. The manifest is the backend-open result:
+identity, metadata, and durable element counts for every graph. `GraphStore`'s
+interface is untouched — the §4.7 "read API makes state visible" obligation is
+discharged by the manager: `state(id): HydrationState`, `summary(id)`,
+`coldSet(): ReadonlySet<GraphId>`, `hydrate(id, {signal}): Promise<void>`,
+`touch(ids)`, `pin(id)/unpin(id)`, `stats()`. It is plain-TS, isomorphic, and
+I/O-free except through the injected backend.
 
 **4. Hydration and eviction move state through the one write path as
 volatile deltas** (ADR-0038 §3):

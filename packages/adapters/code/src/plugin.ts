@@ -11,7 +11,14 @@
  * {@link CODE_PROJECT_MEDIA_TYPE} bundle the composition root built (ADR-0009 —
  * the parser never touches the filesystem).
  */
-import type { MeridianPlugin, PluginContext, PluginManifest, SourceDescriptor } from '@meridian/plugin-api';
+import type {
+  GraphDocument,
+  IngestSink,
+  MeridianPlugin,
+  PluginContext,
+  PluginManifest,
+  SourceDescriptor,
+} from '@meridian/plugin-api';
 import {
   CODE_PROJECT_MEDIA_TYPE,
   decodeProjectBundle,
@@ -26,6 +33,18 @@ import type { RawModule } from './map/raw.js';
 import type { CodeMapper } from './mapper.js';
 
 export const VERSION = '0.2.0';
+
+/**
+ * A streaming host copies and applies at most this many code ops per parser
+ * emission. The host/store may choose a smaller apply batch; keeping the
+ * producer bounded as well prevents its serialized consumer queue from
+ * retaining a monorepo-sized delta while persistence catches up.
+ */
+export const CODE_STREAM_OPS_PER_DELTA = 512;
+
+/** Progress is useful per file, but a parser must periodically let a streaming
+ * consumer catch up instead of enqueueing one closure for every repo file. */
+const CODE_PROGRESS_EVENTS_PER_DRAIN = 32;
 
 export const manifest: PluginManifest = {
   name: '@meridian/adapter-code',
@@ -123,6 +142,49 @@ function resolveInput(src: SourceDescriptor): { root: string; files: readonly Bu
 }
 
 /**
+ * Buffered hosts retain the historic one-document contract. A Phase-11
+ * streaming host advertises `drain`; for it, encode the same document as an
+ * ordered delta stream without first allocating a second monolithic op array.
+ * All graphs precede nodes and all nodes precede edges, so every batch is
+ * independently store-valid, including detail references and edge endpoints.
+ */
+async function emitCodeResult(doc: GraphDocument, sink: IngestSink): Promise<void> {
+  if (sink.drain === undefined) {
+    sink.emitDocument(doc);
+    return;
+  }
+
+  let ops: Record<string, unknown>[] = [];
+  const flush = async (): Promise<void> => {
+    if (ops.length === 0) return;
+    sink.emitDelta({ ops, origin: { actor: 'code:ingest' } });
+    ops = [];
+    await sink.drain!();
+  };
+  const append = (op: Record<string, unknown>): boolean => {
+    ops.push(op);
+    return ops.length === CODE_STREAM_OPS_PER_DELTA;
+  };
+
+  for (const graph of doc.graphs) {
+    if (append({ t: 'graph:add', graph: graph.id, meta: graph.meta })) await flush();
+  }
+  await flush();
+  for (const graph of doc.graphs) {
+    for (const node of graph.nodes) {
+      if (append({ t: 'node:add', graph: graph.id, node })) await flush();
+    }
+  }
+  await flush();
+  for (const graph of doc.graphs) {
+    for (const edge of graph.edges) {
+      if (append({ t: 'edge:add', graph: graph.id, edge })) await flush();
+    }
+  }
+  await flush();
+}
+
+/**
  * Build the code plugin around an injected mapper. `mapper` owns the grammar
  * runtime (worker or in-process); the plugin only sequences files, applies the
  * exclusion policy, and derives IDs through `ctx.ids`.
@@ -142,13 +204,19 @@ export function createCodePlugin(deps: { readonly mapper: CodeMapper }): Meridia
             const modules: RawModule[] = [];
             let done = 0;
             for (const file of files) {
-              const module = await mapFileToModule(mapper, file);
+              sink.signal?.throwIfAborted();
+              const module = await mapFileToModule(mapper, file, {
+                ...(sink.signal === undefined ? {} : { signal: sink.signal }),
+              });
               if (module !== undefined) modules.push(module);
               sink.progress({ stage: 'map', done: ++done, total: files.length });
+              if (done % CODE_PROGRESS_EVENTS_PER_DRAIN === 0) await sink.drain?.();
             }
+            sink.signal?.throwIfAborted();
             sink.progress({ stage: 'build', done: files.length, total: files.length });
             const tree = assembleProject(root, modules);
-            sink.emitDocument(buildCodeDocument(ctx, tree, VERSION));
+            await emitCodeResult(buildCodeDocument(ctx, tree, VERSION), sink);
+            await sink.drain?.();
           },
         },
       ],

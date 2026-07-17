@@ -161,12 +161,14 @@ export interface IngestReport {
 
 // @public
 export interface IngestSink {
+    drain?(): Promise<void>;
     // (undocumented)
     emitDelta(delta: DeltaWire): void;
     // (undocumented)
     emitDocument(doc: GraphDocument): void;
     // (undocumented)
     progress(p: Progress): void;
+    readonly signal?: AbortSignal;
 }
 
 // @public

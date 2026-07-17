@@ -33,6 +33,7 @@ export function App({ runtime }: AppProps) {
   const message = useStore(runtime.store, (state) => state.message);
   const source = useStore(runtime.store, (state) => state.source);
   const adapter = useStore(runtime.store, (state) => state.adapter);
+  const ingestProgress = useStore(runtime.store, (state) => state.ingestProgress);
   const panel = useStore(runtime.store, (state) => state.panel);
   const selectionStartedAtMs = useStore(runtime.store, (state) => state.selectionStartedAtMs);
   const hover = useStore(runtime.store, (state) => state.hover);
@@ -100,6 +101,23 @@ export function App({ runtime }: AppProps) {
               <span className={`phase-dot phase-${phase}`} aria-hidden="true" />
               <strong data-testid="pipeline-phase">{phase}</strong>
               <span data-testid="pipeline-message">{message}</span>
+              {phase === 'ingesting' && ingestProgress !== null ? (
+                <span className="ingest-progress" data-testid="ingest-progress">
+                  {ingestProgress.total === null ? (
+                    <progress aria-label={`${ingestProgress.stage} ingest progress`} />
+                  ) : (
+                    <progress
+                      aria-label={`${ingestProgress.stage} ingest progress`}
+                      value={ingestProgress.done}
+                      max={Math.max(1, ingestProgress.total)}
+                    />
+                  )}
+                  <span>
+                    {ingestProgress.stage} · {ingestProgress.appliedOps.toLocaleString()} ops · peak{' '}
+                    {ingestProgress.peakBufferedOps.toLocaleString()}
+                  </span>
+                </span>
+              ) : null}
             </div>
             <div className="chips">
               {source ? <span data-testid="source-name">{source.name}</span> : null}

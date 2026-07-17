@@ -19,21 +19,34 @@ export interface Oo1Database {
 }
 
 const RESULT_CODE_BUSY = 5;
+const RESULT_CODE_LOCKED = 6;
+const RESULT_CODE_READONLY = 8;
+const RESULT_CODE_IOERR = 10;
 const RESULT_CODE_CORRUPT = 11;
 const RESULT_CODE_FULL = 13;
+const RESULT_CODE_CANTOPEN = 14;
 const RESULT_CODE_NOTADB = 26;
 
 function mapError(e: unknown): never {
   const code = (e as { resultCode?: number }).resultCode;
+  // Extended SQLite result codes keep the primary code in the low byte.
+  const primary = code === undefined ? undefined : code & 0xff;
   const message = e instanceof Error ? e.message : String(e);
-  if (code === RESULT_CODE_BUSY) {
+  if (primary === RESULT_CODE_BUSY || primary === RESULT_CODE_LOCKED) {
     throw new MeridianError('storage-busy', `database is locked by another writer — Meridian projects are single-writer (ADR-0038): ${message}`);
   }
-  if (code === RESULT_CODE_CORRUPT || code === RESULT_CODE_NOTADB) {
+  if (primary === RESULT_CODE_CORRUPT || primary === RESULT_CODE_NOTADB) {
     throw new MeridianError('storage-corrupt', `database is corrupted or not SQLite: ${message}`);
   }
-  if (code === RESULT_CODE_FULL) {
+  if (primary === RESULT_CODE_FULL) {
     throw new MeridianError('storage-io', `I/O failure (storage quota exhausted?): ${message}`);
+  }
+  if (
+    primary === RESULT_CODE_IOERR ||
+    primary === RESULT_CODE_CANTOPEN ||
+    primary === RESULT_CODE_READONLY
+  ) {
+    throw new MeridianError('storage-io', `I/O failure (OPFS unavailable or read-only?): ${message}`);
   }
   throw e;
 }
@@ -77,16 +90,22 @@ export class SqliteWasmDriver implements SqlDriver {
       throw new MeridianError('storage-io', 'nested SQL transactions are a programming error');
     }
     this.inTransaction = true;
-    this.exec('BEGIN IMMEDIATE');
+    let began = false;
     try {
+      // Match the native driver: take the sole writer lease before callback
+      // work, and surface contention as `storage-busy`.
+      this.exec('BEGIN IMMEDIATE');
+      began = true;
       const result = fn();
       this.exec('COMMIT');
       return result;
     } catch (e) {
-      try {
-        this.exec('ROLLBACK');
-      } catch {
-        // the original failure is the interesting one
+      if (began) {
+        try {
+          this.exec('ROLLBACK');
+        } catch {
+          // the original failure is the interesting one
+        }
       }
       if (e instanceof MeridianError) throw e;
       mapError(e);

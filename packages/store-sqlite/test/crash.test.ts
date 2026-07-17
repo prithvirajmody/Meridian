@@ -12,19 +12,33 @@ import { openProject } from '../src/node/index.js';
 import { gid, tmpProjectPath } from './helpers.js';
 
 const CHILD = join(import.meta.dirname, 'crash-child.mjs');
+const WATCHDOG_MS = 10_000;
 
 function runChildAndKill(path: string, killAfterMs: number): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [CHILD, path], { stdio: ['ignore', 'pipe', 'inherit'] });
-    child.stdout.setEncoding('utf8');
-    child.stdout.on('data', (chunk: string) => {
-      if (chunk.includes('started')) {
-        setTimeout(() => child.kill('SIGKILL'), killAfterMs);
-      }
+    const child = spawn(process.execPath, [CHILD, path], {
+      stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
+    });
+    let ready = false;
+    let watchdogFired = false;
+    let killTimer: ReturnType<typeof setTimeout> | undefined;
+    const watchdog = setTimeout(() => {
+      watchdogFired = true;
+      child.kill('SIGKILL');
+    }, WATCHDOG_MS);
+
+    child.on('message', (message: unknown) => {
+      if (ready || (message as { type?: unknown })?.type !== 'started') return;
+      ready = true;
+      killTimer = setTimeout(() => child.kill('SIGKILL'), killAfterMs);
     });
     child.on('exit', (code, signal) => {
-      if (signal === 'SIGKILL') resolve();
-      else reject(new Error(`child exited ${code}/${signal} without being killed — increase the workload`));
+      clearTimeout(watchdog);
+      if (killTimer !== undefined) clearTimeout(killTimer);
+      if (signal === 'SIGKILL' && !ready) reject(new Error(`child did not become ready within ${WATCHDOG_MS}ms`));
+      else if (signal === 'SIGKILL' && watchdogFired) reject(new Error(`child exceeded the ${WATCHDOG_MS}ms crash-test watchdog`));
+      else if (signal === 'SIGKILL') resolve();
+      else reject(new Error(`child exited ${code}/${signal} without being killed`));
     });
     child.on('error', reject);
   });

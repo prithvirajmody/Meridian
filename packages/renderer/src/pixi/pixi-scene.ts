@@ -1,5 +1,11 @@
 import { Container, WebGLRenderer } from 'pixi.js';
-import type { CameraState, Point, RenderModel, ViewportSize } from '@meridian/view-model';
+import type {
+  CameraState,
+  Point,
+  RenderModel,
+  RenderModelPatch,
+  ViewportSize,
+} from '@meridian/view-model';
 import {
   buildSceneGeometryPlan,
   completeScenePlan,
@@ -32,6 +38,7 @@ import { PixiGpuBatches } from './gpu-batches.js';
 import { orderVisibleNodeBatches } from '../visual-order.js';
 
 const EMPTY_STATS: RendererStats = {
+  modelRevision: null,
   frameTimeMs: 0,
   drawCalls: 0,
   frameCount: 0,
@@ -54,6 +61,10 @@ const EMPTY_STATS: RendererStats = {
   pickQueryTimeMs: 0,
   contextLosses: 0,
   bufferUploadBytes: 0,
+  renderPatches: 0,
+  fullModelRebuilds: 0,
+  patchChangedNodes: 0,
+  patchChangedEdges: 0,
 };
 
 type Lifecycle = 'new' | 'mounting' | 'mounted' | 'destroyed';
@@ -230,9 +241,12 @@ export class PixiScene implements SceneAdapter {
     }
   };
 
-  constructor(options: SceneOptions = {}) {
+  constructor(
+    options: SceneOptions = {},
+    spatialIndexWorkerFactory: SpatialIndexWorkerFactory = defaultSpatialIndexWorkerFactory(),
+  ) {
     this.options = normalizedOptions(options);
-    this.spatialIndex = new SpatialIndexHost({ factory: defaultSpatialIndexWorkerFactory() });
+    this.spatialIndex = new SpatialIndexHost({ factory: spatialIndexWorkerFactory });
   }
 
   async mount(canvas: HTMLCanvasElement): Promise<void> {
@@ -322,7 +336,32 @@ export class PixiScene implements SceneAdapter {
 
   render(model: RenderModel, camera: CameraState): void {
     this.assertMounted('render');
-    if (this.latestModel !== null && this.latestModel.revision !== model.revision) {
+    this.acceptModel(model, camera);
+  }
+
+  patch(patch: RenderModelPatch, camera: CameraState): void {
+    this.assertMounted('patch');
+    const previous = this.latestModel;
+    if (
+      previous === null ||
+      previous.revision !== patch.fromRevision ||
+      patch.next.revision !== patch.toRevision
+    ) {
+      // Missing a patch cannot corrupt the pane: the complete next value is
+      // carried with it and is the immediate correctness fallback.
+      this.acceptModel(patch.next, camera);
+      return;
+    }
+    this.acceptModel(patch.next, camera, patch);
+  }
+
+  private acceptModel(
+    model: RenderModel,
+    camera: CameraState,
+    patch?: RenderModelPatch,
+  ): void {
+    const revisionChanged = this.latestModel?.revision !== model.revision;
+    if (revisionChanged && (patch === undefined || patch.topologyChanged)) {
       // Hover is renderer-lifetime state tied to one immutable model revision.
       // Never let an index-space identity survive replacement, even when the
       // next revision happens to reuse the same slot or stable node id.
@@ -338,18 +377,57 @@ export class PixiScene implements SceneAdapter {
       scale: camera.scale,
     };
     if (this.geometry?.modelRevision !== model.revision) {
-      this.geometry = buildSceneGeometryPlan(model, {
-        maxBatchSize: this.options.maxBatchSize,
-      });
-      this.plan = null;
-      if (!this.contextLost) {
-        this.gpu!.configure(
-          this.stage!,
-          this.geometry.nodeBatches.length,
-          this.geometry.edgeBatches.length,
-        );
+      if (
+        patch !== undefined &&
+        !patch.topologyChanged &&
+        !patch.geometryChanged &&
+        this.geometry !== null
+      ) {
+        // Style/selection/label-only update: retain Morton batches and both
+        // quadtrees; only their revision stamp advances. GPU values are read
+        // from the immutable next model on the next frame.
+        const geometry: SceneGeometryPlan = { ...this.geometry, modelRevision: model.revision };
+        this.geometry = geometry;
+        if (this.plan !== null) {
+          this.plan = {
+            ...geometry,
+            nodeTree: this.plan.nodeTree,
+            edgeTree: this.plan.edgeTree,
+          };
+        } else {
+          // A style patch can race the first worker build. The old request is
+          // tied to the old geometry/revision and will be rejected by the
+          // installation guards, so supersede it with a build whose identity
+          // matches this relabelled geometry.
+          this.requestSpatialIndex(model, geometry);
+        }
+      } else {
+        this.geometry = buildSceneGeometryPlan(model, {
+          maxBatchSize: this.options.maxBatchSize,
+        });
+        this.plan = null;
+        if (!this.contextLost) {
+          // Same-topology geometry patches normally preserve batch counts, so
+          // configure is a no-op and the existing GPU meshes survive.
+          this.gpu!.configure(
+            this.stage!,
+            this.geometry.nodeBatches.length,
+            this.geometry.edgeBatches.length,
+          );
+        }
+        this.requestSpatialIndex(model, this.geometry);
       }
-      this.requestSpatialIndex(model, this.geometry);
+      this.currentStats = patch === undefined || patch.topologyChanged
+        ? {
+            ...this.currentStats,
+            fullModelRebuilds: (this.currentStats.fullModelRebuilds ?? 0) + 1,
+          }
+        : {
+            ...this.currentStats,
+            renderPatches: (this.currentStats.renderPatches ?? 0) + 1,
+            patchChangedNodes: patch.changedNodeIndices.length,
+            patchChangedEdges: patch.changedEdgeIndices.length,
+          };
     }
     this.schedule();
   }
@@ -594,6 +672,7 @@ export class PixiScene implements SceneAdapter {
       this.renderer.render(this.root);
       const frameTimeMs = performance.now() - start;
       this.currentStats = {
+        modelRevision: this.latestModel?.revision ?? null,
         frameTimeMs,
         drawCalls,
         frameCount: this.currentStats.frameCount + 1,
@@ -616,6 +695,10 @@ export class PixiScene implements SceneAdapter {
         pickQueryTimeMs: this.currentStats.pickQueryTimeMs,
         contextLosses: this.currentStats.contextLosses,
         bufferUploadBytes: this.currentStats.bufferUploadBytes + uploaded,
+        renderPatches: this.currentStats.renderPatches,
+        fullModelRebuilds: this.currentStats.fullModelRebuilds,
+        patchChangedNodes: this.currentStats.patchChangedNodes,
+        patchChangedEdges: this.currentStats.patchChangedEdges,
       };
       this.events.emit('stats', copyStats(this.currentStats));
     } catch (error) {

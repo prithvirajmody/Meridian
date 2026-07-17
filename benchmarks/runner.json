@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "declaredClass": "github-actions-ubuntu-24.04-x64-node-24",
+  "relativeTolerance": 0.15,
+  "platform": "linux",
+  "arch": "x64",
+  "nodeMajor": 24,
+  "githubImage": "ubuntu24",
+  "externalResult": "benchmarks/results/studio.json",
+  "externalSource": "studio-playwright",
+  "externalMetrics": [
+    "renderer-frame-p95-ms",
+    "renderer-throughput-min-fps",
+    "renderer-first-render-ms",
+    "renderer-interaction-p95-ms",
+    "renderer-max-live-labels",
+    "outline-scroll-min-fps",
+    "matrix-2k-render-ms",
+    "projection-switch-ms",
+    "studio-heap-soak-min-ms",
+    "studio-heap-retained-growth-bytes",
+    "transition-frame-p95-ms",
+    "transition-anchor-drift-px",
+    "transition-max-plan-to-settle-ms",
+    "edit-to-pixel-p95-ms"
+  ]
+}

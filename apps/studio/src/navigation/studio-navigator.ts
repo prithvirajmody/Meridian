@@ -22,11 +22,15 @@
 import {
   buildForestIndex,
   buildLevelChain,
+  CutStaleError,
+  InducedEdgeCache,
   resolveLod,
+  SALIENCE_ATTR,
+  UPDATED_AT_ATTR,
   type LodResult,
   type ZoomPolicy,
 } from '@meridian/abstraction';
-import { tokenizeLabel } from '@meridian/graph-store';
+import { tokenizeLabel, type ChangeSet } from '@meridian/graph-store';
 import {
   deriveRefinementMap,
   deriveScaleRange,
@@ -45,9 +49,11 @@ import {
   buildRenderModel,
   characteristicLength,
   createFocusState,
+  diffRenderModels,
   screenToWorld,
   type CameraState,
   type Cut,
+  type GraphId,
   type GraphSpace,
   type LayoutResult,
   type NodeId,
@@ -55,11 +61,21 @@ import {
   type ProjectionModel,
   type Rect,
   type RenderModel,
+  type RenderModelPatch,
   type SelectionState,
   type TemporalDomainHints,
   type ViewportSize,
 } from '@meridian/view-model';
 import { layoutForLod, type StudioLayoutService } from '../pipeline/layout-cut.js';
+import {
+  BatchCoalescer,
+  diffAffectedCut,
+  diffLayoutResults,
+  summarizeChanges,
+  type AffectedCutDiff,
+  type ChangeBatchSummary,
+  type LayoutResultPatch,
+} from '../pipeline/incremental.js';
 import {
   anchorDriftPx,
   easeInOutCubic,
@@ -111,6 +127,28 @@ export interface TransitionRecord {
   drawTimesMs: number[];
 }
 
+/** Phase-11F evidence for one coalesced ChangeSet → pixels pass. The record
+ * deliberately carries all three patches so tests and the benchmark runner
+ * can distinguish a cheap attribute edit from a structural fallback. */
+export interface IncrementalPipelineRecord {
+  readonly seq: number;
+  readonly sourceAtMs: number;
+  readonly receivedAtMs: number;
+  readonly changeCount: number;
+  readonly opCount: number;
+  readonly touchedGraphCount: number;
+  readonly touchedNodeCount: number;
+  readonly structureChanged: boolean;
+  readonly cut: AffectedCutDiff;
+  readonly layout: LayoutResultPatch;
+  readonly render: RenderModelPatch;
+  readonly modelRevision: string;
+  readonly modelReadyAtMs: number;
+  readonly editToModelMs: number;
+  pixelAtMs: number | null;
+  editToPixelMs: number | null;
+}
+
 // ------------------------------------------------------------------- wiring
 
 /** What the driver needs from the canvas side (the ADR-0022 bridge). */
@@ -132,12 +170,22 @@ export interface StudioNavigatorOptions {
   readonly onUrl?: (fragment: string) => void;
   /** Domain-declared temporal hints for the projection waist (ADR-0037). */
   readonly temporal?: TemporalDomainHints;
+  /** Phase-11F edit-storm coalescing window. */
+  readonly mutationCoalesceMs?: number;
+  /** Located host failure channel for an asynchronous mutation pass. */
+  readonly onMutationError?: (error: unknown) => void;
 }
 
 interface Settled {
   lod: LodResult;
   layout: LayoutResult;
   model: RenderModel;
+}
+
+export interface NavigatorPipelineSnapshot {
+  readonly lod: LodResult;
+  readonly layout: LayoutResult;
+  readonly model: RenderModel;
 }
 
 interface Flight {
@@ -161,6 +209,113 @@ interface FromState {
   readonly camera: CameraState;
   readonly layoutForPrev: LayoutResult;
   readonly replanned: boolean;
+}
+
+interface PendingMutation {
+  readonly space: GraphSpace;
+  readonly change: ChangeSet;
+  readonly sourceAtMs: number;
+  readonly receivedAtMs: number;
+  readonly summary?: ChangeBatchSummary;
+  readonly forceFullRebuild?: boolean;
+}
+
+interface IncrementalTransition {
+  readonly previous: Settled;
+  readonly summary: ChangeBatchSummary;
+  readonly recomputed: readonly NodeId[];
+  readonly inducedEdges?: LodResult['inducedEdges'];
+  readonly presentationOnly: boolean;
+  readonly sourceAtMs: number;
+  readonly receivedAtMs: number;
+}
+
+type NodeAddOp = Extract<ChangeSet['ops'][number], { readonly t: 'node:add' }>;
+type NodeRemoveOp = Extract<ChangeSet['ops'][number], { readonly t: 'node:remove' }>;
+type EdgeAddOp = Extract<ChangeSet['ops'][number], { readonly t: 'edge:add' }>;
+type EdgeRemoveOp = Extract<ChangeSet['ops'][number], { readonly t: 'edge:remove' }>;
+
+function mergeChangeSummaries(summaries: readonly ChangeBatchSummary[]): ChangeBatchSummary {
+  const touchedGraphs = new Set<GraphId>();
+  const touchedNodes = new Set<NodeId>();
+  let changeCount = 0;
+  let opCount = 0;
+  let structureChanged = false;
+  const changes: ChangeSet[] = [];
+  for (const summary of summaries) {
+    changeCount += summary.changeCount;
+    opCount += summary.opCount;
+    structureChanged ||= summary.structureChanged;
+    for (const graph of summary.touchedGraphs) touchedGraphs.add(graph);
+    for (const node of summary.touchedNodes) touchedNodes.add(node);
+    changes.push(...summary.changes);
+  }
+  return { changes, changeCount, opCount, touchedGraphs, touchedNodes, structureChanged };
+}
+
+function mutationSummary(entry: PendingMutation): ChangeBatchSummary {
+  return entry.summary ?? summarizeChanges([entry.change]);
+}
+
+/** Hard-cap fallback for a producer that outruns async layout. Intermediate
+ * immutable spaces and op lists may be discarded because the next pass is
+ * explicitly forced through the full rebuild oracle over the newest space. */
+function compactPendingMutations(pending: readonly PendingMutation[]): PendingMutation {
+  const latest = pending.at(-1)!;
+  const merged = mergeChangeSummaries(pending.map(mutationSummary));
+  return {
+    ...latest,
+    summary: { ...merged, changes: [] },
+    forceFullRebuild: true,
+    sourceAtMs: Math.min(...pending.map((entry) => entry.sourceAtMs)),
+    receivedAtMs: Math.min(...pending.map((entry) => entry.receivedAtMs)),
+  };
+}
+
+/** A diffSpaces label/signature replacement is encoded as remove+add (and
+ * temporarily removes/re-adds incident edges). Detect the paired shape so an
+ * unchanged cut can retain its stable layout instead of paying for a 10k-node
+ * layout after every textual edit. */
+export function isPresentationOnlyChange(change: ChangeSet): boolean {
+  const nodeAdds = new Map<string, NodeAddOp>();
+  const nodeRemoves = new Map<string, NodeRemoveOp>();
+  const edgeAdds = new Map<string, EdgeAddOp>();
+  const edgeRemoves = new Map<string, EdgeRemoveOp>();
+  for (const op of change.ops) {
+    if (op.t === 'node:add') nodeAdds.set(`${op.graph}\u0000${op.node.id}`, op);
+    else if (op.t === 'node:remove') nodeRemoves.set(`${op.graph}\u0000${op.id}`, op);
+    else if (op.t === 'edge:add') edgeAdds.set(`${op.graph}\u0000${op.edge.id}`, op);
+    else if (op.t === 'edge:remove') edgeRemoves.set(`${op.graph}\u0000${op.id}`, op);
+    else if (op.t === 'node:attr') {
+      // These values are cached into ForestIndex and participate directly in
+      // budgeted cut selection. All other attributes are presentation data for
+      // the current Phase-11 pipeline.
+      if (op.key === SALIENCE_ATTR || op.key === UPDATED_AT_ATTR) return false;
+    } else if (op.t === 'graph:meta') continue;
+    else return false;
+  }
+  if (nodeAdds.size !== nodeRemoves.size || edgeAdds.size !== edgeRemoves.size) return false;
+  for (const [key, added] of nodeAdds) {
+    const removed = nodeRemoves.get(key);
+    if (
+      removed === undefined ||
+      removed.prev.kind !== added.node.kind ||
+      removed.prev.detail?.graph !== added.node.detail?.graph ||
+      removed.prev.attrs['core:salience'] !== added.node.attrs['core:salience'] ||
+      removed.prev.attrs['core:updated-at'] !== added.node.attrs['core:updated-at']
+    ) return false;
+  }
+  for (const [key, added] of edgeAdds) {
+    const removed = edgeRemoves.get(key);
+    if (
+      removed === undefined ||
+      removed.prev.src !== added.edge.src ||
+      removed.prev.dst !== added.edge.dst ||
+      removed.prev.kind !== added.edge.kind ||
+      removed.prev.weight !== added.edge.weight
+    ) return false;
+  }
+  return true;
 }
 
 function membersKey(members: readonly NodeId[]): string {
@@ -237,9 +392,12 @@ export class StudioNavigator {
   private readonly rangeByGraph = new Map<string, ScaleRange>();
   private readonly layoutCache = new Map<string, LayoutResult>();
   private readonly records: TransitionRecord[] = [];
+  private readonly incrementalRecords: IncrementalPipelineRecord[] = [];
+  private readonly mutationCoalescer: BatchCoalescer<PendingMutation>;
 
   private rootSpace: GraphSpace;
   private controller!: NavigationController;
+  private inducedCache: InducedEdgeCache | null = null;
   private labels = new Map<NodeId, string>();
   private parentOf = new Map<NodeId, NodeId>();
   private current!: Settled;
@@ -247,6 +405,7 @@ export class StudioNavigator {
   private renderer: NavigatorRenderer | null = null;
   private frameHandle: number | null = null;
   private statsUnsub: (() => void) | null = null;
+  private pixelStatsUnsub: (() => void) | null = null;
   private seq = 0;
   private booted = false;
   private destroyed = false;
@@ -263,6 +422,28 @@ export class StudioNavigator {
     this.cancelFrame = options.cancelFrame ?? ((handle) => cancelAnimationFrame(handle));
     this.onUrl = options.onUrl;
     this.rootSpace = options.space;
+    this.mutationCoalescer = new BatchCoalescer(
+      (batch) => this.flushMutations(batch),
+      // Manual-clock tests use a zero-delay timer so their deterministic
+      // settle helper need not advance wall time. Both modes still coalesce a
+      // synchronous storm into one batch.
+      {
+        windowMs: options.mutationCoalesceMs ?? (options.clock.manual ? 0 : 16),
+        maxPending: 1024,
+        compact: compactPendingMutations,
+        onError: (error) => options.onMutationError?.(error),
+      },
+    );
+    this.pixelStatsUnsub = this.zStore.subscribe((state, previous) => {
+      const stats = state.rendererStats;
+      if (stats === null || stats === previous.rendererStats || stats.modelRevision == null) return;
+      const pending = [...this.incrementalRecords]
+        .reverse()
+        .find((record) => record.pixelAtMs === null && record.modelRevision === stats.modelRevision);
+      if (pending === undefined) return;
+      pending.pixelAtMs = performance.now();
+      pending.editToPixelMs = pending.pixelAtMs - pending.sourceAtMs;
+    });
   }
 
   // ------------------------------------------------------------------- boot
@@ -299,6 +480,7 @@ export class StudioNavigator {
     const bootLod = usable ? controllerLod : lod;
     const model = buildRenderModel(space, bootLod, layout, this.zStore.getState().selection);
     this.current = { lod: bootLod, layout, model };
+    this.inducedCache = new InducedEdgeCache(space, bootLod.cut);
     this.cacheLayout(bootLod.cut.members, layout);
     this.booted = true;
 
@@ -380,6 +562,31 @@ export class StudioNavigator {
     return this.records.map((record) => ({ ...record, drawTimesMs: [...record.drawTimesMs] }));
   }
 
+  incrementalTelemetry(): readonly IncrementalPipelineRecord[] {
+    return this.incrementalRecords.map((record) => ({
+      ...record,
+      cut: {
+        added: [...record.cut.added],
+        removed: [...record.cut.removed],
+        retained: [...record.cut.retained],
+        affected: [...record.cut.affected],
+      },
+      layout: {
+        ...record.layout,
+        added: [...record.layout.added],
+        removed: [...record.layout.removed],
+        changed: [...record.layout.changed],
+        changedRoutes: [...record.layout.changedRoutes],
+      },
+      render: {
+        ...record.render,
+        changedNodeIndices: record.render.changedNodeIndices.slice(),
+        movedNodeIndices: record.render.movedNodeIndices.slice(),
+        changedEdgeIndices: record.render.changedEdgeIndices.slice(),
+      },
+    }));
+  }
+
   inFlight(): boolean {
     return this.flight !== null;
   }
@@ -402,6 +609,26 @@ export class StudioNavigator {
 
   currentLod(): LodResult {
     return this.current.lod;
+  }
+
+  settledSnapshot(): NavigatorPipelineSnapshot {
+    return this.current;
+  }
+
+  /** Expensive test/diagnostic oracle for I6: rebuild controller, cut, layout,
+   * and render model from the latest immutable space without consulting any
+   * incremental cache. */
+  async recomputeFromScratch(): Promise<NavigatorPipelineSnapshot> {
+    const state = this.controller.serialize();
+    const fresh = this.buildController(this.rootSpace, this.controller.camera());
+    const restored = fresh.restore(state);
+    if (!restored.ok) throw new Error(`from-scratch navigation restore failed: ${restored.errors.join('; ')}`);
+    const lod = fresh.currentResult();
+    if (lod === undefined) throw new Error('from-scratch navigation produced no LOD result');
+    const space = fresh.currentSpace();
+    const { layout } = await layoutForLod(space, lod, this.layoutService);
+    const model = buildRenderModel(space, lod, layout, this.zStore.getState().selection);
+    return { lod, layout, model };
   }
 
   /** Snapshot the settled semantic cut without moving presentation authority
@@ -636,22 +863,93 @@ export class StudioNavigator {
    * and replan — from the interpolated frame when a transition is in flight
    * (the roadmap's store-mutation-mid-transition failure case).
    */
-  spaceMutated(space: GraphSpace): void {
+  spaceMutated(space: GraphSpace, change: ChangeSet, sourceAtMs = performance.now()): void {
     if (!this.active) return;
+    this.mutationCoalescer.enqueue({
+      space,
+      change,
+      sourceAtMs,
+      receivedAtMs: performance.now(),
+    });
+  }
+
+  private async flushMutations(batch: readonly PendingMutation[]): Promise<void> {
+    if (!this.active || batch.length === 0) return;
+    const latest = batch.at(-1)!;
+    const previous = this.current;
+    const wasFlying = this.flight !== null;
     const before = this.captureFromState();
-    const state = this.controller.serialize();
-    this.rootSpace = space;
-    this.indexSpace(space);
-    this.controller = this.buildController(space, this.controller.camera());
-    const restored = this.controller.restore(state);
-    if (!restored.ok && restored.errors.length > 0) {
-      // Root graph changed identity — an ingest-level change, not a delta;
-      // nothing to navigate. Surface via nav notice.
-      this.publishNav();
-      return;
+    const summary = mergeChangeSummaries(batch.map(mutationSummary));
+    const forceFullRebuild = batch.some((entry) => entry.forceFullRebuild === true);
+    const presentationOnly = !forceFullRebuild && batch.every((entry) => isPresentationOnlyChange(entry.change));
+    const preserveForest = presentationOnly && !wasFlying;
+    const recomputed = new Set<NodeId>();
+    let cachedEdges: LodResult['inducedEdges'] | undefined;
+    if (preserveForest) {
+      // Paired node/edge replacements preserve the fixed cut and its induced
+      // adjacency exactly. Rebind immutable values without rebuilding three
+      // forest indices or a stable 10k-node layout.
+      cachedEdges = previous.lod.inducedEdges;
+    } else if (!forceFullRebuild && this.inducedCache !== null) {
+      try {
+        for (const entry of batch) {
+          for (const member of this.inducedCache.applyChange(entry.change, latest.space)) {
+            recomputed.add(member);
+          }
+        }
+        cachedEdges = this.inducedCache.resolve();
+      } catch (error) {
+        if (!(error instanceof CutStaleError)) throw error;
+        this.inducedCache = null;
+      }
     }
+    if (forceFullRebuild) {
+      this.inducedCache = null;
+      for (const member of previous.lod.cut.members) recomputed.add(member);
+    }
+
+    this.rootSpace = latest.space;
+    if (preserveForest) {
+      for (const entry of batch) {
+        for (const op of entry.change.ops) {
+          if (op.t === 'node:add') this.labels.set(op.node.id, op.node.label);
+        }
+      }
+      this.controller.replaceSpacePreservingForest(
+        latest.space,
+        storeLabelTokenIndex(latest.space),
+        { ...previous.lod, inducedEdges: previous.lod.inducedEdges },
+        summary.touchedNodes,
+      );
+    } else {
+      const state = this.controller.serialize();
+      this.indexSpace(latest.space);
+      this.controller = this.buildController(latest.space, this.controller.camera());
+      const restored = this.controller.restore(state);
+      if (!restored.ok && restored.errors.length > 0) {
+        // Root graph changed identity — an ingest-level change, not a delta;
+        // nothing to navigate. Surface via nav notice.
+        this.publishNav();
+        return;
+      }
+    }
+    // The cache key is semantic-cut identity, so an attribute edit can leave
+    // membership unchanged while changing deterministic node sizes. Invalidate
+    // on every committed batch; the presentation-only fast path still avoids
+    // rebuilding the forest and induced-edge aggregation.
     this.layoutCache.clear();
-    void this.transitionTo('mutation', before, { frame: 'restored-camera' });
+    await this.transitionTo('mutation', before, {
+      frame: 'restored-camera',
+      incremental: {
+        previous,
+        summary,
+        recomputed: [...recomputed],
+        ...(cachedEdges === undefined ? {} : { inducedEdges: cachedEdges }),
+        presentationOnly,
+        sourceAtMs: Math.min(...batch.map((entry) => entry.sourceAtMs)),
+        receivedAtMs: Math.min(...batch.map((entry) => entry.receivedAtMs)),
+      },
+    });
   }
 
   // ------------------------------------------------------ transition machinery
@@ -708,12 +1006,19 @@ export class StudioNavigator {
       readonly worldOut?: Point;
       readonly frame?: 'fit-context' | 'restored-camera';
       readonly flyToNode?: NodeId;
+      readonly incremental?: IncrementalTransition;
     },
   ): Promise<void> {
-    const gestureAt = performance.now();
+    const gestureAt = opts.incremental?.sourceAtMs ?? performance.now();
     const seq = ++this.seq;
-    const lod = this.controller.currentResult();
+    let lod = this.controller.currentResult();
     if (lod === undefined) return;
+    if (
+      opts.incremental?.inducedEdges !== undefined &&
+      membersKey(lod.cut.members) === membersKey(opts.incremental.previous.lod.cut.members)
+    ) {
+      lod = { ...lod, inducedEdges: opts.incremental.inducedEdges };
+    }
     const space = this.controller.currentSpace();
     const context = this.controller.context();
     // One snapshot of the 6E session tunables per transition: a panel edit
@@ -825,6 +1130,34 @@ export class StudioNavigator {
     const finalLod = this.controller.currentResult() ?? lod;
     const model = buildRenderModel(space, finalLod, layout, this.zStore.getState().selection);
 
+    if (opts.incremental !== undefined) {
+      const modelReadyAtMs = performance.now();
+      const incremental: IncrementalPipelineRecord = {
+        seq,
+        sourceAtMs: opts.incremental.sourceAtMs,
+        receivedAtMs: opts.incremental.receivedAtMs,
+        changeCount: opts.incremental.summary.changeCount,
+        opCount: opts.incremental.summary.opCount,
+        touchedGraphCount: opts.incremental.summary.touchedGraphs.size,
+        touchedNodeCount: opts.incremental.summary.touchedNodes.size,
+        structureChanged: opts.incremental.summary.structureChanged,
+        cut: diffAffectedCut(
+          opts.incremental.previous.lod,
+          finalLod,
+          opts.incremental.recomputed,
+        ),
+        layout: diffLayoutResults(opts.incremental.previous.layout, layout),
+        render: diffRenderModels(opts.incremental.previous.model, model),
+        modelRevision: model.revision,
+        modelReadyAtMs,
+        editToModelMs: modelReadyAtMs - opts.incremental.sourceAtMs,
+        pixelAtMs: null,
+        editToPixelMs: null,
+      };
+      this.incrementalRecords.push(incremental);
+      if (this.incrementalRecords.length > 128) this.incrementalRecords.shift();
+    }
+
     const changed = membersKey(finalLod.cut.members) !== membersKey(before.members);
     const prepared = changed || before.replanned ? prepareTransition(before.model, model, plan) : null;
     record.mode = prepared === null ? 'camera-only' : plan.mode;
@@ -835,7 +1168,9 @@ export class StudioNavigator {
     // duration stands.
     const overhead = this.clock.manual ? 0 : record.layoutMs + record.planMs;
     record.durationMs =
-      prepared === null
+      opts.incremental?.presentationOnly === true
+        ? 0
+        : prepared === null
         ? Math.min(tunables.baseTransitionMs, MAX_TRANSITION_MS) // camera-only flight
         : Math.max(0, Math.min(plan.durationMs, MAX_TRANSITION_MS - overhead));
 
@@ -905,6 +1240,7 @@ export class StudioNavigator {
   private settle(flight: Flight): void {
     this.endFlight(flight, true);
     this.current = { lod: flight.target.lod, layout: flight.target.layout, model: flight.target.model };
+    this.inducedCache = new InducedEdgeCache(this.controller.currentSpace(), flight.target.lod.cut);
     flight.record.settledAtMs = performance.now();
     flight.record.gestureToSettleMs = flight.record.settledAtMs - flight.record.gestureAtMs;
     this.renderer?.render(flight.target.model, flight.target.camera);
@@ -1027,6 +1363,9 @@ export class StudioNavigator {
 
   destroy(): void {
     this.destroyed = true;
+    this.mutationCoalescer.dispose();
+    this.pixelStatsUnsub?.();
+    this.pixelStatsUnsub = null;
     const flight = this.flight;
     if (flight !== null) this.endFlight(flight, false);
     this.renderer = null;

@@ -79,6 +79,8 @@ export {
   NODE_FLAG_SELECTED,
   NODE_FLAG_SELECTION_ANCHOR,
 } from './render-model.js';
+export { diffRenderModels } from './render-patch.js';
+export type { RenderModelPatch } from './render-patch.js';
 export type {
   RenderDiagnostic,
   RenderDiagnosticCode,

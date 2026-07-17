@@ -1,6 +1,6 @@
 /**
  * The narrow synchronous SQL seam both runtime bindings implement
- * (ADR-0038): better-sqlite3 in Node, wa-sqlite (sync build, in a worker)
+ * (ADR-0038): better-sqlite3 in Node, `@sqlite.org/sqlite-wasm` (in a worker)
  * in the browser. Everything above this interface — schema, migrations,
  * the open/append/checkpoint protocol — is written once and shared, which
  * is what makes the 11D parity suite a suite and not two suites.
@@ -17,8 +17,10 @@ export interface SqlDriver {
   all(sql: string, params?: readonly SqlValue[]): SqlRow[];
   get(sql: string, params?: readonly SqlValue[]): SqlRow | undefined;
   /**
-   * Run `fn` inside one SQLite transaction: commit on return, rollback on
-   * throw. Nesting is a programming error (drivers may throw).
+   * Run `fn` inside one SQLite `BEGIN IMMEDIATE` transaction: acquiring the
+   * writer lease before executing `fn` enforces ADR-0038's single-writer
+   * contract. Commit on return, rollback on throw. Nesting is a programming
+   * error (drivers may throw).
    */
   transaction<T>(fn: () => T): T;
   close(): void;

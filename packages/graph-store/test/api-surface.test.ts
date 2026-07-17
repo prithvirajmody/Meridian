@@ -26,6 +26,7 @@ describe('@meridian/graph-store public surface', () => {
       'initialVersion',
       'invertDelta',
       'invertOp',
+      'stageDeltaStream',
       'successorVersion',
       'tokenizeLabel',
       'versionsEqual',

@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { encodeProjectBundle, type RawModule } from '@meridian/adapter-code';
+import type { CodeMapper } from '@meridian/adapter-code/worker-host';
 import { describe, expect, it } from 'vitest';
 import { StudioSession } from '../src/studio-session.js';
 import { createStudioStore, StudioStoreCommands } from '../src/store.js';
@@ -32,6 +34,9 @@ describe('StudioSession full pipeline', () => {
           [...(state.renderModel?.nodeIds ?? [])].sort(),
         );
         expect(state.renderModel?.diagnostics).toEqual([]);
+        expect(state.ingestProgress?.emissions).toBeGreaterThanOrEqual(1);
+        expect(state.ingestProgress?.appliedOps).toBeGreaterThan(0);
+        expect(state.ingestProgress?.peakBufferedOps).toBeLessThanOrEqual(1024);
         if (corpus === 'empty.md') expect(state.renderModel?.nodeIds).toHaveLength(0);
       } finally {
         await session.destroy();
@@ -72,6 +77,58 @@ describe('StudioSession full pipeline', () => {
         source: 'pipeline',
         code: 'open-failed',
       });
+    } finally {
+      await session.destroy();
+    }
+  });
+
+  it('cancels a superseded code parse and cannot publish stale progress', async () => {
+    let started!: () => void;
+    const mapStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    let parseSignal: AbortSignal | undefined;
+    const mapper: CodeMapper = {
+      mapModule: (_request, opts): Promise<RawModule> => {
+        parseSignal = opts?.signal;
+        started();
+        return new Promise((_resolve, reject) => {
+          if (parseSignal === undefined) {
+            reject(new Error('Studio did not propagate an ingest cancellation signal'));
+            return;
+          }
+          if (parseSignal.aborted) {
+            reject(parseSignal.reason);
+            return;
+          }
+          parseSignal.addEventListener('abort', () => reject(parseSignal?.reason), { once: true });
+        });
+      },
+      resolveBody: async () => undefined,
+      dispose: async () => undefined,
+    };
+    const store = createStudioStore();
+    const session = new StudioSession(store, { codeMapper: mapper });
+    try {
+      const stale = session.openText(
+        'stale.meridian-code-project',
+        encodeProjectBundle({
+          root: 'stale',
+          files: [{ path: 'src/stale.ts', text: 'export const stale = true;\n' }],
+        }),
+      );
+      await mapStarted;
+      const current = session.openText('current.md', '# Current\n\nOnly this source may publish.');
+      await Promise.all([stale, current]);
+
+      expect(parseSignal?.aborted).toBe(true);
+      expect(store.getState()).toMatchObject({
+        phase: 'ready',
+        adapter: { domain: 'markdown', plugin: '@meridian/adapter-markdown' },
+        source: { name: 'current.md' },
+      });
+      expect(store.getState().diagnostics).toEqual([]);
+      expect(store.getState().ingestProgress?.stage).not.toBe('map');
     } finally {
       await session.destroy();
     }

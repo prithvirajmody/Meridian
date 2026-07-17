@@ -52,6 +52,7 @@ import {
 import { containmentRollupProvider } from '@meridian/abstraction';
 import { decode, encode } from '@meridian/graph-core';
 import { readFile, writeFile } from 'node:fs/promises';
+import { stderrLine, stdoutLine } from './io.js';
 
 // ------------------------------------------------------------------- options
 
@@ -91,11 +92,11 @@ export class AiCliError extends Error {
 }
 
 function out(line: string): void {
-  process.stdout.write(line + '\n');
+  stdoutLine(line);
 }
 
 function err(line: string): void {
-  process.stderr.write(line + '\n');
+  stderrLine(line);
 }
 
 // --------------------------------------------------------------- mock handlers

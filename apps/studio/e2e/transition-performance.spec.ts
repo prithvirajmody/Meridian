@@ -6,7 +6,7 @@
  * numbers so the gate output is a real measurement record.
  */
 import { expect, test } from '@playwright/test';
-import { boot, openCorpus, percentile95, telemetry, UI_BUDGETS, zoomStep } from './support.js';
+import { boot, openCorpus, percentile95, recordStudioBenchmarkMetrics, telemetry, UI_BUDGETS, zoomStep } from './support.js';
 
 test('transition p95 frame time ≤ 22ms across a live basic.md descent/ascent', async ({ page }) => {
   test.setTimeout(120_000);
@@ -29,6 +29,9 @@ test('transition p95 frame time ≤ 22ms across a live basic.md descent/ascent',
   const maxDrift = Math.max(...settled.map((record) => record.maxDriftPx));
   const maxPlan = Math.max(...settled.map((record) => record.planMs));
   const maxLayout = Math.max(...settled.map((record) => record.layoutMs));
+  const maxGestureToSettle = Math.max(
+    ...settled.map((record) => record.gestureToSettleMs ?? 0),
+  );
 
   console.log(
     `[6D transition-fps] transitions=${settled.length} framesSampled=${drawTimes.length} ` +
@@ -39,6 +42,14 @@ test('transition p95 frame time ≤ 22ms across a live basic.md descent/ascent',
 
   expect(p95).toBeLessThanOrEqual(UI_BUDGETS['transition-frame-p95-ms']);
   expect(maxDrift).toBeLessThan(UI_BUDGETS['transition-anchor-drift-px']);
+  expect(maxGestureToSettle).toBeLessThanOrEqual(
+    UI_BUDGETS['transition-max-plan-to-settle-ms'],
+  );
+  recordStudioBenchmarkMetrics([
+    { id: 'transition-frame-p95-ms', value: p95, unit: 'ms', sampleCount: drawTimes.length },
+    { id: 'transition-anchor-drift-px', value: maxDrift, unit: 'px', sampleCount: settled.length },
+    { id: 'transition-max-plan-to-settle-ms', value: maxGestureToSettle, unit: 'ms', sampleCount: settled.length },
+  ]);
   // Plan computation is part of the 300ms budget (ADR-0023) — and must stay
   // well inside the 20ms roadmap row on these corpus-sized cut diffs.
   expect(maxPlan).toBeLessThan(20);

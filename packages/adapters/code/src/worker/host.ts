@@ -33,7 +33,7 @@ import {
   type ParseWorkerApi,
   type ResolveBodyRequest,
   type ResolveBodyResponse,
-} from './worker-api.js';
+} from './protocol.js';
 
 /** How a worker died. */
 export interface CrashInfo {

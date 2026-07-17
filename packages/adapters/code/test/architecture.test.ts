@@ -8,12 +8,14 @@
  * behaviorally in worker-map.test.ts, where the worker actually loads a grammar
  * and returns a mapped module.)
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { preProcessFile } from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../../..');
+const adapterRoot = resolve(repoRoot, 'packages/adapters/code');
 
 /** Packages that must never know a code kind (the dependency-law core, §20). */
 const DOMAIN_FREE_PACKAGES = [
@@ -56,4 +58,39 @@ describe('architecture — code vocabulary is adapter-local', () => {
       expect(offenders).toEqual([]);
     });
   }
+
+  it('the public worker-host graph cannot reach the in-process parser runtime', () => {
+    const entry = resolve(adapterRoot, 'src/worker-host-entry.ts');
+    const pending = [entry];
+    const visited = new Set<string>();
+
+    while (pending.length > 0) {
+      const file = pending.pop()!;
+      if (visited.has(file)) continue;
+      visited.add(file);
+      const source = readFileSync(file, 'utf8');
+      for (const imported of preProcessFile(source).importedFiles) {
+        if (!imported.fileName.startsWith('.')) continue;
+        const target = resolve(dirname(file), imported.fileName.replace(/[.]js$/, '.ts'));
+        if (existsSync(target)) pending.push(target);
+      }
+    }
+
+    const relative = [...visited].map((file) => file.replace(`${adapterRoot}/`, '')).sort();
+    expect(relative).not.toContain('src/in-process-mapper.ts');
+    expect(relative).not.toContain('src/shim.ts');
+    expect(relative).not.toContain('src/worker/worker-api.ts');
+    expect(relative).toContain('src/worker/protocol.ts');
+    expect(relative).toContain('src/worker-mapper.ts');
+  });
+
+  it('publishes stable package subpaths for both browser grammar assets', () => {
+    const manifest = JSON.parse(readFileSync(resolve(adapterRoot, 'package.json'), 'utf8')) as {
+      exports?: Record<string, unknown>;
+    };
+    expect(manifest.exports).toMatchObject({
+      './grammars/tree-sitter-typescript.wasm': './grammars/tree-sitter-typescript.wasm',
+      './grammars/tree-sitter-python.wasm': './grammars/tree-sitter-python.wasm',
+    });
+  });
 });

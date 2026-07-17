@@ -13,6 +13,7 @@ import {
   type Unsubscribe,
 } from '@meridian/renderer';
 import {
+  diffRenderModels,
   worldToScreen,
   type CameraState,
   type Point,
@@ -171,6 +172,7 @@ export class StudioSceneBridge {
   }
 
   private modelChanged(model: RenderModel | null, sourceGeneration: number | null): void {
+    const previous = this.latestModel;
     this.latestModel = model;
     this.latestSourceGeneration = sourceGeneration;
     this.commands.clearHover(this.sceneGeneration);
@@ -183,7 +185,23 @@ export class StudioSceneBridge {
         this.camera.fitToBounds(model.nodeIds.length === 0 ? null : model.bounds, { padding: 64 });
       }
     }
-    this.scene.render(model, this.camera.state());
+    this.renderScene(model, this.camera.state(), previous);
+  }
+
+  private renderScene(
+    model: RenderModel,
+    camera: CameraState,
+    previous: RenderModel | null,
+  ): void {
+    if (
+      previous !== null &&
+      previous.revision !== model.revision &&
+      this.scene?.patch !== undefined
+    ) {
+      this.scene.patch(diffRenderModels(previous, model), camera);
+      return;
+    }
+    this.scene?.render(model, camera);
   }
 
   /** Settled map-model ingress owned by MapProjection's node-link port. */
@@ -405,8 +423,9 @@ export class StudioSceneBridge {
    * the navigator at flight end. */
   renderTransient(model: RenderModel, camera: CameraState): void {
     if (!this.ready || this.scene === null) return;
+    const previous = this.latestModel;
     this.latestModel = model;
-    this.scene.render(model, camera);
+    this.renderScene(model, camera, previous);
   }
 
   /** Current canvas viewport in CSS px (the navigator's camera-math input). */

@@ -97,12 +97,17 @@ export class SqliteBackendCore {
   private readonly checkpointEvery: number;
   private queue: Array<readonly GraphOp[]> = [];
   private lastAppendedSeq: number;
+  /** Durable head observed when this core opened. Compared under the SQLite
+   * writer lease before every append so a second, stale project instance
+   * cannot write a duplicate logical version after the first writer commits. */
+  private lastDurableCounter: number;
   private deadReason: string | undefined;
 
-  private constructor(db: SqlDriver, opts: CoreOptions, headSeq: number) {
+  private constructor(db: SqlDriver, opts: CoreOptions, headSeq: number, durableCounter: number) {
     this.db = db;
     this.checkpointEvery = Math.max(1, opts.checkpointEvery ?? DEFAULT_CHECKPOINT_EVERY);
     this.lastAppendedSeq = headSeq;
+    this.lastDurableCounter = durableCounter;
   }
 
   /** Full checkpoint of `space` into a freshly initialized schema. */
@@ -127,7 +132,7 @@ export class SqliteBackendCore {
         }
       }
     });
-    return new SqliteBackendCore(db, opts, 0);
+    return new SqliteBackendCore(db, opts, 0, 0);
   }
 
   /**
@@ -146,7 +151,7 @@ export class SqliteBackendCore {
       );
     }
 
-    const core = new SqliteBackendCore(db, opts, headSeq);
+    const core = new SqliteBackendCore(db, opts, headSeq, lastCounter);
     let fullSpace: GraphSpace | undefined;
     let replayed = 0;
 
@@ -200,6 +205,13 @@ export class SqliteBackendCore {
     const wire = JSON.stringify(deltaToWire({ origin: { actor: delta.origin.actor }, ops: delta.ops }));
     try {
       this.db.transaction(() => {
+        const durableHead = readIntMeta(this.db, META_LAST_COUNTER);
+        if (durableHead !== this.lastDurableCounter) {
+          throw new MeridianError(
+            'storage-busy',
+            `project durable head advanced from ${this.lastDurableCounter} to ${durableHead} in another writer — close this stale session and reopen (ADR-0038 single-writer contract)`,
+          );
+        }
         this.db.run('INSERT INTO oplog (counter, site, actor, ops) VALUES (?, ?, ?, ?)', [
           committedCounter,
           delta.baseVersion.site,
@@ -209,10 +221,11 @@ export class SqliteBackendCore {
         writeMetaValue(this.db, META_LAST_COUNTER, String(committedCounter));
       });
     } catch (e) {
-      this.die(e);
+      this.die(e, `op-log append for durable version ${committedCounter}`);
     }
     const row = this.db.get('SELECT last_insert_rowid() AS seq');
     this.lastAppendedSeq = Number(row?.seq ?? this.lastAppendedSeq + 1);
+    this.lastDurableCounter = committedCounter;
   }
 
   /** Queue a committed change for materialization (write-behind checkpoint). */
@@ -252,7 +265,7 @@ export class SqliteBackendCore {
       });
       this.queue = [];
     } catch (e) {
-      this.die(e);
+      this.die(e, `checkpoint through op-log seq ${upToSeq}`);
     }
   }
 
@@ -321,9 +334,12 @@ export class SqliteBackendCore {
     }
   }
 
-  private die(e: unknown): never {
+  private die(e: unknown, location: string): never {
     this.deadReason = e instanceof Error ? e.message : String(e);
-    throw new MeridianError('storage-io', `storage write failed: ${this.deadReason}`);
+    throw new MeridianError(
+      e instanceof MeridianError ? e.code : 'storage-io',
+      `storage write failed during ${location}: ${this.deadReason}`,
+    );
   }
 
   private materializeOp(op: GraphOp, counts: Map<string, { nodes: number; edges: number }>): void {

@@ -11,6 +11,7 @@ import {
   type DomainParser,
   type GraphDocument,
   type IngestReport,
+  type IngestSink,
   type MeridianPlugin,
   type PluginContext,
   type PluginLogger,
@@ -63,6 +64,8 @@ export interface IngestOptions {
   /** Force a parser by domain, bypassing sniff arbitration. */
   readonly parser?: string;
   readonly onProgress?: (p: Progress) => void;
+  /** Cancels parser work and any accepted streaming consumer work. */
+  readonly signal?: AbortSignal;
 }
 
 export type IngestOutcome =
@@ -75,6 +78,32 @@ export type IngestOutcome =
       readonly report: IngestReport;
     }
   | { readonly ok: false; readonly issue: HostIssue };
+
+/** Async destination for non-buffering host ingest. Calls are serialized. */
+export interface StreamingIngestConsumer {
+  emitDocument(doc: GraphDocument): void | Promise<void>;
+  emitDelta(delta: DeltaWire): void | Promise<void>;
+  progress?(progress: Progress): void | Promise<void>;
+}
+
+/** Buffered-ingest counts plus progress events accepted by the stream sink. */
+export interface StreamingIngestReport extends IngestReport {
+  readonly progressEvents: number;
+}
+
+export type StreamingIngestOutcome =
+  | {
+      readonly ok: true;
+      readonly plugin: string;
+      readonly domain: string;
+      readonly report: StreamingIngestReport;
+    }
+  | {
+      readonly ok: false;
+      readonly issue: HostIssue;
+      /** Present once a parser was selected and streaming began. */
+      readonly report?: StreamingIngestReport;
+    };
 
 export interface HostOptions {
   /** Deterministic ID derivation for plugin contexts; the composition root
@@ -415,6 +444,213 @@ export class PluginHost {
       elapsedMs: Date.now() - started,
     };
     return { ok: true, plugin, domain: parser.domain, documents, deltas, report };
+  }
+
+  /**
+   * Run one parser without retaining its documents or deltas in the host.
+   * Accepted emissions are forwarded through one serialized async queue, and
+   * `sink.drain()` awaits everything accepted before the call. The final queue
+   * is always drained and the sink closed before this method resolves.
+   *
+   * Streaming cannot roll back an arbitrary consumer. The consumer therefore
+   * owns a private staging target and publishes it only from the `ok: true`
+   * branch; every failure branch means discard that target.
+   */
+  async ingestStreaming(
+    src: SourceDescriptor,
+    consumer: StreamingIngestConsumer,
+    opts: IngestOptions = {},
+  ): Promise<StreamingIngestOutcome> {
+    const warnings: string[] = [];
+    let chosen: { plugin: string; parser: DomainParser } | undefined;
+
+    if (opts.parser !== undefined) {
+      const matches = [...this.#plugins.values()].flatMap((pl) =>
+        pl.parsers
+          .filter((p) => p.domain === opts.parser)
+          .map((p) => ({ plugin: pl.manifest.name, parser: p })),
+      );
+      if (matches.length === 0) {
+        return {
+          ok: false,
+          issue: {
+            code: 'unknown-parser',
+            message: `no registered parser has domain "${opts.parser}"`,
+          },
+        };
+      }
+      if (matches.length > 1) {
+        return {
+          ok: false,
+          issue: {
+            code: 'ambiguous-source',
+            message: `domain "${opts.parser}" is provided by more than one plugin: ${matches.map((m) => m.plugin).join(', ')}`,
+          },
+        };
+      }
+      chosen = matches[0]!;
+    } else {
+      const { candidates, warnings: sniffWarnings } = this.resolve(src);
+      warnings.push(...sniffWarnings);
+      const [best, second] = candidates;
+      if (best === undefined) {
+        return {
+          ok: false,
+          issue: {
+            code: 'no-parser',
+            message: `no registered parser claims "${src.uri}" (${candidates.length} claimants)`,
+          },
+        };
+      }
+      if (second !== undefined && second.score === best.score) {
+        return {
+          ok: false,
+          issue: {
+            code: 'ambiguous-source',
+            message:
+              `"${src.uri}" is claimed equally (${best.score}) by ` +
+              `"${best.parser.domain}" (${best.plugin}) and "${second.parser.domain}" (${second.plugin})` +
+              ` — pick one explicitly`,
+          },
+        };
+      }
+      chosen = { plugin: best.plugin, parser: best.parser };
+    }
+
+    const { plugin, parser } = chosen;
+    const started = Date.now();
+    let documents = 0;
+    let deltas = 0;
+    let graphs = 0;
+    let nodes = 0;
+    let edges = 0;
+    let progressEvents = 0;
+    const provenance = { source: 0, derived: 0, ai: 0 };
+    const tally = (origin: string) => {
+      if (origin === 'source' || origin === 'derived' || origin === 'ai') provenance[origin] += 1;
+    };
+    const tallyDocument = (doc: GraphDocument) => {
+      graphs += doc.graphs.length;
+      for (const graph of doc.graphs) {
+        nodes += graph.nodes.length;
+        edges += graph.edges.length;
+        tally(graph.meta.provenance.origin);
+        for (const node of graph.nodes) tally(node.provenance.origin);
+        for (const edge of graph.edges) tally(edge.provenance.origin);
+      }
+    };
+    const report = (): StreamingIngestReport => ({
+      plugin,
+      domain: parser.domain,
+      source: src.uri,
+      documents,
+      deltas,
+      graphs,
+      nodes,
+      edges,
+      provenance: { ...provenance },
+      warnings: [...warnings],
+      elapsedMs: Date.now() - started,
+      progressEvents,
+    });
+
+    let closed = false;
+    let consumerFailed = false;
+    let consumerFailure: unknown;
+    let queue: Promise<void> = Promise.resolve();
+
+    const ensureWritable = () => {
+      opts.signal?.throwIfAborted();
+      if (closed) {
+        throw new Error('streaming ingest sink is closed (no emissions after ingest resolves)');
+      }
+      if (consumerFailed) {
+        throw consumerFailure instanceof Error
+          ? consumerFailure
+          : new Error(`streaming ingest consumer failed: ${message(consumerFailure)}`);
+      }
+    };
+    const enqueue = (work: () => void | Promise<void>) => {
+      queue = queue.then(async () => {
+        if (consumerFailed) return;
+        try {
+          await work();
+        } catch (cause) {
+          consumerFailed = true;
+          consumerFailure = cause;
+        }
+      });
+    };
+    const drain = async () => {
+      await queue;
+      if (consumerFailed) throw consumerFailure;
+    };
+
+    const sink: IngestSink = {
+      emitDocument: (doc) => {
+        ensureWritable();
+        documents += 1;
+        tallyDocument(doc);
+        enqueue(() => consumer.emitDocument(doc));
+      },
+      emitDelta: (delta) => {
+        ensureWritable();
+        deltas += 1;
+        enqueue(() => consumer.emitDelta(delta));
+      },
+      progress: (progress) => {
+        ensureWritable();
+        progressEvents += 1;
+        enqueue(async () => {
+          opts.onProgress?.(progress);
+          await consumer.progress?.(progress);
+        });
+      },
+      ...(opts.signal === undefined ? {} : { signal: opts.signal }),
+      drain,
+    };
+
+    let parserFailed = false;
+    let parserFailure: unknown;
+    try {
+      await parser.ingest(src, sink);
+    } catch (cause) {
+      parserFailed = true;
+      parserFailure = cause;
+    }
+    // Refuse late emissions while the final accepted queue drains.
+    closed = true;
+    await queue;
+
+    const finalReport = report();
+    if (consumerFailed) {
+      return {
+        ok: false,
+        issue: {
+          code: 'ingest-failed',
+          message:
+            `stream consumer for "${parser.domain}" failed after accepting ${documents} document(s), ` +
+            `${deltas} delta(s), ${progressEvents} progress event(s) — caller-owned staging must not be published: ` +
+            message(consumerFailure),
+          plugin,
+        },
+        report: finalReport,
+      };
+    }
+    if (parserFailed) {
+      return {
+        ok: false,
+        issue: {
+          code: 'ingest-failed',
+          message:
+            `"${parser.domain}" parser failed after forwarding ${documents} document(s), ` +
+            `${deltas} delta(s) — caller-owned staging must not be published: ${message(parserFailure)}`,
+          plugin,
+        },
+        report: finalReport,
+      };
+    }
+    return { ok: true, plugin, domain: parser.domain, report: finalReport };
   }
 
   #refuse(issue: HostIssue): RegisterResult {

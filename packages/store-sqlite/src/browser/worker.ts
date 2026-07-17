@@ -30,6 +30,12 @@ import {
   readMetaValue,
   STORAGE_SCHEMA_VERSION,
 } from '../schema.js';
+import {
+  detectBrowserStorageCapability,
+  durableBrowserStorage,
+  volatileBrowserStorage,
+  type BrowserStorageCapability,
+} from './capability.js';
 import { SqliteWasmDriver, type Oo1Database } from './driver.js';
 
 const PRODUCER = '@meridian/store-sqlite@0.1.0 (browser)';
@@ -65,7 +71,7 @@ interface PoolUtil {
 
 /** The Comlink-exposed surface. One project per worker. */
 export interface StorageWorkerApi {
-  probe(): Promise<{ ok: boolean; reason?: string }>;
+  probe(): Promise<BrowserStorageCapability>;
   open(opts: StorageWorkerOpenOptions): Promise<StorageWorkerOpenResult>;
   appendDelta(delta: GraphDelta): Promise<void>;
   persistOps(ops: readonly GraphOp[]): Promise<void>;
@@ -76,27 +82,15 @@ export interface StorageWorkerApi {
   wipeAll(): Promise<void>;
 }
 
-function opfsSupported(): { ok: boolean; reason?: string } {
-  const nav = (globalThis as { navigator?: { storage?: { getDirectory?: unknown } } }).navigator;
-  if (typeof nav?.storage?.getDirectory !== 'function') {
-    return { ok: false, reason: 'navigator.storage.getDirectory is unavailable' };
-  }
-  const fileHandle = (globalThis as { FileSystemFileHandle?: { prototype: object } }).FileSystemFileHandle;
-  if (!fileHandle || !('createSyncAccessHandle' in fileHandle.prototype)) {
-    return { ok: false, reason: 'FileSystemFileHandle.createSyncAccessHandle is unavailable (no sync access handles in this context)' };
-  }
-  return { ok: true };
-}
-
 export function createStorageWorkerApi(): StorageWorkerApi {
   let poolUtil: PoolUtil | undefined;
   let core: SqliteBackendCore | undefined;
 
   async function pool(): Promise<PoolUtil> {
     if (poolUtil) return poolUtil;
-    const support = opfsSupported();
+    const support = detectBrowserStorageCapability();
     if (!support.ok) {
-      throw new MeridianError('opfs-unavailable', support.reason ?? 'OPFS unavailable');
+      throw new MeridianError('opfs-unavailable', `[${support.location}] ${support.reason}`);
     }
     const sqlite3 = await sqlite3InitModule();
     // A predecessor worker's access handles are released asynchronously
@@ -126,12 +120,17 @@ export function createStorageWorkerApi(): StorageWorkerApi {
   }
 
   return {
-    async probe(): Promise<{ ok: boolean; reason?: string }> {
+    async probe(): Promise<BrowserStorageCapability> {
+      const support = detectBrowserStorageCapability();
+      if (!support.ok) return support;
       try {
         await pool();
-        return { ok: true };
+        return durableBrowserStorage();
       } catch (e) {
-        return { ok: false, reason: e instanceof Error ? e.message : String(e) };
+        return volatileBrowserStorage(
+          'opfs-sah-pool',
+          e instanceof Error ? e.message : String(e),
+        );
       }
     },
 

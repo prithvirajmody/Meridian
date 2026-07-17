@@ -23,6 +23,22 @@ import {
   type VersionStamp,
 } from '@meridian/graph-store';
 import type { StorageWorkerApi } from './worker.js';
+import {
+  volatileBrowserStorage,
+  type BrowserStorageCapability,
+  type DurableBrowserStorageCapability,
+  type VolatileBrowserStorageCapability,
+} from './capability.js';
+
+export { detectBrowserStorageCapability } from './capability.js';
+export type {
+  BrowserStorageCapability,
+  BrowserStorageCapabilityLocation,
+  BrowserStoragePrerequisiteResult,
+  BrowserStoragePrerequisitesPresent,
+  DurableBrowserStorageCapability,
+  VolatileBrowserStorageCapability,
+} from './capability.js';
 
 export interface BrowserProjectOptions {
   /** Host-provided worker factory (the app owns bundling, ADR-0017 style):
@@ -51,8 +67,16 @@ export interface BrowserMeridianProject {
 }
 
 export type BrowserOpenOutcome =
-  | { readonly mode: 'opfs'; readonly project: BrowserMeridianProject }
-  | { readonly mode: 'memory'; readonly reason: string };
+  | {
+      readonly mode: 'opfs';
+      readonly capability: DurableBrowserStorageCapability;
+      readonly project: BrowserMeridianProject;
+    }
+  | {
+      readonly mode: 'memory';
+      readonly capability: VolatileBrowserStorageCapability;
+      readonly reason: string;
+    };
 
 class WorkerStorageBackend implements StorageBackend {
   /** Tail of all work this backend has been handed. Unlike the Node binding,
@@ -109,17 +133,23 @@ export async function openBrowserProject(
   opts: BrowserProjectOptions,
 ): Promise<BrowserOpenOutcome> {
   if (opts.forceUnavailable === true) {
-    return { mode: 'memory', reason: 'OPFS unavailable (forced by host)' };
+    const capability = volatileBrowserStorage(
+      'host-policy',
+      'OPFS unavailable (forced by host)',
+    );
+    return { mode: 'memory', capability, reason: capability.reason };
   }
   const worker = opts.workerFactory();
   const api = Comlink.wrap<StorageWorkerApi>(worker);
-  const fail = async (reason: string): Promise<BrowserOpenOutcome> => {
+  const fail = async (
+    capability: VolatileBrowserStorageCapability,
+  ): Promise<BrowserOpenOutcome> => {
     worker.terminate();
-    return { mode: 'memory', reason };
+    return { mode: 'memory', capability, reason: capability.reason };
   };
   try {
     const probe = await api.probe();
-    if (!probe.ok) return await fail(probe.reason ?? 'OPFS unavailable');
+    if (!probe.ok) return await fail(probe);
     if (opts.wipeFirst === true) await api.wipeAll();
     const opened = await api.open({
       name,
@@ -130,7 +160,9 @@ export async function openBrowserProject(
     if (!opened.ok) {
       // Corruption/schema refusals are real errors, not fallback: silent data
       // divergence must never masquerade as a fresh session.
-      if (opened.code === 'opfs-unavailable') return await fail(opened.message);
+      if (opened.code === 'opfs-unavailable') {
+        return await fail(volatileBrowserStorage('opfs-sah-pool', opened.message));
+      }
       worker.terminate();
       throw Object.assign(new Error(opened.message), { code: opened.code, name: 'MeridianError' });
     }
@@ -142,6 +174,7 @@ export async function openBrowserProject(
     };
     return {
       mode: 'opfs',
+      capability: probe,
       project: {
         name,
         space: opened.space,
@@ -169,7 +202,12 @@ export async function openBrowserProject(
     };
   } catch (e) {
     if ((e as { name?: string }).name === 'MeridianError') throw e;
-    return await fail(`storage worker failed: ${e instanceof Error ? e.message : String(e)}`);
+    return await fail(
+      volatileBrowserStorage(
+        'storage-worker',
+        `storage worker failed: ${e instanceof Error ? e.message : String(e)}`,
+      ),
+    );
   }
 }
 
@@ -191,6 +229,7 @@ export async function wipeBrowserProjects(
 
 export interface BrowserSession {
   readonly mode: 'opfs' | 'memory';
+  readonly capability: BrowserStorageCapability;
   readonly reason?: string;
   readonly store: GraphStore;
   readonly project?: BrowserMeridianProject;
@@ -211,7 +250,12 @@ export async function openBrowserProjectStore(
     const store = createStore(opts.initialSpace ?? { graphs: new Map(), roots: [] }, {
       ...(opts.onListenerError ? { onListenerError: opts.onListenerError } : {}),
     });
-    return { mode: 'memory', reason: outcome.reason, store };
+    return {
+      mode: 'memory',
+      capability: outcome.capability,
+      reason: outcome.reason,
+      store,
+    };
   }
   const { project } = outcome;
   const store = createStore(project.space, {
@@ -220,12 +264,14 @@ export async function openBrowserProjectStore(
     ...(opts.onListenerError ? { onListenerError: opts.onListenerError } : {}),
     ...(opts.onBackendError ? { onBackendError: opts.onBackendError } : {}),
   });
-  if (project.manifest === undefined) return { mode: 'opfs', store, project };
+  if (project.manifest === undefined) {
+    return { mode: 'opfs', capability: outcome.capability, store, project };
+  }
   const hydration = new HydrationManager({
     store,
     backend: project.backend,
     manifest: project.manifest,
     ...(opts.hydrationPolicy ? { policy: opts.hydrationPolicy } : {}),
   });
-  return { mode: 'opfs', store, project, hydration };
+  return { mode: 'opfs', capability: outcome.capability, store, project, hydration };
 }

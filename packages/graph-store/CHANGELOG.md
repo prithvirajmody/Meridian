@@ -1,5 +1,11 @@
 # @meridian/graph-store
 
+## Unreleased — Phase 11 streaming staging
+
+Additive `stageDeltaStream`: bounded op batching into a private `GraphStore`,
+awaited backend/settle backpressure, progress and peak-buffer statistics, and
+failure-as-value outcomes that never expose a partially ingested store.
+
 ## 0.1.0 — 2026-07-05 (Phase 1)
 
 Initial store: immutable structurally-shared snapshots (ADR-0006), op-based

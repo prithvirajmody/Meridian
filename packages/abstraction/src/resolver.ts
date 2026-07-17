@@ -213,9 +213,17 @@ class CandidateHeap {
 export class LodResolver {
   private readonly index: ForestIndex;
   private readonly weights?: SalienceWeights;
+  /** Immutable-space induced-edge results are reused across threshold
+   * crossings. Navigation commonly revisits the same small set of cuts; the
+   * bounded LRU avoids repeating the O(nodes + edges) cover walk. */
+  private readonly inducedByCut = new Map<string, readonly InducedEdge[]>();
+  /** Complete immutable results for the handful of semantic bands a camera
+   * revisits while zooming. The request's continuous zoom value is presentation
+   * provenance only once `(level, nominalLevel)` and all semantic inputs match. */
+  private readonly resultsBySemanticRequest = new Map<string, LodResult>();
 
   constructor(
-    private readonly space: GraphSpace,
+    private space: GraphSpace,
     private readonly chain: LevelChain,
     private readonly policy: ZoomPolicy,
     options: LodResolverOptions = {},
@@ -225,9 +233,27 @@ export class LodResolver {
     this.weights = options.salienceWeights;
   }
 
+  /** Phase-11 incremental seam. The caller has already proven that graph,
+   * node, containment, and incident-edge topology are unchanged. Rebind the
+   * immutable value snapshot while retaining the expensive forest index; the
+   * next resolve reads current edges/labels from `space`. */
+  replaceSpacePreservingForest(space: GraphSpace): void {
+    this.space = space;
+  }
+
   resolve(req: LodRequest): LodResult {
     const index = this.index;
     const { level: base, nominal } = levelForZoom(this.policy, this.chain, req.zoom, req.prevLevel);
+    const semanticKey = this.semanticRequestKey(req, base, nominal);
+    const cachedResult = this.resultsBySemanticRequest.get(semanticKey);
+    if (cachedResult !== undefined) {
+      this.resultsBySemanticRequest.delete(semanticKey);
+      this.resultsBySemanticRequest.set(semanticKey, cachedResult);
+      return {
+        ...cachedResult,
+        provenance: { ...cachedResult.provenance, zoom: req.zoom },
+      };
+    }
 
     // --- 2. Classify overrides. ---------------------------------------------
     const ignored: IgnoredOverride[] = [];
@@ -315,7 +341,20 @@ export class LodResolver {
 
     // --- 5. Induced edges. An edgeless forest induces nothing, so skip the
     // whole-forest cover walk (matters on the 1M-leaf fixture). ----------------
-    const inducedEdges = index.hasEdges ? aggregateEdges(this.space, cut) : [];
+    let inducedEdges: readonly InducedEdge[] = [];
+    if (index.hasEdges) {
+      const key = cut.members.join('\u0000');
+      const cached = this.inducedByCut.get(key);
+      if (cached !== undefined) {
+        this.inducedByCut.delete(key);
+        this.inducedByCut.set(key, cached);
+        inducedEdges = cached;
+      } else {
+        inducedEdges = aggregateEdges(this.space, cut);
+        this.inducedByCut.set(key, inducedEdges);
+        if (this.inducedByCut.size > 8) this.inducedByCut.delete(this.inducedByCut.keys().next().value!);
+      }
+    }
     const cappedEdges = index.hasEdges
       ? capFanOut(inducedEdges, budgetSpec?.fanOut ?? FANOUT_CAP)
       : { edges: [], residuals: [] };
@@ -327,7 +366,7 @@ export class LodResolver {
     const reasons = new Map<NodeId, CutReason>();
     for (const [id, member] of trace) reasons.set(id, member.reason);
 
-    return {
+    const result: LodResult = {
       cut,
       inducedEdges,
       cappedEdges,
@@ -342,6 +381,30 @@ export class LodResolver {
         ...(budgetTrace !== undefined ? { budget: budgetTrace } : {}),
       },
     };
+    this.resultsBySemanticRequest.set(semanticKey, result);
+    if (this.resultsBySemanticRequest.size > 8) {
+      this.resultsBySemanticRequest.delete(this.resultsBySemanticRequest.keys().next().value!);
+    }
+    return result;
+  }
+
+  private semanticRequestKey(req: LodRequest, level: number, nominal: number): string {
+    const budget = req.viewportHint ?? this.policy.budget;
+    const overrides = [...req.overrides]
+      .sort(([left], [right]) => compareIds(left, right))
+      .map(([node, kind]) => [node, kind]);
+    const cold = req.cold === undefined
+      ? []
+      : [...req.cold].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+    return JSON.stringify([
+      level,
+      nominal,
+      req.focus ?? null,
+      budget?.maxNodes ?? null,
+      budget?.fanOut ?? null,
+      overrides,
+      cold,
+    ]);
   }
 
   // ------------------------------------------------------------- internals

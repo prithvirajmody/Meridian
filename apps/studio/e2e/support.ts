@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 interface UiBudgets {
@@ -11,11 +11,12 @@ interface UiBudgets {
   readonly 'outline-scroll-min-fps': number;
   readonly 'matrix-2k-render-ms': number;
   readonly 'projection-switch-ms': number;
-  readonly 'studio-heap-soak-ms': number;
+  readonly 'studio-heap-soak-min-ms': number;
   readonly 'studio-heap-retained-growth-bytes': number;
   readonly 'transition-frame-p95-ms': number;
   readonly 'transition-anchor-drift-px': number;
   readonly 'transition-max-plan-to-settle-ms': number;
+  readonly 'edit-to-pixel-p95-ms': number;
 }
 
 export const UI_BUDGETS = JSON.parse(
@@ -70,6 +71,35 @@ export async function settleFrames(page: Page, frames = 3): Promise<void> {
 export function percentile95(values: readonly number[]): number {
   const ordered = [...values].sort((a, b) => a - b);
   return ordered[Math.min(ordered.length - 1, Math.ceil(ordered.length * 0.95) - 1)] ?? 0;
+}
+
+export interface StudioBenchmarkMetric {
+  readonly id: string;
+  readonly value: number;
+  readonly unit: string;
+  readonly sampleCount: number;
+}
+
+/** Append real measurements from the existing owning Playwright gates to the
+ * one dashboard input. The benchmark job runs one worker, so this synchronous
+ * read/append/write is deterministic and cannot race another spec. */
+export function recordStudioBenchmarkMetrics(metrics: readonly StudioBenchmarkMetric[]): void {
+  if (process.env.MERIDIAN_PHASE11_BENCH !== '1' || metrics.length === 0) return;
+  const directory = fileURLToPath(new URL('../../../benchmarks/results/', import.meta.url));
+  const output = `${directory}studio.json`;
+  let prior: StudioBenchmarkMetric[] = [];
+  try {
+    const parsed = JSON.parse(readFileSync(output, 'utf8')) as { metrics?: StudioBenchmarkMetric[] };
+    if (Array.isArray(parsed.metrics)) prior = parsed.metrics;
+  } catch {
+    // Global setup removes stale output; a missing first-write file is normal.
+  }
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(output, `${JSON.stringify({
+    schemaVersion: 1,
+    source: 'studio-playwright',
+    metrics: [...prior, ...metrics],
+  }, null, 2)}\n`);
 }
 
 /** Serializable telemetry record shape (mirrors `TransitionRecord`). */

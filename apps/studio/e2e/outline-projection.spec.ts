@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
 import { OUTLINE_OVERSCAN, OUTLINE_ROW_HEIGHT } from '@meridian/renderer';
-import { boot, percentile95, settleFrames, UI_BUDGETS } from './support.js';
+import { boot, percentile95, recordStudioBenchmarkMetrics, settleFrames, UI_BUDGETS } from './support.js';
 
 const markdown = readFileSync(
   new URL('../../../fixtures/corpora/markdown/basic.md', import.meta.url),
@@ -149,6 +149,9 @@ test('100k outline rows keep a bounded DOM window while sustained scrolling stay
     `[10C outline] rows=100000 cadenceP95Ms=${p95.toFixed(2)} meanFps=${meanFps.toFixed(1)} liveRows=${result.rowCount}`,
   );
   expect(meanFps).toBeGreaterThanOrEqual(UI_BUDGETS['outline-scroll-min-fps']);
+  recordStudioBenchmarkMetrics([
+    { id: 'outline-scroll-min-fps', value: meanFps, unit: 'fps', sampleCount: result.intervals.length },
+  ]);
   expect(result.rowCount).toBeLessThanOrEqual(
     Math.ceil(result.viewportHeight / OUTLINE_ROW_HEIGHT) + 1 + OUTLINE_OVERSCAN * 2,
   );

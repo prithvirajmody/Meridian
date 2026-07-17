@@ -7,7 +7,7 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -20,6 +20,7 @@ jobs:
           cache: pnpm
 
       - name: Install
+        id: install
         run: pnpm install --frozen-lockfile
 
       - name: Lint
@@ -41,17 +42,33 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Browser UI, interaction, FPS, and heap gates
+        env:
+          MERIDIAN_PHASE11_BENCH: "1"
         run: pnpm test:e2e
 
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phase-5-playwright
+          name: meridian-playwright
           path: |
             apps/studio/playwright-report/
             apps/studio/test-results/
           if-no-files-found: ignore
 
       - name: Benchmarks (perf budgets are tests)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        env:
+          MERIDIAN_BENCH_RUNNER_CLASS: github-actions-ubuntu-24.04-x64-node-24
+          MERIDIAN_BENCH_REQUIRE_RUNNER: "1"
+          MERIDIAN_BENCH_REQUIRE_EXTERNAL: "1"
+          MERIDIAN_BENCH_REQUIRE_ALL: "1"
         run: pnpm bench
+
+      - name: Upload benchmark dashboard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-dashboard
+          path: benchmarks/results/
+          if-no-files-found: error

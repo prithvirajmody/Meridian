@@ -19,12 +19,22 @@ export interface DeltaWire {
   readonly baseVersion?: unknown;
 }
 
-/** Where a parser's output goes. Emissions are buffered by the host and
- * discarded wholesale if the parser throws (atomic rollback, §7.2.6). */
+/**
+ * Where a parser's output goes. A host may provide buffered atomic ingest or
+ * Phase-11 streaming ingest into caller-owned private staging. Streaming
+ * hosts expose {@link drain}; parsers that can emit large runs should await it
+ * at bounded batch boundaries. The optional member keeps every existing
+ * parser source-compatible, and buffered hosts may omit it.
+ */
 export interface IngestSink {
   emitDocument(doc: GraphDocument): void;
   emitDelta(delta: DeltaWire): void;
   progress(p: Progress): void;
+  /** Optional lifetime for this ingest. Long-running parsers should stop at
+   * bounded work boundaries and pass it through to cancellable workers. */
+  readonly signal?: AbortSignal;
+  /** Await all emissions accepted before this call (stream backpressure). */
+  drain?(): Promise<void>;
 }
 
 export interface DomainParser {

@@ -49,6 +49,7 @@ import { createStore, type GraphOpInput, type GraphStore } from '@meridian/graph
 import { applyProposal } from '@meridian/abstraction';
 import type { ProposedGroup } from '@meridian/plugin-api';
 import type { AiSession } from '@meridian/ai';
+import { stderrLine, stdoutLine } from './io.js';
 import {
   classify,
   clusterNodes,
@@ -87,11 +88,11 @@ export interface EnrichCommandOptions extends AiCommandOptions {
 }
 
 function out(line: string): void {
-  process.stdout.write(line + '\n');
+  stdoutLine(line);
 }
 
 function err(line: string): void {
-  process.stderr.write(line + '\n');
+  stderrLine(line);
 }
 
 function cmp(a: string, b: string): number {

@@ -147,6 +147,31 @@ describe('core reads', () => {
 });
 
 describe('failure containment', () => {
+  it('a stale second project instance cannot append after the first writer releases its lock', async () => {
+    const path = tmpProjectPath();
+    const errors: unknown[] = [];
+    const first = await openProjectStore(path, { initialSpace: twoLevelSpace() });
+    const stale = await openProjectStore(path, { onBackendError: (error) => errors.push(error) });
+
+    expect(first.store.apply(addGraphDelta(1)).ok).toBe(true);
+    await first.project.backend.settle();
+
+    expect(stale.store.apply(addGraphDelta(2)).ok).toBe(true);
+    await expect(stale.project.backend.settle()).rejects.toMatchObject({ code: 'storage-io' });
+    expect(errors[0]).toMatchObject({ code: 'storage-busy' });
+    await expect(stale.project.close()).rejects.toMatchObject({ code: 'storage-io' });
+    await first.project.close();
+
+    const reopened = await openProject(path);
+    expect(reopened.version.counter).toBe(1);
+    expect(reopened.space.graphs.has(gid('g-extra-1'))).toBe(true);
+    expect(reopened.space.graphs.has(gid('g-extra-2'))).toBe(false);
+    const inspector = new BetterSqlite3Driver(path, { readonly: true });
+    expect(inspector.all('SELECT counter FROM oplog ORDER BY seq').map((row) => row.counter)).toEqual([1]);
+    inspector.close();
+    await reopened.close();
+  });
+
   it('a second writer holding the write lock surfaces as storage-busy', async () => {
     const path = tmpProjectPath();
     const { project } = await openProjectStore(path, { initialSpace: twoLevelSpace() });
@@ -196,5 +221,51 @@ describe('failure containment', () => {
     await settleTick();
     expect(errors.length).toBe(2); // dead backend keeps refusing, chain not stalled
     expect(store.snapshot().graphs.size).toBe(4);
+  });
+
+  it('disk-full is deterministic, located, and leaves the in-memory session usable', async () => {
+    const path = tmpProjectPath();
+    const errors: unknown[] = [];
+    const db = new BetterSqlite3Driver(path);
+    initializeSchema(db, { formatVersion: 1, producer: 'quota-test' });
+    const core = SqliteBackendCore.create(db, twoLevelSpace());
+    const backend = new SqliteStorageBackend(core);
+    const store = createStore(twoLevelSpace(), {
+      backend,
+      onBackendError: (error) => errors.push(error),
+    });
+
+    // Constrain this database to its current page count. A large op-log row
+    // now deterministically returns SQLITE_FULL without filling the host disk.
+    const pages = Number(db.get('PRAGMA page_count')?.page_count);
+    db.exec(`PRAGMA max_page_count = ${pages}`);
+
+    const result = store.apply({
+      origin: { actor: 'quota-test' },
+      ops: [
+        {
+          t: 'graph:add',
+          graph: gid('g-quota'),
+          meta: {
+            label: 'x'.repeat(1024 * 1024),
+            domain: 'test',
+            provenance: { origin: 'derived' },
+          },
+        },
+      ],
+    });
+    expect(result.ok).toBe(true);
+    await expect(backend.settle()).rejects.toMatchObject({ code: 'storage-io' });
+
+    expect(store.snapshot().graphs.has(gid('g-quota'))).toBe(true);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(MeridianError);
+    expect((errors[0] as MeridianError).code).toBe('storage-io');
+    expect((errors[0] as Error).message).toContain('op-log append for durable version 1');
+    expect((errors[0] as Error).message).toMatch(/disk full/i);
+
+    // The dead backend still closes cleanly; hosts can keep using/exporting
+    // the in-memory store after surfacing the typed failure.
+    core.close();
   });
 });

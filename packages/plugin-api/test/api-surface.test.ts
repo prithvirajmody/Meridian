@@ -119,4 +119,18 @@ describe('@meridian/plugin-api public surface', () => {
     expect(mod.oldText).toBe('a');
     expect(typeof adapter.update).toBe('function');
   });
+
+  it('the Phase 11 sink backpressure hook is optional and shaped (compile-time)', async () => {
+    const legacySink: IngestSink = {
+      emitDocument: () => undefined,
+      emitDelta: () => undefined,
+      progress: () => undefined,
+    };
+    const streamingSink: IngestSink = {
+      ...legacySink,
+      drain: () => Promise.resolve(),
+    };
+    expect(legacySink.drain).toBeUndefined();
+    await expect(streamingSink.drain?.()).resolves.toBeUndefined();
+  });
 });

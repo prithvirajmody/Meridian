@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { boot, UI_BUDGETS } from './support.js';
+import { boot, recordStudioBenchmarkMetrics, UI_BUDGETS } from './support.js';
 
 const SOAK_MS = Number(
-  process.env.MERIDIAN_HEAP_SOAK_MS ?? UI_BUDGETS['studio-heap-soak-ms'],
+  process.env.MERIDIAN_HEAP_SOAK_MS ?? UI_BUDGETS['studio-heap-soak-min-ms'],
 );
 
 test('5-minute pan/zoom heap soak remains stable', async ({ page }) => {
@@ -40,6 +40,10 @@ test('5-minute pan/zoom heap soak remains stable', async ({ page }) => {
   expect(retainedGrowth).toBeLessThanOrEqual(
     UI_BUDGETS['studio-heap-retained-growth-bytes'],
   );
+  recordStudioBenchmarkMetrics([
+    { id: 'studio-heap-soak-min-ms', value: Date.now() - started, unit: 'ms', sampleCount: 1 },
+    { id: 'studio-heap-retained-growth-bytes', value: Math.max(0, retainedGrowth), unit: 'bytes', sampleCount: heapSamples.length },
+  ]);
   expect(domSamples.at(-1)!.nodes).toBeLessThanOrEqual(domSamples[0]!.nodes + 50);
   expect(domSamples.at(-1)!.listeners).toBeLessThanOrEqual(domSamples[0]!.listeners + 20);
 });

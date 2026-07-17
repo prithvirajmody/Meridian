@@ -161,6 +161,7 @@ export class CodeIncrementalSession implements IncrementalAdapter {
       ops.push({ t: 'node:detail', graph: found.graphId, id: nodeId, next: { graph: detail } });
       sink.emitDelta({ ops, origin: { actor: INCREMENTAL_ACTOR } });
     }
+    await sink.drain?.();
     this.hotBodies.set(nodeId, { source: found.node.provenance.uri!, parentGraphId: found.graphId, graphs: graphs.graphs });
     return { graph: detail };
   }
@@ -210,6 +211,7 @@ export class CodeIncrementalSession implements IncrementalAdapter {
       if (module === undefined) {
         // Not a routed code file — nothing graph-shaped changed.
         sink.emitDelta({ ops: [], origin: { actor: INCREMENTAL_ACTOR } });
+        await sink.drain?.();
         return;
       }
       this.texts.set(source, change.newText);
@@ -249,5 +251,6 @@ export class CodeIncrementalSession implements IncrementalAdapter {
     const eagerOps = diffCodeDocuments(oldDoc, newDoc);
     const ops = [...teardownOps, ...eagerOps, ...bodyOps];
     sink.emitDelta({ ops, origin: { actor: INCREMENTAL_ACTOR } });
+    await sink.drain?.();
   }
 }

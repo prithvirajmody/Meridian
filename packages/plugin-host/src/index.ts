@@ -9,6 +9,9 @@ export {
   type RegisteredPlugin,
   type RegisterResult,
   type Resolution,
+  type StreamingIngestConsumer,
+  type StreamingIngestOutcome,
+  type StreamingIngestReport,
   type ViewProjectionRegistration,
 } from './host.js';
 export type { HostIssue, HostIssueCode } from './issues.js';

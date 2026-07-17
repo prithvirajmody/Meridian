@@ -22,6 +22,7 @@ import {
 } from '@meridian/graph-core';
 import type { GraphOpInput } from './ops.js';
 import type { ChangeSet, GraphStore, StorageBackend, Unsubscribe } from './store.js';
+import { versionsEqual, type VersionStamp } from './version.js';
 
 export type HydrationState = 'cold' | 'hydrating' | 'live' | 'evictable';
 
@@ -86,6 +87,11 @@ export class HydrationManager {
   private residentElements = 0;
   private hydrations = 0;
   private evictions = 0;
+  /** Highest contiguous store version whose residency/history effects this
+   * manager has accounted. Semantic commits advance it from `onChange`; our
+   * own volatile commits may advance it synchronously because their effects
+   * are applied at the call site. A gap conservatively disables eviction. */
+  private lastObservedVersion: VersionStamp;
   private readonly unsubscribe: Unsubscribe;
 
   constructor(opts: HydrationManagerOptions) {
@@ -95,6 +101,7 @@ export class HydrationManager {
     this.maxResident = opts.policy?.maxResidentElements ?? DEFAULT_MAX_RESIDENT_ELEMENTS;
     this.lowWater = Math.floor(this.maxResident * (opts.policy?.lowWaterRatio ?? DEFAULT_LOW_WATER_RATIO));
     this.actor = opts.policy?.actor ?? HYDRATION_ACTOR;
+    this.lastObservedVersion = this.store.version();
 
     // Initial residency: a graph in the space is live iff it holds elements
     // or is durably empty (manifest counts 0 — nothing to hydrate). An empty
@@ -202,10 +209,12 @@ export class HydrationManager {
       }
     };
     throwIfAborted();
+    const entry = this.manifest.get(id)!;
+    this.evictBeforeHydration(entry.nodeCount + entry.edgeCount, id);
+    throwIfAborted();
     const graph = await this.backend.loadGraph(id);
     throwIfAborted();
 
-    const entry = this.manifest.get(id)!;
     if (graph === null) {
       if (entry.nodeCount + entry.edgeCount === 0) {
         this.live.add(id); // durably empty — nothing to materialize
@@ -255,6 +264,7 @@ export class HydrationManager {
         `hydrate: volatile delta for graph "${id}" rejected — [${first.code}] ${first.message}`,
       );
     }
+    this.observeOwnChange(applied.changes);
     this.live.add(id);
     this.residentElements += graph.nodes.size + graph.edges.size;
     this.hydrations += 1;
@@ -267,6 +277,11 @@ export class HydrationManager {
   /** live ∧ unobserved-LRU ∧ unpinned ∧ not history-protected ∧ not a root
    * ∧ all children cold (deepest-first, ADR-0039 §4). */
   private isEvictable(id: GraphId): boolean {
+    // A semantic commit mutates the store synchronously but reaches this
+    // manager through an async subscription. Until that exact gap closes we
+    // cannot know the undo-protection set or resident counts, so eviction is
+    // conservatively disabled for every graph.
+    if (!versionsEqual(this.lastObservedVersion, this.store.version())) return false;
     if (!this.live.has(id) || this.inFlight.has(id)) return false;
     if (this.pinned.has(id) || this.historyProtected.has(id)) return false;
     const space = this.store.snapshot();
@@ -319,6 +334,7 @@ export class HydrationManager {
         `evict: volatile delta for graph "${id}" rejected — [${first.code}] ${first.message}`,
       );
     }
+    this.observeOwnChange(applied.changes);
     this.live.delete(id);
     for (const child of children) this.live.delete(child); // drop weightless empty-live children
     this.residentElements -= size;
@@ -331,8 +347,51 @@ export class HydrationManager {
    * low-water mark. Returns the number of evictions performed. */
   evictToBudget(exclude?: GraphId): number {
     if (this.residentElements <= this.maxResident) return 0;
+    return this.evictLruUntil(
+      this.lowWater,
+      exclude === undefined ? undefined : new Set([exclude]),
+    );
+  }
+
+  /** Use the durable manifest size to make room before loading a cold graph.
+   * If the predicted post-hydration resident set crosses high water, drain
+   * eligible LRU graphs far enough that adding the graph lands at low water.
+   * Failure to make enough room never refuses hydration: correctness wins. */
+  private evictBeforeHydration(incomingElements: number, exclude: GraphId): number {
+    if (this.residentElements + incomingElements <= this.maxResident) return 0;
+    return this.evictLruUntil(
+      Math.max(0, this.lowWater - incomingElements),
+      this.hydrationLineage(exclude),
+    );
+  }
+
+  /** The target shell and every live ancestor that keeps it reachable must
+   * survive pre-hydration eviction. The valid containment relation is a
+   * forest, so each child has at most one parent. */
+  private hydrationLineage(target: GraphId): ReadonlySet<GraphId> {
+    const parentByChild = new Map<GraphId, GraphId>();
+    for (const [parentId, graph] of this.store.snapshot().graphs) {
+      for (const node of graph.nodes.values()) {
+        if (node.detail !== undefined) parentByChild.set(node.detail.graph, parentId);
+      }
+    }
+    const lineage = new Set<GraphId>([target]);
+    let current = target;
+    while (true) {
+      const parent = parentByChild.get(current);
+      if (parent === undefined || lineage.has(parent)) break;
+      lineage.add(parent);
+      current = parent;
+    }
+    return lineage;
+  }
+
+  private evictLruUntil(
+    targetResidentElements: number,
+    excluded?: ReadonlySet<GraphId>,
+  ): number {
     const candidates = [...this.live]
-      .filter((id) => id !== exclude && this.isEvictable(id))
+      .filter((id) => excluded?.has(id) !== true && this.isEvictable(id))
       .sort((a, b) => {
         const ta = this.lastTouch.get(a) ?? 0;
         const tb = this.lastTouch.get(b) ?? 0;
@@ -340,7 +399,7 @@ export class HydrationManager {
       });
     let evicted = 0;
     for (const id of candidates) {
-      if (this.residentElements <= this.lowWater) break;
+      if (this.residentElements <= targetResidentElements) break;
       if (this.evict(id)) evicted += 1;
     }
     return evicted;
@@ -356,7 +415,10 @@ export class HydrationManager {
    * resident size. Volatile commits are this manager's own cache movements
    * and are already accounted at their call sites. */
   private onChange(change: ChangeSet): void {
-    if (change.origin.volatile === true) return;
+    if (change.origin.volatile === true) {
+      this.observeChange(change);
+      return;
+    }
     for (const g of change.touched.graphs) {
       this.historyProtected.add(g);
     }
@@ -392,6 +454,20 @@ export class HydrationManager {
           break;
       }
     }
+    this.observeChange(change);
+  }
+
+  /** Advance only across a contiguous version edge. Older notifications for
+   * volatile commits may arrive after we accounted them synchronously; those
+   * are harmless and must not move the watermark backwards. */
+  private observeChange(change: ChangeSet): void {
+    if (versionsEqual(this.lastObservedVersion, change.fromVersion)) {
+      this.lastObservedVersion = change.toVersion;
+    }
+  }
+
+  private observeOwnChange(change: ChangeSet): void {
+    this.observeChange(change);
   }
 
   private bumpCounts(graph: GraphId, nodes: number, edges: number): void {

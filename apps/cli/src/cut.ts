@@ -21,6 +21,7 @@
  * from the resolver; we only look up labels and print.
  */
 import { readFile } from 'node:fs/promises';
+import { stderrLine, stdoutLine } from './io.js';
 import {
   decode,
   type GraphSpace,
@@ -40,7 +41,7 @@ import {
 } from '@meridian/abstraction';
 
 function out(line: string): void {
-  process.stdout.write(line + '\n');
+  stdoutLine(line);
 }
 
 function formatIssue(issue: Issue): string {
@@ -52,7 +53,7 @@ async function readDocument(file: string): Promise<string> {
   try {
     return await readFile(file, 'utf8');
   } catch (e) {
-    process.stderr.write(`cannot read ${file}: ${(e as Error).message}\n`);
+    stderrLine(`cannot read ${file}: ${(e as Error).message}`);
     process.exit(2);
   }
 }
@@ -225,7 +226,7 @@ export async function cmdCut(file: string, opts: CutOptions): Promise<number> {
   const index = indexNodes(space);
 
   if (opts.focus !== undefined && !index.has(opts.focus)) {
-    process.stderr.write(`focus node "${opts.focus}" not found in ${file}\n`);
+    stderrLine(`focus node "${opts.focus}" not found in ${file}`);
     return 1;
   }
 

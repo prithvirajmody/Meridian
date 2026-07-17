@@ -59,6 +59,7 @@ CREATE INDEX IF NOT EXISTS idx_nodes_graph ON nodes(graph_id);
 CREATE INDEX IF NOT EXISTS idx_edges_graph ON edges(graph_id);
 CREATE INDEX IF NOT EXISTS idx_edges_src ON edges(src);
 CREATE INDEX IF NOT EXISTS idx_edges_dst ON edges(dst);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_oplog_version ON oplog(site, counter);
 `;
 
 /** Single-step storage migration (any→current chains are forbidden). */

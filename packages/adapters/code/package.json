@@ -8,7 +8,17 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./worker-host": {
+      "types": "./dist/worker-host-entry.d.ts",
+      "default": "./dist/worker-host-entry.js"
+    },
+    "./worker-runtime": {
+      "types": "./dist/worker-runtime-entry.d.ts",
+      "default": "./dist/worker-runtime-entry.js"
+    },
+    "./grammars/tree-sitter-typescript.wasm": "./grammars/tree-sitter-typescript.wasm",
+    "./grammars/tree-sitter-python.wasm": "./grammars/tree-sitter-python.wasm"
   },
   "files": [
     "dist",

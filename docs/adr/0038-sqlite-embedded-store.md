@@ -34,9 +34,10 @@ below — and that seam is what lets Node and browser run the *identical*
 construction). The official WASM distribution's `oo1` API is fully synchronous
 inside a worker, so it wins on the criterion that matters; the swap surface
 remains one browser module either way, as this record always required.
-Flagged for fold-back into §15.1's wording. Both bindings live **only** in
-`@meridian/store-sqlite` (depcruise-gated; §20 already reserves the package:
-deps `graph-store`, `graph-core`). The package ships three entrypoints:
+This binding choice is folded back into §15.1 and the Phase 11 roadmap. Both
+bindings live **only** in `@meridian/store-sqlite` (depcruise-gated; §20 already
+reserves the package: deps `graph-store`, `graph-core`). The package ships
+three entrypoints:
 `.` (isomorphic core: schema DDL, migrations, codec glue, replay, parity
 scenarios), `./node`, `./browser`.
 
@@ -84,7 +85,8 @@ edges  (id TEXT PRIMARY KEY, graph_id TEXT REFERENCES graphs(id), src TEXT,
         dst TEXT, kind TEXT, weight REAL, attrs TEXT, provenance TEXT)
 oplog  (seq INTEGER PRIMARY KEY AUTOINCREMENT, counter INTEGER NOT NULL,
         site TEXT NOT NULL, actor TEXT NOT NULL, ops TEXT NOT NULL)
--- indices: nodes(graph_id), edges(graph_id), edges(src), edges(dst)
+-- indices: nodes(graph_id), edges(graph_id), edges(src), edges(dst),
+--          UNIQUE oplog(site, counter)
 ```
 
 JSON columns (`attrs`, `provenance`, `ops`) store the **ADR-0004 wire shapes,
@@ -108,7 +110,11 @@ timestamps in v1 (nothing needs them; determinism stays easy).
   `meta.last_counter`.
 - Single-writer assumption (documented, per roadmap §8): one store instance
   per file; multi-writer is P12's server. WAL mode; a second opener's busy
-  errors surface as typed `storage-busy` refusals, never corruption.
+  errors surface as typed `storage-busy` refusals, never corruption. Each core
+  also remembers the durable head it opened and re-reads `meta.last_counter`
+  inside every append transaction; a sequentially stale second core is refused
+  and becomes terminal before it can fork the log. The unique `(site, counter)`
+  index is the final schema backstop.
 
 **6. Failure policy (§17.4).** On open: `PRAGMA quick_check` — failure is a
 typed `storage-corrupt` refusal naming the salvage path;
@@ -143,9 +149,10 @@ requirement.
 - **sql.js (in-memory WASM, no VFS).** Rejected: whole-file-in-memory defeats
   partial reads and lazy hydration.
 - **wa-sqlite instead of the official `@sqlite.org/sqlite-wasm`.** The draft's
-  original choice (the constitution names it, §15.1, and its VFS layer is more
-  pluggable). Rejected at 11D: its public API is asynchronous even on the sync
-  build, which would force an async driver seam and a second (async) core —
+  original choice (the then-current constitution named it, and its VFS layer
+  is more pluggable). Rejected at 11D: its public API is asynchronous even on
+  the sync build, which would force an async driver seam and a second (async)
+  core —
   two consistency implementations where the whole design wants one (see the
   §1 amendment).
 - **Materialize element tables on every commit (checkpoint N=1).** Rejected as
@@ -199,5 +206,3 @@ eviction proves the need.
 2. **`volatile` on `OpOrigin`** vs a reserved actor prefix. The flag is
    explicit and type-visible; the prefix needs no type change. The flag is
    recommended (magic strings acquire accidental semantics).
-3. **wa-sqlite vs official sqlite-wasm** — confirm the constitution's naming
-   stands; the swap surface is one module either way.

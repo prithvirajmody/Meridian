@@ -9,6 +9,7 @@ import {
   type DomainParser,
   type GraphDocument,
   type IdFacade,
+  type IngestSink,
   type MeridianPlugin,
   type PluginManifest,
   type SourceDescriptor,
@@ -386,6 +387,221 @@ describe('ingest', () => {
     const out = await host.ingest(SRC, { onProgress: (p) => seen.push(p.stage) });
     expect(out.ok).toBe(true);
     expect(seen).toEqual(['parse', 'emit']);
+  });
+});
+
+describe('streaming ingest (Phase 11)', () => {
+  it('forwards without result buffering, serializes callbacks, and reports counts/progress', async () => {
+    const host = createPluginHost({ ids });
+    host.register(
+      plugin(
+        {},
+        {
+          ingest: async (_src, sink) => {
+            sink.emitDocument(doc('g-stream-1'));
+            sink.emitDelta({ ops: [{ t: 'graph:add' }] });
+            sink.progress({ stage: 'parse', done: 1, total: 2 });
+            await sink.drain?.();
+            sink.emitDocument(doc('g-stream-2'));
+          },
+        },
+      ),
+    );
+
+    const events: string[] = [];
+    let inFlight = 0;
+    let peakInFlight = 0;
+    const run = async (event: string) => {
+      inFlight += 1;
+      peakInFlight = Math.max(peakInFlight, inFlight);
+      events.push(`${event}:start`);
+      await Promise.resolve();
+      events.push(`${event}:end`);
+      inFlight -= 1;
+    };
+    const progress: string[] = [];
+    const out = await host.ingestStreaming(
+      SRC,
+      {
+        emitDocument: (value) => run(`doc:${value.graphs[0]?.id}`),
+        emitDelta: () => run('delta'),
+        progress: (p) => run(`progress:${p.stage}`),
+      },
+      { onProgress: (p) => progress.push(p.stage) },
+    );
+
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(peakInFlight).toBe(1);
+    expect(events).toEqual([
+      'doc:g-stream-1:start',
+      'doc:g-stream-1:end',
+      'delta:start',
+      'delta:end',
+      'progress:parse:start',
+      'progress:parse:end',
+      'doc:g-stream-2:start',
+      'doc:g-stream-2:end',
+    ]);
+    expect(progress).toEqual(['parse']);
+    expect(out.report).toMatchObject({
+      documents: 2,
+      deltas: 1,
+      progressEvents: 1,
+      graphs: 2,
+      nodes: 2,
+      edges: 0,
+      provenance: { source: 4, derived: 0, ai: 0 },
+    });
+    expect('documents' in out).toBe(false);
+    expect('deltas' in out).toBe(false);
+  });
+
+  it('awaits the final queue even when the parser never calls drain', async () => {
+    const host = createPluginHost({ ids });
+    host.register(plugin());
+
+    let release!: () => void;
+    let started!: () => void;
+    const consumerStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let resolved = false;
+    const pending = host.ingestStreaming(SRC, {
+      emitDocument: async () => {
+        started();
+        await gate;
+      },
+      emitDelta: () => undefined,
+    });
+    void pending.then(() => {
+      resolved = true;
+    });
+
+    await consumerStarted;
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+    release();
+    expect((await pending).ok).toBe(true);
+    expect(resolved).toBe(true);
+  });
+
+  it('closes the sink and returns parser throws with partial forwarded counts', async () => {
+    const host = createPluginHost({ ids });
+    let leaked: IngestSink | undefined;
+    host.register(
+      plugin(
+        {},
+        {
+          ingest: async (_src, sink) => {
+            leaked = sink;
+            sink.emitDocument(doc('g-partial-a'));
+            sink.emitDocument(doc('g-partial-b'));
+            throw new Error('stream parser exploded');
+          },
+        },
+      ),
+    );
+    const forwarded: string[] = [];
+    const out = await host.ingestStreaming(SRC, {
+      emitDocument: (value) => {
+        forwarded.push(value.graphs[0]!.id);
+      },
+      emitDelta: () => undefined,
+    });
+
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(forwarded).toEqual(['g-partial-a', 'g-partial-b']);
+    expect(out.issue.code).toBe('ingest-failed');
+    expect(out.issue.message).toContain('must not be published');
+    expect(out.issue.message).toContain('stream parser exploded');
+    expect(out.report?.documents).toBe(2);
+    expect(() => leaked!.emitDocument(doc('g-too-late'))).toThrow(/closed/);
+    expect('documents' in out).toBe(false);
+  });
+
+  it('turns a consumer/apply rejection into a typed failure and drain backpressures the parser', async () => {
+    const host = createPluginHost({ ids });
+    const order: string[] = [];
+    host.register(
+      plugin(
+        {},
+        {
+          ingest: async (_src, sink) => {
+            order.push('parser:emit');
+            sink.emitDelta({ ops: [{ invalid: true }] });
+            try {
+              await sink.drain?.();
+            } finally {
+              order.push('parser:drained');
+            }
+          },
+        },
+      ),
+    );
+
+    const out = await host.ingestStreaming(SRC, {
+      emitDocument: () => undefined,
+      emitDelta: async () => {
+        order.push('consumer:start');
+        await Promise.resolve();
+        order.push('consumer:reject');
+        throw new Error('invalid delta at apply');
+      },
+    });
+
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(order).toEqual([
+      'parser:emit',
+      'consumer:start',
+      'consumer:reject',
+      'parser:drained',
+    ]);
+    expect(out.issue.code).toBe('ingest-failed');
+    expect(out.issue.message).toContain('invalid delta at apply');
+    expect(out.report).toMatchObject({ deltas: 1, documents: 0 });
+  });
+
+  it('propagates cancellation to a long-running parser and closes its stream', async () => {
+    const host = createPluginHost({ ids });
+    let parserStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      parserStarted = resolve;
+    });
+    let seenSignal: AbortSignal | undefined;
+    host.register(
+      plugin(
+        {},
+        {
+          ingest: async (_src, sink) => {
+            seenSignal = sink.signal;
+            parserStarted();
+            await new Promise<void>((resolve) => {
+              sink.signal?.addEventListener('abort', () => resolve(), { once: true });
+            });
+            sink.signal?.throwIfAborted();
+          },
+        },
+      ),
+    );
+    const controller = new AbortController();
+    const pending = host.ingestStreaming(
+      SRC,
+      { emitDocument: () => undefined, emitDelta: () => undefined },
+      { signal: controller.signal },
+    );
+
+    await started;
+    controller.abort();
+    const out = await pending;
+    expect(seenSignal).toBe(controller.signal);
+    expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.issue.message).toContain('aborted');
   });
 });
 

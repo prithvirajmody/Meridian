@@ -23,10 +23,12 @@ import {
 } from '@meridian/graph-core';
 import { isCodeLanguage, type CodeLanguage } from '@meridian/adapter-code';
 import { cmdAiCluster, cmdAiSummarize, type AiCommandOptions } from './ai.js';
+import { cmdBench } from './bench.js';
 import { cmdAiEnrich } from './enrich.js';
 import { cmdCut } from './cut.js';
 import { splitCsv } from './globs.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
+import { stderrLine, stdoutLine, writeStderr } from './io.js';
 import { cmdLayout } from './layout.js';
 import { cmdOpen } from './open.js';
 import { cmdWatchRepo } from './watch-repo.js';
@@ -124,6 +126,9 @@ Usage:
                                              (typescript, python)
   meridian plugins list [--json]             registered plugins: versions,
                                              capabilities, vocabulary
+  meridian bench [--json]                    run every repository performance
+                                             contract; write JSON + Markdown
+                                             dashboards under benchmarks/results
   meridian ai summarize <file> [--ai-mode <mock|replay|live>]
                   [--ai-provider <id>] [--ai-model <id>] [--budget <dollars>]
                   [--ai-consent] [--json]
@@ -164,11 +169,11 @@ Exit codes: 0 ok · 1 invalid input or rejected delta · 2 usage or I/O error
 `;
 
 function out(line: string): void {
-  process.stdout.write(line + '\n');
+  stdoutLine(line);
 }
 
 function usageError(message: string): never {
-  process.stderr.write(message + '\n\n' + HELP);
+  writeStderr(message + '\n\n' + HELP);
   process.exit(2);
 }
 
@@ -176,7 +181,7 @@ async function readDocument(file: string): Promise<string> {
   try {
     return await readFile(file, 'utf8');
   } catch (e) {
-    process.stderr.write(`cannot read ${file}: ${(e as Error).message}\n`);
+    stderrLine(`cannot read ${file}: ${(e as Error).message}`);
     process.exit(2);
   }
 }
@@ -299,7 +304,7 @@ function cmdInspect(file: string, text: string, nodeId: string, json: boolean): 
   const space = requireValid(file, text);
   const found = findNode(space, nodeId);
   if (!found) {
-    process.stderr.write(`node "${nodeId}" not found in ${file}\n`);
+    stderrLine(`node "${nodeId}" not found in ${file}`);
     return 1;
   }
   const { graph, node } = found;
@@ -468,7 +473,7 @@ async function readScript(file: string): Promise<string> {
   try {
     return await readFile(file, 'utf8');
   } catch (e) {
-    process.stderr.write(`cannot read ${file}: ${(e as Error).message}\n`);
+    stderrLine(`cannot read ${file}: ${(e as Error).message}`);
     process.exit(2);
   }
 }
@@ -594,7 +599,7 @@ async function cmdWatch(
 ): Promise<number> {
   const space = requireValid(file, text);
   const store = createStore(space, {
-    onListenerError: (e) => process.stderr.write(`listener error: ${String(e)}\n`),
+    onListenerError: (e) => stderrLine(`listener error: ${String(e)}`),
   });
   store.subscribe((change) => printChange(change, opts.json));
   const s = stats(store.snapshot());
@@ -711,8 +716,13 @@ async function main(): Promise<void> {
   const cli = parseCli(process.argv.slice(2));
   const [command, file, extra] = cli.positional;
   if (command === undefined || command === 'help' || command === '--help') {
-    process.stderr.write(HELP);
+    writeStderr(HELP);
     process.exit(command === undefined ? 2 : 0);
+  }
+  if (command === 'bench') {
+    if (file !== undefined) usageError('bench: takes no positional arguments');
+    allowFlags(cli, command, []);
+    process.exit(await cmdBench(cli.json));
   }
   if (file === undefined) usageError(`${command}: missing <file> argument`);
 
@@ -763,7 +773,7 @@ async function main(): Promise<void> {
             ...(cli.values.has('--mutate') ? { script: cli.values.get('--mutate')! } : {}),
             ...(cli.values.has('--salvage') ? { salvage: cli.values.get('--salvage')! } : {}),
           },
-          { out, err: (line) => process.stderr.write(line + '\n'), readDocument },
+          { out, err: stderrLine, readDocument },
         ),
       );
       break;

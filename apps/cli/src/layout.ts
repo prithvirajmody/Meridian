@@ -56,9 +56,10 @@ import {
   type Size,
 } from '@meridian/layout';
 import { nodeWorkerFactory } from './layout-worker.js';
+import { stderrLine, stdoutLine } from './io.js';
 
 function out(line: string): void {
-  process.stdout.write(line + '\n');
+  stdoutLine(line);
 }
 
 function formatIssue(issue: Issue): string {
@@ -70,7 +71,7 @@ async function readDocument(file: string): Promise<string> {
   try {
     return await readFile(file, 'utf8');
   } catch (e) {
-    process.stderr.write(`cannot read ${file}: ${(e as Error).message}\n`);
+    stderrLine(`cannot read ${file}: ${(e as Error).message}`);
     process.exit(2);
   }
 }
@@ -153,7 +154,7 @@ export async function cmdLayout(file: string, opts: LayoutOptions): Promise<numb
   // is chosen from the resolved cut below (ADR-0018).
   if (opts.provider !== undefined && !BUILTIN_LAYOUT_PROVIDERS.has(opts.provider)) {
     const known = [...BUILTIN_LAYOUT_PROVIDERS.keys()].join(', ');
-    process.stderr.write(`layout: unknown provider "${opts.provider}" (available: ${known})\n`);
+    stderrLine(`layout: unknown provider "${opts.provider}" (available: ${known})`);
     return 2;
   }
 
@@ -218,7 +219,7 @@ export async function cmdLayout(file: string, opts: LayoutOptions): Promise<numb
   try {
     await writeFile(opts.svg, svg, 'utf8');
   } catch (e) {
-    process.stderr.write(`cannot write ${opts.svg}: ${(e as Error).message}\n`);
+    stderrLine(`cannot write ${opts.svg}: ${(e as Error).message}`);
     return 2;
   }
 

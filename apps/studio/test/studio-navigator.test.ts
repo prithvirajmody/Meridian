@@ -7,6 +7,7 @@
  */
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import fc from 'fast-check';
 import { describe, expect, it, vi } from 'vitest';
 import type { NodeId } from '@meridian/view-model';
 import { StudioSession } from '../src/studio-session.js';
@@ -17,6 +18,30 @@ import { createStudioStore, type StudioStore } from '../src/store.js';
 const CORPUS_ROOT = fileURLToPath(new URL('../../../fixtures/corpora/markdown/', import.meta.url));
 const VIEWPORT = { width: 1000, height: 800 };
 const CENTER = { x: 500, y: 400 };
+const STRUCTURAL_PAIRS = [
+  { left: 'Pair Zero Left', right: 'Pair Zero Right' },
+  { left: 'Pair One Left', right: 'Pair One Right' },
+  { left: 'Pair Two Left', right: 'Pair Two Right' },
+] as const;
+const STRUCTURAL_CORPUS = STRUCTURAL_PAIRS.map((pair) => {
+  const anchor = pair.right.toLowerCase().replaceAll(' ', '-');
+  return `# ${pair.left}\n\nSee [the paired section](#${anchor}).\n\n# ${pair.right}\n\nStandalone text.`;
+}).join('\n\n');
+
+type ConvergenceAction =
+  | {
+      readonly kind: 'label';
+      readonly member: number;
+      readonly label: string;
+      readonly order: number;
+      readonly tie: number;
+    }
+  | {
+      readonly kind: 'group';
+      readonly pair: number;
+      readonly order: number;
+      readonly tie: number;
+    };
 
 interface Harness {
   readonly store: StudioStore;
@@ -27,14 +52,15 @@ interface Harness {
   destroy(): Promise<void>;
 }
 
-async function open(corpus = 'basic.md'): Promise<Harness> {
+async function open(corpus = 'basic.md', source?: string): Promise<Harness> {
   const store = createStudioStore();
   const clock = new ManualClock();
   const session = new StudioSession(store, {
     clock,
     viewportProvider: () => VIEWPORT,
   });
-  await session.openText(corpus, await readFile(`${CORPUS_ROOT}${corpus}`, 'utf8'));
+  const text = source ?? await readFile(`${CORPUS_ROOT}${corpus}`, 'utf8');
+  await session.openText(corpus, text);
   const nav = session.nav();
   if (nav === null) throw new Error(`navigator failed to boot for ${corpus}: ${store.getState().message}`);
   const settle = async (): Promise<void> => {
@@ -273,11 +299,16 @@ describe('search & fly-to (6C port wired)', () => {
 
 function labelQueryFor(h: Harness, node: NodeId): string {
   // Use the first token of the node's own label so the query always hits.
-  const raw = h.store.getState().renderModel!;
-  const index = raw.nodeIds.indexOf(node);
-  const text = raw.labelTable[raw.labelRefs[index]!] ?? '';
+  const text = renderedLabelFor(h, node);
   const token = text.split(/[^\p{L}\p{N}]+/u).find((part) => part.length > 0);
   return token ?? 'a';
+}
+
+function renderedLabelFor(h: Harness, node: NodeId): string {
+  const raw = h.store.getState().renderModel!;
+  const index = raw.nodeIds.indexOf(node);
+  if (index < 0) throw new Error(`node ${node} is absent from the settled render model`);
+  return raw.labelTable[raw.labelRefs[index]!] ?? '';
 }
 
 describe('URL state (ADR-0025 exact restoration)', () => {
@@ -341,5 +372,179 @@ describe('store mutation mid-transition (P1 subscription forces replan)', () => 
     } finally {
       await h.destroy();
     }
+  });
+
+  it('coalesces a 100-edit storm into one bounded pipeline pass and converges on the final label', async () => {
+    const h = await open();
+    try {
+      const node = h.nav.currentLod().cut.members[0]!;
+      for (let index = 0; index < 100; index++) {
+        expect(h.session.mutateNodeLabel(node, `Storm label ${index}`)).toBe(true);
+      }
+
+      await vi.waitFor(() => {
+        if (h.nav.incrementalTelemetry().length === 0) throw new Error('incremental pass pending');
+      });
+      const record = h.nav.incrementalTelemetry().at(-1)!;
+      expect(record.changeCount).toBe(100);
+      expect(record.opCount).toBeGreaterThanOrEqual(100);
+      expect(h.nav.telemetry().filter((entry) => entry.trigger === 'mutation')).toHaveLength(1);
+
+      await h.settle();
+      expect(h.nav.search('storm').some((hit) => hit.node === node)).toBe(true);
+      expect(h.nav.search('99').some((hit) => hit.node === node)).toBe(true);
+      expect(record.modelRevision).toBe(h.nav.currentModel().revision);
+    } finally {
+      await h.destroy();
+    }
+  });
+
+  it('serializes a sustained 100-edits-per-second source and converges on its final value', async () => {
+    const h = await open();
+    try {
+      const node = h.nav.currentLod().cut.members[0]!;
+      for (let index = 0; index < 100; index++) {
+        expect(h.session.mutateNodeLabel(node, `Timed storm ${index}`)).toBe(true);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
+      await vi.waitFor(
+        () => {
+          const delivered = h.nav.incrementalTelemetry().reduce((total, record) => total + record.changeCount, 0);
+          expect(delivered).toBe(100);
+        },
+        { timeout: 5_000 },
+      );
+      await h.settle();
+      expect(h.nav.search('timed').some((hit) => hit.node === node)).toBe(true);
+      expect(h.nav.search('99').some((hit) => hit.node === node)).toBe(true);
+      expect(h.nav.incrementalTelemetry().at(-1)?.modelRevision).toBe(h.nav.currentModel().revision);
+    } finally {
+      await h.destroy();
+    }
+  });
+
+  it('matches a cold cut, layout, and render rebuild after arbitrary rapid label/structure interleavings', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.record({
+          groupCount: fc.integer({ min: 1, max: STRUCTURAL_PAIRS.length }),
+          groupOrders: fc.tuple(
+            fc.nat({ max: 100 }),
+            fc.nat({ max: 100 }),
+            fc.nat({ max: 100 }),
+          ),
+          labels: fc.array(
+            fc.record({
+              member: fc.nat({ max: STRUCTURAL_PAIRS.length * 2 - 1 }),
+              label: fc.string({ maxLength: 24 }),
+              order: fc.nat({ max: 100 }),
+            }),
+            { minLength: 1, maxLength: 18 },
+          ),
+        }),
+        async (scenario) => {
+          const h = await open('structural-convergence.md', STRUCTURAL_CORPUS);
+          try {
+            // Studio opens at the first relationally useful detail level. Move
+            // to the section cut so the paired link edges themselves are the
+            // visible induced edges that the structural groups will absorb.
+            h.nav.wheelZoom(1 / 60, CENTER);
+            await waitForFlight(h.nav);
+            await h.settle();
+            const members = [...h.nav.currentLod().cut.members];
+            const memberByLabel = new Map(members.map((member) => [renderedLabelFor(h, member), member]));
+            const pairs = STRUCTURAL_PAIRS.map((pair) => {
+              const left = memberByLabel.get(pair.left);
+              const right = memberByLabel.get(pair.right);
+              if (left === undefined || right === undefined) {
+                throw new Error(
+                  `structural fixture members are absent: ${pair.left}, ${pair.right}; visible: ${[
+                    ...memberByLabel.keys(),
+                  ].join(', ')}`,
+                );
+              }
+              return [left, right] as const;
+            });
+            const orderedMembers = pairs.flat();
+            const initialEdges = [...h.nav.currentLod().inducedEdges];
+            const actions: ConvergenceAction[] = [
+              ...scenario.labels.map((edit, index) => ({
+                kind: 'label' as const,
+                member: edit.member,
+                label: edit.label,
+                order: edit.order,
+                tie: index,
+              })),
+              ...Array.from({ length: scenario.groupCount }, (_, pair) => ({
+                kind: 'group' as const,
+                pair,
+                order: scenario.groupOrders[pair]!,
+                tie: scenario.labels.length + pair,
+              })),
+            ].sort((a, b) => a.order - b.order || a.tie - b.tie);
+
+            for (const [index, action] of actions.entries()) {
+              if (action.kind === 'label') {
+                const member = orderedMembers[action.member]!;
+                expect(h.session.mutateNodeLabel(member, `${index}:${action.label}`)).toBe(true);
+                continue;
+              }
+              const proposalId = h.session.aiTrust.submit({
+                service: 'structural-convergence-property',
+                proposal: {
+                  groups: [{
+                    id: `convergence-group-${action.pair}`,
+                    label: `Convergence group ${action.pair}`,
+                    members: pairs[action.pair]!,
+                    rationale: 'exercise structural incremental convergence',
+                  }],
+                },
+              });
+              const outcome = await h.session.aiTrust.accept(proposalId);
+              expect(outcome.ok, outcome.errors.join('; ')).toBe(true);
+            }
+
+            await vi.waitFor(
+              () => {
+                const delivered = h.nav.incrementalTelemetry()
+                  .reduce((total, record) => total + record.changeCount, 0);
+                expect(delivered).toBe(actions.length);
+              },
+              { timeout: 5_000 },
+            );
+            await h.settle();
+
+            const incremental = h.nav.settledSnapshot();
+            const rebuilt = await h.nav.recomputeFromScratch();
+            const groupedMembers = new Set(pairs.slice(0, scenario.groupCount).flat());
+            const remainingInitialEdges = initialEdges.filter(
+              (edge) => !(groupedMembers.has(edge.src) && groupedMembers.has(edge.dst)),
+            );
+            expect(initialEdges.length).toBeGreaterThan(0);
+            expect(remainingInitialEdges.length).toBeLessThan(initialEdges.length);
+            expect(incremental.lod.inducedEdges).toHaveLength(remainingInitialEdges.length);
+            expect(
+              incremental.lod.cut.members.filter((member) => String(member).startsWith('convergence-group-')),
+            ).toHaveLength(scenario.groupCount);
+            expect(h.nav.incrementalTelemetry().some((record) => record.structureChanged)).toBe(true);
+            expect(incremental.lod).toEqual(rebuilt.lod);
+            // `stability` intentionally measures displacement against the
+            // outgoing frame, so a warm incremental solve and a cold oracle
+            // have different reference frames. Their actual geometry must be
+            // identical.
+            expect(incremental.layout.positions).toEqual(rebuilt.layout.positions);
+            expect(incremental.layout.edgeRoutes).toEqual(rebuilt.layout.edgeRoutes);
+            expect(incremental.layout.bounds).toEqual(rebuilt.layout.bounds);
+            expect(incremental.layout.stability).toBeGreaterThanOrEqual(0);
+            expect(incremental.layout.stability).toBeLessThanOrEqual(1);
+            expect(incremental.model).toEqual(rebuilt.model);
+          } finally {
+            await h.destroy();
+          }
+        },
+      ),
+      { numRuns: 12 },
+    );
   });
 });

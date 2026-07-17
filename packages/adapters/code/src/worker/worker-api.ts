@@ -17,99 +17,35 @@
  * also run worker-side, so whole trees never need to cross).
  */
 import { buildBody } from '../detail/body.js';
-import type { RawBody } from '../detail/types.js';
 import type { CodeLanguage } from '../languages.js';
 import { mapModuleTree } from '../map/map-module.js';
-import type { RawModule } from '../map/raw.js';
-import { parseSource, type ParseOutcome } from '../parse.js';
+import { parseSource } from '../parse.js';
 import { createParserRuntime, type ParserRuntime, type ParserRuntimeOptions } from '../shim.js';
+import {
+  abortError,
+  type MapRequest,
+  type MapResponse,
+  type ParseRequest,
+  type ParseResponse,
+  type ParseWorkerApi,
+  type ResolveBodyRequest,
+  type ResolveBodyResponse,
+  type WorkerControlChannel,
+} from './protocol.js';
 
-/** Host→worker control message (over the dedicated control port). */
-export interface CancelMessage {
-  readonly type: 'cancel';
-  readonly requestId: number;
-}
-
-/** Worker→host control acknowledgement (observability). */
-export interface CancelledMessage {
-  readonly type: 'cancelled';
-  readonly requestId: number;
-}
-
-/** The worker's view of the dedicated control port (adapted by the entry shim). */
-export interface WorkerControlChannel {
-  postMessage(msg: CancelledMessage): void;
-  onMessage(cb: (msg: CancelMessage) => void): void;
-}
-
-export interface ParseRequest {
-  readonly requestId: number;
-  readonly language: CodeLanguage;
-  readonly text: string;
-}
-
-/** A {@link ParseOutcome} plus worker-side timing (budget observability). */
-export interface ParseResponse extends ParseOutcome {
-  readonly requestId: number;
-  readonly parseTimeMs: number;
-}
-
-/** A map request: like {@link ParseRequest} plus the coordinate/label the
- * skeleton needs (7C). The **mapping walk runs here, where the tree lives**
- * (ADR-0017); only the graph-shaped {@link RawModule} crosses the boundary. */
-export interface MapRequest {
-  readonly requestId: number;
-  readonly language: CodeLanguage;
-  /** Repository-relative POSIX path — the ADR-0028 `source` coordinate. */
-  readonly source: string;
-  /** Display label (basename). */
-  readonly label: string;
-  readonly text: string;
-}
-
-export interface MapResponse {
-  readonly requestId: number;
-  readonly module: RawModule;
-  readonly mapTimeMs: number;
-}
-
-/** A body-resolve request (7F): parse one file and materialize the function/
- * method body at `declSpan` (the cold node's provenance span, ADR-0027). */
-export interface ResolveBodyRequest {
-  readonly requestId: number;
-  readonly language: CodeLanguage;
-  readonly text: string;
-  readonly declSpan: readonly [number, number];
-}
-
-export interface ResolveBodyResponse {
-  readonly requestId: number;
-  /** `undefined` when no resolvable body is found (abstract/overload/stale). */
-  readonly body: RawBody | undefined;
-  readonly resolveTimeMs: number;
-}
-
-/** The Comlink-exposed worker surface. */
-export interface ParseWorkerApi {
-  /** Pre-load a grammar (idempotent) so first-parse latency excludes it. */
-  warm(language: CodeLanguage): Promise<void>;
-  parse(req: ParseRequest): Promise<ParseResponse>;
-  /** Parse **and** map one file to its {@link RawModule} skeleton (7C). */
-  map(req: MapRequest): Promise<MapResponse>;
-  /** Parse **and** build one function body's CFG/AST {@link RawBody} (7F). */
-  resolveBody(req: ResolveBodyRequest): Promise<ResolveBodyResponse>;
-}
-
-/** Portable `AbortError` (`DOMException` where available). */
-export function abortError(): Error {
-  try {
-    return new DOMException('Aborted', 'AbortError');
-  } catch {
-    const e = new Error('Aborted');
-    e.name = 'AbortError';
-    return e;
-  }
-}
+export { abortError } from './protocol.js';
+export type {
+  CancelledMessage,
+  CancelMessage,
+  MapRequest,
+  MapResponse,
+  ParseRequest,
+  ParseResponse,
+  ParseWorkerApi,
+  ResolveBodyRequest,
+  ResolveBodyResponse,
+  WorkerControlChannel,
+} from './protocol.js';
 
 const PRECANCEL_CAP = 4096;
 

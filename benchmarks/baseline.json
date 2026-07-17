@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "status": "unmeasured",
+  "runnerClass": "github-actions-ubuntu-24.04-x64-node-24",
+  "reason": "No value is invented for the pinned runner. Generate this file from at least three independent green pinned-CI dashboards for the same known commit using the procedure in docs/PERFORMANCE-PROFILING.md.",
+  "metrics": {}
+}

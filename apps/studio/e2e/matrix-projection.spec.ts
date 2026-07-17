@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { boot, UI_BUDGETS } from './support.js';
+import { boot, recordStudioBenchmarkMetrics, UI_BUDGETS } from './support.js';
 
 const markdown = readFileSync(
   new URL('../../../fixtures/corpora/markdown/links.md', import.meta.url),
@@ -93,6 +93,9 @@ test('matrix renders the 2k×2k fixture within budget and maps clicks to selecti
   const elapsed = Date.now() - start;
   console.info(`[10D matrix] 2k-node switch+first-paint=${elapsed}ms`);
   expect(elapsed).toBeLessThanOrEqual(UI_BUDGETS['matrix-2k-render-ms']);
+  recordStudioBenchmarkMetrics([
+    { id: 'matrix-2k-render-ms', value: elapsed, unit: 'ms', sampleCount: 1 },
+  ]);
   await expect(page.locator('.meridian-projection-canvas-message')).toBeHidden();
 
   // A click on the first diagonal cell selects that row's node.

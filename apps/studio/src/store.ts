@@ -35,6 +35,19 @@ export interface AdapterState {
   readonly score: number;
 }
 
+/** Serializable Phase-11 streamed-ingest progress. Parser progress and
+ * private-store staging counters share one strip so the UI never implies that
+ * parsed work is already durable/published. */
+export interface StudioIngestProgress {
+  readonly stage: string;
+  readonly done: number;
+  readonly total: number | null;
+  readonly emissions: number;
+  readonly appliedOps: number;
+  readonly batches: number;
+  readonly peakBufferedOps: number;
+}
+
 export interface StudioDiagnostic {
   readonly source: 'pipeline' | 'view-model' | 'renderer' | 'projection';
   readonly code: string;
@@ -185,6 +198,7 @@ export interface StudioState {
   readonly message: string;
   readonly source: OpenSourceState | null;
   readonly adapter: AdapterState | null;
+  readonly ingestProgress: StudioIngestProgress | null;
   readonly graphVersion: string | null;
   readonly renderModel: RenderModel | null;
   /** Presentation-neutral, data-only input consumed by the active projection. */
@@ -230,6 +244,7 @@ export function initialStudioState(debugEnabled = false): StudioState {
     message: 'Open a corpus file to begin.',
     source: null,
     adapter: null,
+    ingestProgress: null,
     graphVersion: null,
     renderModel: null,
     projectionModel: null,
@@ -287,6 +302,7 @@ export class StudioStoreCommands {
       message: `Reading ${source.name}…`,
       source,
       adapter: null,
+      ingestProgress: null,
       graphVersion: null,
       renderModel: null,
       projectionModel: null,
@@ -309,6 +325,10 @@ export class StudioStoreCommands {
 
   adapterResolved(adapter: AdapterState): void {
     this.store.setState({ adapter });
+  }
+
+  ingestProgress(progress: StudioIngestProgress): void {
+    this.store.setState({ ingestProgress: progress });
   }
 
   publishModel(

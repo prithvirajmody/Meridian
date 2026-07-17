@@ -1341,9 +1341,10 @@ export/import, fixtures, and sharing — never as the working store.
 *Why one SQLite file:* users get a project they can copy, back up, and
 attach to an email; we get transactions, partial reads (lazy hydration is a
 `WHERE graph_id = ?`), crash safety (WAL), and a mature browser story
-(OPFS via wa-sqlite) — all behind the injected storage backend so the
-in-memory + export-only mode (P9) remains first-class. A directory-of-files
-format was rejected: human-mergeable in theory, corruption-prone and
+(OPFS via `@sqlite.org/sqlite-wasm`) — all behind the injected storage backend
+so the in-memory + export-only mode (P9) remains first-class. A
+directory-of-files format was rejected: human-mergeable in theory,
+corruption-prone and
 sync-hostile in practice; the op log gives better merge semantics than
 text diffing ever would.
 
@@ -1887,6 +1888,4 @@ this document is edited in the same change. Silent divergence is the only
 prohibited outcome.
 
 *End of architecture specification.*
-
-
 

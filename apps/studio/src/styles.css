@@ -157,6 +157,21 @@ h1 {
   text-transform: capitalize;
 }
 
+.ingest-progress {
+  display: inline-flex;
+  min-width: 190px;
+  align-items: center;
+  gap: 7px;
+  color: #9fb1d6;
+  white-space: nowrap;
+}
+
+.ingest-progress progress {
+  width: 76px;
+  height: 5px;
+  accent-color: #6f98ff;
+}
+
 .phase-dot {
   width: 7px;
   height: 7px;
