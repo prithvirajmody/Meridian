@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autobuild.dev/contracts/bridge-v1/diff-artifact.schema.json",
+  "title": "Meridian structural diff artifact descriptor (bridge-v1)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "from",
+    "to",
+    "produced_by",
+    "summary",
+    "delta",
+    "delta_sha256",
+    "delta_size_bytes",
+    "delta_format_version"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "meridian-diff" },
+    "from": { "$ref": "#/$defs/endpoint" },
+    "to": { "$ref": "#/$defs/endpoint" },
+    "produced_by": { "$ref": "#/$defs/diff_producer" },
+    "summary": { "$ref": "#/$defs/summary" },
+    "delta": { "$ref": "#/$defs/safe_path" },
+    "delta_sha256": { "$ref": "#/$defs/sha256" },
+    "delta_size_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1073741824
+    },
+    "delta_format_version": { "const": 1 }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "full_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "safe_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "endpoint": {
+      "type": "object",
+      "required": [
+        "repo",
+        "ref",
+        "document_sha256",
+        "document_size_bytes",
+        "graph_format_version"
+      ],
+      "properties": {
+        "repo": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "ref": { "$ref": "#/$defs/full_sha" },
+        "document_sha256": { "$ref": "#/$defs/sha256" },
+        "document_size_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1073741824
+        },
+        "graph_format_version": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "diff_producer": {
+      "type": "object",
+      "required": ["meridian_version", "diff_engine", "diff_engine_version"],
+      "properties": {
+        "meridian_version": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "diff_engine": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "diff_engine_version": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "change_counts": {
+      "type": "object",
+      "required": ["added", "removed"],
+      "properties": {
+        "added": { "type": "integer", "minimum": 0 },
+        "removed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "nodes_added",
+        "nodes_removed",
+        "nodes_moved",
+        "edges_added",
+        "edges_removed",
+        "by_kind"
+      ],
+      "properties": {
+        "nodes_added": { "type": "integer", "minimum": 0 },
+        "nodes_removed": { "type": "integer", "minimum": 0 },
+        "nodes_moved": { "type": "integer", "minimum": 0 },
+        "edges_added": { "type": "integer", "minimum": 0 },
+        "edges_removed": { "type": "integer", "minimum": 0 },
+        "by_kind": {
+          "type": "object",
+          "propertyNames": { "minLength": 1, "maxLength": 256 },
+          "additionalProperties": { "$ref": "#/$defs/change_counts" }
+        }
+      }
+    }
+  }
+}

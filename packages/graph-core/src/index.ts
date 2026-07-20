@@ -21,6 +21,7 @@ export type {
   DecodeOptions,
   DecodeResult,
   DocumentProducer,
+  DocumentSource,
   EncodeOptions,
   GraphDocument,
   Migration,

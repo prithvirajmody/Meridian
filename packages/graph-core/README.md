@@ -33,7 +33,9 @@ by dependency-cruiser (`graph-core-only-zod`, `graph-core-no-node-builtins`).
   keys); `encodeCanonical` (minified, for hashing) and `encodePretty` (for
   fixtures/goldens) derive from the same canonical form. `formatVersion: 1`;
   newer is refused; older will run the chained-migration registry (empty at
-  v1, hook signature fixed).
+  v1, hook signature fixed). ADR-0045 adds an optional typed document `source`
+  pin to `DecodeResult`/`EncodeOptions`; it is evidence rather than graph
+  semantics, and encode drops it unless a caller deliberately supplies it.
 - **Builders are append-only.** Mutation machinery (deltas, transactions) is
   Phase 1; `addGraph`/`addNode`/`addEdge` are pure and return new spaces
   with structural sharing. Builders enforce cheap local invariants;

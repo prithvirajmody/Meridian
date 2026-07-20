@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "meridian-diff",
+  "from": {
+    "repo": "https://example.test/acme/widgets.git",
+    "ref": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "document_sha256": "8271de38d66776fbe248108e79cede7619a4c0fa4bd98a4cca64c2557832a791",
+    "document_size_bytes": 1514,
+    "graph_format_version": 1
+  },
+  "to": {
+    "repo": "https://example.test/acme/widgets.git",
+    "ref": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "document_sha256": "c80f867ff2d48c629101d478add6e66afcf8627c0270230c1aec94516910103c",
+    "document_size_bytes": 1635,
+    "graph_format_version": 1
+  },
+  "produced_by": {
+    "meridian_version": "0.1.0",
+    "diff_engine": "@meridian/graph-store",
+    "diff_engine_version": "0.1.0"
+  },
+  "summary": {
+    "nodes_added": 2,
+    "nodes_removed": 1,
+    "nodes_moved": 1,
+    "edges_added": 1,
+    "edges_removed": 1,
+    "by_kind": {
+      "code:function": { "added": 1, "removed": 0 },
+      "code:imports": { "added": 1, "removed": 1 },
+      "code:module": { "added": 1, "removed": 1 }
+    }
+  },
+  "delta": "bundle/drift.delta.json",
+  "delta_sha256": "89daebfabf647ddc7e6d0ec5ec2109d616817c2d29d81c21204fc5f1ad982f37",
+  "delta_size_bytes": 1326,
+  "delta_format_version": 1
+}

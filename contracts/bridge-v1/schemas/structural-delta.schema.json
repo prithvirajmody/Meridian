@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autobuild.dev/contracts/bridge-v1/structural-delta.schema.json",
+  "title": "Replayable Meridian structural delta (bridge-v1)",
+  "type": "object",
+  "required": ["schema_version", "kind", "from", "to", "origin", "ops"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "meridian-structural-delta" },
+    "from": { "$ref": "#/$defs/source_pin" },
+    "to": { "$ref": "#/$defs/source_pin" },
+    "origin": {
+      "type": "object",
+      "required": ["actor"],
+      "properties": {
+        "actor": { "const": "meridian:diff" }
+      }
+    },
+    "ops": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/op" }
+    }
+  },
+  "$defs": {
+    "full_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "source_pin": {
+      "type": "object",
+      "required": ["repo", "ref"],
+      "properties": {
+        "repo": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "ref": { "$ref": "#/$defs/full_sha" }
+      }
+    },
+    "op": {
+      "oneOf": [
+        { "$ref": "#/$defs/graph_add" },
+        { "$ref": "#/$defs/graph_remove" },
+        { "$ref": "#/$defs/graph_meta" },
+        { "$ref": "#/$defs/node_add" },
+        { "$ref": "#/$defs/node_remove" },
+        { "$ref": "#/$defs/node_attr" },
+        { "$ref": "#/$defs/node_detail" },
+        { "$ref": "#/$defs/edge_add" },
+        { "$ref": "#/$defs/edge_remove" }
+      ]
+    },
+    "op_base": {
+      "type": "object",
+      "required": ["t", "graph"],
+      "properties": {
+        "t": { "type": "string" },
+        "graph": { "type": "string", "minLength": 1 }
+      }
+    },
+    "graph_add": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["meta"],
+          "properties": { "t": { "const": "graph:add" }, "meta": { "type": "object" } }
+        }
+      ]
+    },
+    "graph_remove": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["prev"],
+          "properties": { "t": { "const": "graph:remove" }, "prev": { "type": "object" } }
+        }
+      ]
+    },
+    "graph_meta": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["prev", "next"],
+          "properties": {
+            "t": { "const": "graph:meta" },
+            "prev": { "type": "object" },
+            "next": { "type": "object" }
+          }
+        }
+      ]
+    },
+    "node_add": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["node"],
+          "properties": { "t": { "const": "node:add" }, "node": { "type": "object" } }
+        }
+      ]
+    },
+    "node_remove": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["id", "prev"],
+          "properties": {
+            "t": { "const": "node:remove" },
+            "id": { "type": "string", "minLength": 1 },
+            "prev": { "type": "object" }
+          }
+        }
+      ]
+    },
+    "node_attr": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["id", "key"],
+          "properties": {
+            "t": { "const": "node:attr" },
+            "id": { "type": "string", "minLength": 1 },
+            "key": { "type": "string", "minLength": 1 }
+          },
+          "anyOf": [{ "required": ["prev"] }, { "required": ["next"] }]
+        }
+      ]
+    },
+    "node_detail": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["id"],
+          "properties": {
+            "t": { "const": "node:detail" },
+            "id": { "type": "string", "minLength": 1 },
+            "prev": { "type": "object", "required": ["graph"] },
+            "next": { "type": "object", "required": ["graph"] }
+          },
+          "anyOf": [{ "required": ["prev"] }, { "required": ["next"] }]
+        }
+      ]
+    },
+    "edge_add": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["edge"],
+          "properties": { "t": { "const": "edge:add" }, "edge": { "type": "object" } }
+        }
+      ]
+    },
+    "edge_remove": {
+      "allOf": [
+        { "$ref": "#/$defs/op_base" },
+        {
+          "required": ["id", "prev"],
+          "properties": {
+            "t": { "const": "edge:remove" },
+            "id": { "type": "string", "minLength": 1 },
+            "prev": { "type": "object" }
+          }
+        }
+      ]
+    }
+  }
+}

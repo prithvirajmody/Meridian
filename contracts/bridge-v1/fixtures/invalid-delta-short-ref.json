@@ -1,0 +1,1 @@
+{"schema_version":1,"kind":"meridian-structural-delta","from":{"repo":"https://example.test/repo.git","ref":"abc"},"to":{"repo":"https://example.test/repo.git","ref":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},"origin":{"actor":"meridian:diff"},"ops":[]}

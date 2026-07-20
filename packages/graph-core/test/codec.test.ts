@@ -159,6 +159,63 @@ describe('decode: version policy (ADR-0004)', () => {
   });
 });
 
+describe('document source provenance (ADR-0045)', () => {
+  const source = {
+    repo: 'https://example.test/acme/widgets.git',
+    ref: '0123456789abcdef0123456789abcdef01234567',
+    ingested_by: {
+      meridian_version: '0.1.0',
+      adapter: 'demo',
+      adapter_versions: { 'z:adapter': '2.0.0', 'a:adapter': '1.0.0' },
+    },
+  } as const;
+
+  it('decodes, exposes, and canonically re-encodes an optional source block', () => {
+    const result = decode({ ...minimalDoc(), source });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.source).toEqual({
+      ...source,
+      ingested_by: {
+        ...source.ingested_by,
+        adapter_versions: { 'a:adapter': '1.0.0', 'z:adapter': '2.0.0' },
+      },
+    });
+    const rendered = encodeCanonical(result.space, {
+      producer: minimalDoc().producer,
+      source: result.source,
+    });
+    expect(rendered.indexOf('"source"')).toBeLessThan(rendered.indexOf('"roots"'));
+    expect(JSON.parse(rendered).source).toEqual(result.source);
+  });
+
+  it('keeps legacy documents source-free and drops a pin unless explicitly supplied', () => {
+    const legacy = decode(minimalDoc());
+    expect(legacy.ok).toBe(true);
+    if (!legacy.ok) return;
+    expect('source' in legacy).toBe(false);
+
+    const pinned = decode({ ...minimalDoc(), source });
+    expect(pinned.ok).toBe(true);
+    if (!pinned.ok) return;
+    expect(encode(pinned.space)).not.toHaveProperty('source');
+  });
+
+  it.each([
+    ['relative repo', { ...source, repo: '../widgets' }],
+    ['short ref', { ...source, ref: 'abc123' }],
+    ['uppercase ref', { ...source, ref: 'A'.repeat(40) }],
+    [
+      'empty adapter versions',
+      { ...source, ingested_by: { ...source.ingested_by, adapter_versions: {} } },
+    ],
+  ])('rejects %s', (_label, badSource) => {
+    const result = decode({ ...minimalDoc(), source: badSource });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors[0]?.path).toContain('source');
+  });
+});
+
 describe('encode: deterministic canonical form (I6)', () => {
   it('is insensitive to construction order', () => {
     const build = (flip: boolean) => {

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "meridian-graph",
+  "target": {
+    "repo": "https://example.test/acme/widgets.git",
+    "ref": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "produced_by": {
+    "meridian_version": "0.1.0",
+    "adapter": "code",
+    "adapter_versions": {
+      "@meridian/adapter-code": "0.2.0"
+    }
+  },
+  "document": "bundle/to.graph.json",
+  "document_sha256": "c80f867ff2d48c629101d478add6e66afcf8627c0270230c1aec94516910103c",
+  "document_size_bytes": 1635,
+  "graph_format_version": 1,
+  "node_count": 6,
+  "edge_count": 1,
+  "domains": ["code"]
+}

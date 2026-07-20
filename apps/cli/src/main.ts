@@ -26,6 +26,7 @@ import { cmdAiCluster, cmdAiSummarize, type AiCommandOptions } from './ai.js';
 import { cmdBench } from './bench.js';
 import { cmdAiEnrich } from './enrich.js';
 import { cmdCut } from './cut.js';
+import { cmdDiff } from './diff.js';
 import { splitCsv } from './globs.js';
 import { cmdIngest, cmdPlugins } from './ingest.js';
 import { stderrLine, stdoutLine, writeStderr } from './io.js';
@@ -112,6 +113,8 @@ Usage:
                                              off-thread in the ADR-0017 Comlink
                                              worker host (byte-identical output)
   meridian ingest <source> [--adapter <domain>] [--out <file>]
+                  [--repo <absolute-uri> --ref <full-sha>
+                   --descriptor <graph-artifact.json>]
                   [--include <globs>] [--exclude <globs>] [--lang <langs>] [--json]
                                              run a domain adapter over a source
                                              file or directory: sniff arbitration
@@ -124,6 +127,15 @@ Usage:
                                              repo-relative paths and --lang a
                                              comma-separated allowlist
                                              (typescript, python)
+                                             Pinned bridge mode requires
+                                             --repo/--ref/--out/--descriptor
+                                             together and writes canonical
+                                             graph bytes plus bridge-v1 metadata
+  meridian diff <from.json> <to.json> [--json]
+                  [--delta-out <delta.json> --descriptor <diff-artifact.json>]
+                                             semantic diff over diffSpaces;
+                                             artifact mode writes a replayable
+                                             bridge-v1 delta then its descriptor
   meridian plugins list [--json]             registered plugins: versions,
                                              capabilities, vocabulary
   meridian bench [--json]                    run every repository performance
@@ -165,7 +177,8 @@ Usage:
                                              --ai-fixtures is read in replay and
                                              written in record mode
 
-Exit codes: 0 ok · 1 invalid input or rejected delta · 2 usage or I/O error
+Exit codes: generally 0 ok · 1 invalid/rejected · 2 usage or I/O.
+            diff: 0 identical · 1 different · 2 invalid/usage/I/O
 `;
 
 function out(line: string): void {
@@ -644,7 +657,7 @@ async function cmdWatch(
 
 // ---------------------------------------------------------------------- main
 
-const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang', '--budget', '--ai-provider', '--ai-model', '--ai-mode', '--ai-fixtures', '--import', '--export', '--mutate', '--salvage']);
+const VALUE_FLAGS = new Set(['--script', '--out', '--emit-delta', '--apply', '--edits', '--adapter', '--level', '--zoom', '--focus', '--svg', '--provider', '--include', '--exclude', '--lang', '--budget', '--ai-provider', '--ai-model', '--ai-mode', '--ai-fixtures', '--import', '--export', '--mutate', '--salvage', '--repo', '--ref', '--descriptor', '--delta-out']);
 const BOOL_FLAGS = new Set(['--worker', '--ai-consent']);
 
 interface Cli {
@@ -871,13 +884,50 @@ async function main(): Promise<void> {
       break;
     }
     case 'ingest': {
-      allowFlags(cli, command, ['--adapter', '--out', '--include', '--exclude', '--lang']);
+      allowFlags(cli, command, ['--adapter', '--out', '--include', '--exclude', '--lang', '--repo', '--ref', '--descriptor']);
+      const bridgeRequested = ['--repo', '--ref', '--descriptor'].some((flag) =>
+        cli.values.has(flag),
+      );
+      if (
+        bridgeRequested &&
+        !['--repo', '--ref', '--out', '--descriptor'].every((flag) => cli.values.has(flag))
+      ) {
+        usageError('ingest: --repo, --ref, --out, and --descriptor must be supplied together');
+      }
       process.exit(
         await cmdIngest(file, {
           json: cli.json,
           ...(cli.values.has('--adapter') ? { adapter: cli.values.get('--adapter')! } : {}),
           ...(cli.values.has('--out') ? { out: cli.values.get('--out')! } : {}),
+          ...(bridgeRequested
+            ? {
+                bridge: {
+                  repo: cli.values.get('--repo')!,
+                  ref: cli.values.get('--ref')!,
+                  descriptor: cli.values.get('--descriptor')!,
+                },
+              }
+            : {}),
           ...parseCodeWalkFlags(cli),
+        }),
+      );
+      break;
+    }
+    case 'diff': {
+      allowFlags(cli, command, ['--delta-out', '--descriptor']);
+      if (extra === undefined || cli.positional.length !== 3) {
+        usageError('diff: expected exactly <from.json> <to.json>');
+      }
+      const hasDelta = cli.values.has('--delta-out');
+      const hasDescriptor = cli.values.has('--descriptor');
+      if (hasDelta !== hasDescriptor) {
+        usageError('diff: --delta-out and --descriptor must be supplied together');
+      }
+      process.exit(
+        await cmdDiff(file, extra, {
+          json: cli.json,
+          ...(hasDelta ? { deltaOut: cli.values.get('--delta-out')! } : {}),
+          ...(hasDescriptor ? { descriptor: cli.values.get('--descriptor')! } : {}),
         }),
       );
       break;

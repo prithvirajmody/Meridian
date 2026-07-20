@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autobuild.dev/contracts/bridge-v1/graph-artifact.schema.json",
+  "title": "Meridian graph artifact descriptor (bridge-v1)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "target",
+    "produced_by",
+    "document",
+    "document_sha256",
+    "document_size_bytes",
+    "graph_format_version",
+    "node_count",
+    "edge_count",
+    "domains"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "meridian-graph" },
+    "target": { "$ref": "#/$defs/source_pin" },
+    "produced_by": { "$ref": "#/$defs/graph_producer" },
+    "document": { "$ref": "#/$defs/safe_path" },
+    "document_sha256": { "$ref": "#/$defs/sha256" },
+    "document_size_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1073741824
+    },
+    "graph_format_version": { "type": "integer", "minimum": 1 },
+    "node_count": { "type": "integer", "minimum": 0 },
+    "edge_count": { "type": "integer", "minimum": 0 },
+    "domains": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "full_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "safe_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "source_pin": {
+      "type": "object",
+      "required": ["repo", "ref"],
+      "properties": {
+        "repo": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "ref": { "$ref": "#/$defs/full_sha" }
+      }
+    },
+    "graph_producer": {
+      "type": "object",
+      "required": ["meridian_version", "adapter", "adapter_versions"],
+      "properties": {
+        "meridian_version": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "adapter": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "adapter_versions": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "minLength": 1, "maxLength": 256 },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    }
+  }
+}

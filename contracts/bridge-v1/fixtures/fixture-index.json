@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    { "path": "valid-from-graph-artifact.json", "schema": "graph-artifact.schema.json", "valid": true },
+    { "path": "valid-to-graph-artifact.json", "schema": "graph-artifact.schema.json", "valid": true },
+    { "path": "valid-diff-artifact.json", "schema": "diff-artifact.schema.json", "valid": true },
+    { "path": "bundle/drift.delta.json", "schema": "structural-delta.schema.json", "valid": true },
+    { "path": "invalid-graph-unknown-major.json", "schema": "graph-artifact.schema.json", "valid": false },
+    { "path": "invalid-graph-short-ref.json", "schema": "graph-artifact.schema.json", "valid": false },
+    { "path": "invalid-graph-path-escape.json", "schema": "graph-artifact.schema.json", "valid": false },
+    { "path": "invalid-graph-absolute-path.json", "schema": "graph-artifact.schema.json", "valid": false },
+    { "path": "invalid-graph-digest.json", "schema": "graph-artifact.schema.json", "valid": false },
+    { "path": "invalid-graph-negative-count.json", "schema": "graph-artifact.schema.json", "valid": false },
+    { "path": "invalid-graph-duplicate-domain.json", "schema": "graph-artifact.schema.json", "valid": false },
+    { "path": "invalid-diff-unknown-major.json", "schema": "diff-artifact.schema.json", "valid": false },
+    { "path": "invalid-diff-path-escape.json", "schema": "diff-artifact.schema.json", "valid": false },
+    { "path": "invalid-diff-short-ref.json", "schema": "diff-artifact.schema.json", "valid": false },
+    { "path": "invalid-diff-negative-summary.json", "schema": "diff-artifact.schema.json", "valid": false },
+    { "path": "invalid-delta-unknown-major.json", "schema": "structural-delta.schema.json", "valid": false },
+    { "path": "invalid-delta-unknown-op.json", "schema": "structural-delta.schema.json", "valid": false },
+    { "path": "invalid-delta-short-ref.json", "schema": "structural-delta.schema.json", "valid": false },
+    { "path": "invalid-delta-incomplete-remove.json", "schema": "structural-delta.schema.json", "valid": false }
+  ],
+  "support_files": ["bundle/from.graph.json", "bundle/to.graph.json"]
+}

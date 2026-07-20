@@ -28,8 +28,10 @@ import {
   deriveEdgeId,
   deriveGraphId,
   deriveNodeId,
+  encodeCanonical,
   encodePretty,
   stats,
+  type DocumentSource,
   type GraphId,
   type GraphSpace,
   type NodeId,
@@ -37,6 +39,16 @@ import {
 import { PLUGIN_API_VERSION, type IdFacade, type SourceDescriptor } from '@meridian/plugin-api';
 import { createPluginHost, type PluginHost } from '@meridian/plugin-host';
 import { materializeStreamedSource } from './stream-ingest.js';
+import {
+  BridgeArtifactError,
+  buildGraphArtifact,
+  canonicalBridgeJson,
+  makeDocumentSource,
+  parseBridgeSourcePin,
+  resolveBridgeOutputPair,
+  writeBridgeOutputPair,
+  type BridgeOutputPair,
+} from './bridge-artifacts.js';
 
 const MEDIA_TYPES: Readonly<Record<string, string>> = {
   md: 'text/markdown',
@@ -200,19 +212,42 @@ export interface IngestOptions {
   readonly include?: readonly string[];
   readonly exclude?: readonly string[];
   readonly langs?: ReadonlySet<CodeLanguage>;
+  readonly bridge?: {
+    readonly repo: string;
+    readonly ref: string;
+    readonly descriptor: string;
+  };
 }
 
 export async function cmdIngest(sourcePath: string, opts: IngestOptions): Promise<number> {
+  let bridgePair: BridgeOutputPair | undefined;
+  if (opts.bridge !== undefined) {
+    try {
+      parseBridgeSourcePin(opts.bridge.repo, opts.bridge.ref);
+      if (opts.out === undefined) {
+        throw new BridgeArtifactError('pinned ingest requires --out');
+      }
+      bridgePair = resolveBridgeOutputPair(opts.out, opts.bridge.descriptor, [sourcePath]);
+    } catch (error) {
+      stderrLine(`ingest: ${error instanceof Error ? error.message : String(error)}`);
+      return 2;
+    }
+  }
   const built = buildHost();
   const { host } = built;
   try {
-    return await runIngest(host, sourcePath, opts);
+    return await runIngest(host, sourcePath, opts, bridgePair);
   } finally {
     await built.dispose();
   }
 }
 
-async function runIngest(host: PluginHost, sourcePath: string, opts: IngestOptions): Promise<number> {
+async function runIngest(
+  host: PluginHost,
+  sourcePath: string,
+  opts: IngestOptions,
+  bridgePair?: BridgeOutputPair,
+): Promise<number> {
   const walk: CodeWalkOptions = {
     ...(opts.include !== undefined ? { include: opts.include } : {}),
     ...(opts.exclude !== undefined ? { exclude: opts.exclude } : {}),
@@ -235,20 +270,53 @@ async function runIngest(host: PluginHost, sourcePath: string, opts: IngestOptio
   const { space, producer } = materialized;
   const s = stats(space);
   const written: string[] = [];
+  let documentText = encodePretty(space, { producer });
+  let source: DocumentSource | undefined;
+  if (bridgePair !== undefined && opts.bridge !== undefined) {
+    const plugin = host.plugins().find((candidate) => candidate.manifest.name === outcome.plugin);
+    if (plugin === undefined) {
+      stderrLine(`ingest: selected plugin "${outcome.plugin}" is no longer registered`);
+      return 2;
+    }
+    source = makeDocumentSource(
+      opts.bridge.repo,
+      opts.bridge.ref,
+      outcome.domain,
+      plugin.manifest.name,
+      plugin.manifest.version,
+    );
+    documentText = encodeCanonical(space, { producer, source });
+  }
   if (opts.out !== undefined) {
     try {
-      await writeFile(opts.out, encodePretty(space, { producer }), 'utf8');
+      if (bridgePair !== undefined && source !== undefined) {
+        const descriptor = buildGraphArtifact(
+          space,
+          bridgePair.artifactReference,
+          documentText,
+          source,
+        );
+        await writeBridgeOutputPair(
+          bridgePair,
+          documentText,
+          canonicalBridgeJson(descriptor),
+        );
+      } else {
+        await writeFile(opts.out, documentText, 'utf8');
+      }
     } catch (cause) {
-      const message = `cannot write ${opts.out}: ${cause instanceof Error ? cause.message : String(cause)}`;
+      const targets = bridgePair === undefined ? opts.out : `${opts.out} and ${opts.bridge?.descriptor}`;
+      const message = `cannot write ${targets}: ${cause instanceof Error ? cause.message : String(cause)}`;
       if (opts.json) {
         out(JSON.stringify({ source: sourcePath, ok: false, issue: { code: 'storage-io', message } }, null, 2));
       } else {
         out(`INGEST FAILED ${sourcePath}`);
         out(`  [storage-io] ${message}`);
       }
-      return 1;
+      return bridgePair === undefined ? 1 : 2;
     }
     written.push(opts.out);
+    if (opts.bridge !== undefined) written.push(opts.bridge.descriptor);
   }
 
   const report = outcome.report;
@@ -269,7 +337,7 @@ async function runIngest(host: PluginHost, sourcePath: string, opts: IngestOptio
           },
           stats: s,
           written,
-          document: JSON.parse(encodePretty(space, { producer })),
+          document: JSON.parse(documentText),
         },
         null,
         2,

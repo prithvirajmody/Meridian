@@ -7,6 +7,9 @@ import { StudioSession } from '../src/studio-session.js';
 import { createStudioStore, StudioStoreCommands } from '../src/store.js';
 
 const CORPUS_ROOT = fileURLToPath(new URL('../../../fixtures/corpora/markdown/', import.meta.url));
+const PINNED_GRAPH = fileURLToPath(
+  new URL('../../../contracts/bridge-v1/fixtures/bundle/from.graph.json', import.meta.url),
+);
 const CORPORA = [
   'basic.md',
   'links.md',
@@ -17,6 +20,21 @@ const CORPORA = [
 ] as const;
 
 describe('StudioSession full pipeline', () => {
+  it('opens a bridge-v1 pinned graph through the saved-document path', async () => {
+    const store = createStudioStore();
+    const session = new StudioSession(store);
+    try {
+      await session.openText('pinned.graph.json', await readFile(PINNED_GRAPH, 'utf8'));
+      expect(store.getState()).toMatchObject({
+        phase: 'ready',
+        adapter: { plugin: 'meridian:document', score: 1 },
+      });
+      expect(store.getState().renderModel).not.toBeNull();
+    } finally {
+      await session.destroy();
+    }
+  });
+
   for (const corpus of CORPORA) {
     it(`opens ${corpus} via sniff → gate/store → LOD → layout → RenderModel`, async () => {
       const store = createStudioStore();

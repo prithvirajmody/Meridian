@@ -85,9 +85,24 @@ const graphSchema = z.object({
   edges: z.array(edgeSchema),
 });
 
+const documentSourceSchema = z.object({
+  repo: z.string().url().min(1).max(2048),
+  ref: z.string().regex(/^[0-9a-f]{40}$/u),
+  ingested_by: z.object({
+    meridian_version: z.string().min(1).max(128),
+    adapter: z.string().min(1).max(128),
+    adapter_versions: z
+      .record(z.string().min(1).max(256), z.string().min(1).max(128))
+      .refine((value) => Object.keys(value).length > 0, {
+        message: 'adapter_versions must not be empty',
+      }),
+  }),
+});
+
 const documentSchema = z.object({
   formatVersion: z.literal(CURRENT_FORMAT_VERSION),
   producer: z.object({ name: z.string().min(1), version: z.string().min(1) }),
+  source: documentSourceSchema.optional(),
   roots: z.array(z.string().min(1)),
   graphs: z.array(graphSchema),
 });
@@ -95,12 +110,19 @@ const documentSchema = z.object({
 /** The wire form (ADR-0004). */
 export type GraphDocument = z.infer<typeof documentSchema>;
 export type DocumentProducer = GraphDocument['producer'];
+/** Optional document identity accepted by ADR-0045; it is evidence, not graph semantics. */
+export type DocumentSource = z.infer<typeof documentSourceSchema>;
 type WireAttrBag = z.infer<typeof attrBagSchema>;
 
 // ----------------------------------------------------------------- decode
 
 export type DecodeResult =
-  | { readonly ok: true; readonly space: GraphSpace; readonly warnings: Issue[] }
+  | {
+      readonly ok: true;
+      readonly space: GraphSpace;
+      readonly source?: DocumentSource;
+      readonly warnings: Issue[];
+    }
   | { readonly ok: false; readonly errors: Issue[]; readonly warnings: Issue[] };
 
 function fail(errors: Issue[], warnings: Issue[] = []): DecodeResult {
@@ -123,6 +145,24 @@ function nfcAttrs(attrs: WireAttrBag | undefined): AttrBag {
 
 function nfcProvenance(p: z.infer<typeof provenanceSchema>): SourceRef {
   return canonProvenance(p as SourceRef);
+}
+
+function canonDocumentSource(source: DocumentSource): DocumentSource {
+  const adapterVersions: Record<string, string> = {};
+  for (const [name, version] of Object.entries(source.ingested_by.adapter_versions).sort(
+    ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0),
+  )) {
+    adapterVersions[nfc(name)] = nfc(version);
+  }
+  return {
+    repo: nfc(source.repo),
+    ref: source.ref,
+    ingested_by: {
+      meridian_version: nfc(source.ingested_by.meridian_version),
+      adapter: nfc(source.ingested_by.adapter),
+      adapter_versions: adapterVersions,
+    },
+  };
 }
 
 /** Options for `decode`. `vocabulary` turns the semantic pass into an IR gate (U8). */
@@ -284,7 +324,12 @@ export function decode(input: string | unknown, opts: DecodeOptions = {}): Decod
   const result = validate(space, opts);
   const errors = [...dupErrors, ...result.errors];
   if (errors.length > 0) return fail(errors, result.warnings);
-  return { ok: true, space, warnings: result.warnings };
+  return {
+    ok: true,
+    space,
+    ...(doc.source !== undefined ? { source: canonDocumentSource(doc.source) } : {}),
+    warnings: result.warnings,
+  };
 }
 
 // ----------------------------------------------------------------- encode
@@ -322,6 +367,8 @@ function encodeProvenance(p: SourceRef): GraphDocument['graphs'][number]['meta']
 
 export interface EncodeOptions {
   readonly producer?: DocumentProducer;
+  /** Deliberate trusted assertion; ordinary transforms omit it and therefore drop stale pins. */
+  readonly source?: DocumentSource;
 }
 
 /** Deterministic wire form: same space ⇒ identical document (I6). */
@@ -361,6 +408,7 @@ export function encode(space: GraphSpace, opts: EncodeOptions = {}): GraphDocume
   return {
     formatVersion: CURRENT_FORMAT_VERSION,
     producer: { name: nfc(producer.name), version: nfc(producer.version) },
+    ...(opts.source !== undefined ? { source: canonDocumentSource(opts.source) } : {}),
     roots: space.roots.map((r) => nfc(r)).sort(),
     graphs,
   };

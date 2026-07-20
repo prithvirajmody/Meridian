@@ -1,5 +1,11 @@
 # @meridian/graph-core
 
+## Unreleased — bridge-v1 integration
+
+- Added ADR-0045's optional typed `DocumentSource` to GraphDocument decode and
+  canonical encode. Legacy documents are unchanged; transformed spaces do not
+  inherit a source pin unless the caller explicitly supplies trusted metadata.
+
 ## 0.1.0 — 2026-07-05 (Phases 0–2)
 
 - **Phase 0:** USG model, branded IDs (ADR-0002 derivation), constructors,
