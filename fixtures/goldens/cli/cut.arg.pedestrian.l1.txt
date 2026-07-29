@@ -1,5 +1,5 @@
 cut fixtures/.cut-inputs/arg-pedestrian.meridian.json — level 1/2 · zoom 0.5
-  chain      argument · 3 levels (level-0 → level-1 → level-2)
+  chain      argument · 3 levels (essay → paragraph → sentence)
   coverage   24/24 leaves — covers ✓
   nodes (8):
     nbrty4lj2ix75jbahfmxfueyyq4 "City governments should close their historic centers to private cars. The change pays for itself in safety, commerce, and civic life, and the objections raised against it dissolve on contact with the evidence from cities that have already made the move." (arg:paragraph) · level · covers 2

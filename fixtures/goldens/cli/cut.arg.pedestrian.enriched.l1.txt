@@ -1,5 +1,5 @@
 cut fixtures/.cut-inputs/arg-pedestrian.enriched.meridian.json — level 1/2 · zoom 0.5
-  chain      argument · 3 levels (level-0 → level-1 → level-2)
+  chain      argument · 3 levels (essay → paragraph → sentence)
   coverage   39/39 leaves — covers ✓
   nodes (23):
     n44udxmhu4bcozervfczraoqpry "Pedestrianization is not a hardship to be endured but an amenity to be claimed." (arg:claim) · leaf · covers 1

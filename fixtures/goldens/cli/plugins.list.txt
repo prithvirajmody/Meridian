@@ -1,4 +1,4 @@
-plugins (4):
+plugins (5):
   @meridian/adapter-markdown 0.1.0 — plugin-api ^1.0.0
     capabilities  domain-parser:markdown
     kinds         doc:break, doc:code, doc:html, doc:links-to, doc:list, doc:paragraph, doc:quote, doc:section
@@ -15,3 +15,7 @@ plugins (4):
     capabilities  domain-parser:argument
     kinds         arg:assumes, arg:cites, arg:claim, arg:essay, arg:evidence, arg:objection, arg:paragraph, arg:premise, arg:rebuts, arg:sentence, arg:supports, arg:thesis
     attrs         arg:index
+  @meridian/adapter-org 0.1.0 — plugin-api ^1.0.0
+    capabilities  domain-parser:org
+    kinds         org:artifact, org:assignment, org:escalates-to, org:event, org:feeds, org:gate, org:gates, org:organization, org:produced, org:reviewed-by, org:role-instance, org:team, org:then
+    attrs         org:brain-root-ref, org:brain-store, org:detail, org:digest, org:ended-at, org:engine, org:id, org:implicit, org:index, org:input, org:job-id, org:kind, org:lane, org:org-digest, org:raw, org:role-type, org:row-kind, org:seq, org:started-at, org:state, org:template-ref, org:verdict, org:version, org:via-dst, org:via-src

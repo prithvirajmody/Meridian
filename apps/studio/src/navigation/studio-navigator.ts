@@ -30,6 +30,7 @@ import {
   type LodResult,
   type ZoomPolicy,
 } from '@meridian/abstraction';
+import type { LevelChainSpec } from '@meridian/plugin-api';
 import { tokenizeLabel, type ChangeSet } from '@meridian/graph-store';
 import {
   deriveRefinementMap,
@@ -170,6 +171,9 @@ export interface StudioNavigatorOptions {
   readonly onUrl?: (fragment: string) => void;
   /** Domain-declared temporal hints for the projection waist (ADR-0037). */
   readonly temporal?: TemporalDomainHints;
+  /** Domain-declared semantic-zoom chain (ADR-0047 §6): named levels for the
+   * abstraction ladder instead of the synthesized `level-0…N`. */
+  readonly chainSpec?: LevelChainSpec;
   /** Phase-11F edit-storm coalescing window. */
   readonly mutationCoalesceMs?: number;
   /** Located host failure channel for an asynchronous mutation pass. */
@@ -454,7 +458,7 @@ export class StudioNavigator {
    */
   async boot(): Promise<{ model: RenderModel; message: string }> {
     const space = this.rootSpace;
-    const chain = buildLevelChain(space);
+    const chain = buildLevelChain(space, this.options.chainSpec);
     const lod = resolveLod(space, chain, this.policy, {
       zoom: this.options.initialZoom,
       overrides: new Map(),
@@ -501,6 +505,7 @@ export class StudioNavigator {
     return new NavigationController({
       space,
       policy: this.policy,
+      ...(this.options.chainSpec === undefined ? {} : { chainSpec: this.options.chainSpec }),
       viewport: this.viewport,
       scaleRangeFor: (graphId) =>
         this.rangeByGraph.get(graphId) ?? this.rangeByGraph.values().next().value ?? { sMin: 1, sMax: 1000 },

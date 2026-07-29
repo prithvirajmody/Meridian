@@ -265,6 +265,134 @@
           "description": "0-based order of an element within its graph"
         }
       }
+    },
+    {
+      "name": "@meridian/adapter-org",
+      "version": "0.1.0",
+      "apiVersion": "^1.0.0",
+      "capabilities": [
+        {
+          "kind": "domain-parser",
+          "id": "org"
+        }
+      ],
+      "kinds": [
+        "org:organization",
+        "org:team",
+        "org:role-instance",
+        "org:gate",
+        "org:assignment",
+        "org:event",
+        "org:artifact",
+        "org:then",
+        "org:feeds",
+        "org:reviewed-by",
+        "org:escalates-to",
+        "org:gates",
+        "org:produced"
+      ],
+      "attrSchemas": {
+        "org:id": {
+          "type": "string",
+          "description": "organization id from the definition"
+        },
+        "org:version": {
+          "type": "string",
+          "description": "organization semver from the definition"
+        },
+        "org:digest": {
+          "type": "string",
+          "description": "canonical self-digest of the org definition"
+        },
+        "org:brain-store": {
+          "type": "string",
+          "description": "registered brain store the org binds to"
+        },
+        "org:brain-root-ref": {
+          "type": "string",
+          "description": "brain root reference the org binds to"
+        },
+        "org:index": {
+          "type": "number",
+          "description": "0-based order of an element within its collection"
+        },
+        "org:implicit": {
+          "type": "boolean",
+          "description": "true on nodes the adapter synthesizes for uniform depth (_direct team, _system instance)"
+        },
+        "org:template-ref": {
+          "type": "string",
+          "description": "team template a team was stamped from"
+        },
+        "org:role-type": {
+          "type": "string",
+          "description": "declared role type of an instance"
+        },
+        "org:engine": {
+          "type": "string",
+          "description": "per-instance engine override, when declared"
+        },
+        "org:row-kind": {
+          "type": "string",
+          "description": "workflow row kind an edge derives from"
+        },
+        "org:verdict": {
+          "type": "string",
+          "description": "verdict selecting a conditional workflow edge"
+        },
+        "org:input": {
+          "type": "string",
+          "description": "artifact kind a feeds/gates edge carries"
+        },
+        "org:via-src": {
+          "type": "string",
+          "description": "deep source node id of a portal-rebased edge"
+        },
+        "org:via-dst": {
+          "type": "string",
+          "description": "deep destination node id of a portal-rebased edge"
+        },
+        "org:job-id": {
+          "type": "string",
+          "description": "AutoBuild job id an assignment belongs to"
+        },
+        "org:org-digest": {
+          "type": "string",
+          "description": "org digest the job was pinned to at mint"
+        },
+        "org:lane": {
+          "type": "string",
+          "description": "owning role instance id (timeline swimlane)"
+        },
+        "org:state": {
+          "type": "string",
+          "description": "conservative assignment state: in_progress | awaiting_answer | delivered | accepted | escalated"
+        },
+        "org:started-at": {
+          "type": "string",
+          "description": "ISO-8601 start instant of an element"
+        },
+        "org:ended-at": {
+          "type": "string",
+          "description": "ISO-8601 end instant of an element"
+        },
+        "org:seq": {
+          "type": "number",
+          "description": "globally monotonic run-log ordinal of an event"
+        },
+        "org:kind": {
+          "type": "string",
+          "description": "closed event kind from org-run-events-v1"
+        },
+        "org:raw": {
+          "type": "string",
+          "description": "raw run-log event literal"
+        },
+        "org:detail": {
+          "type": "string",
+          "description": "redacted run-log detail string, verbatim"
+        }
+      }
     }
   ]
 }

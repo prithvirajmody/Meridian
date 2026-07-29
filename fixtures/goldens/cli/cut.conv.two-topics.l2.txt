@@ -1,5 +1,5 @@
 cut fixtures/.cut-inputs/conv-two-topics.meridian.json — level 2/2 · zoom 0.8333
-  chain      conversation · 3 levels (level-0 → level-1 → level-2)
+  chain      conversation · 3 levels (session → exchange → message)
   coverage   12/12 leaves — covers ✓
   nodes (12):
     n5ecpinhzhbmssemgcoafwnfxhq "An acetone smell means the starter is hungry and has exhausted its food supply. Feed it twice daily at a one to one to one ratio until the smell fades and it doubles reliably." (conv:message) · leaf · covers 1

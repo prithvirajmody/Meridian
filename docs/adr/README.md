@@ -105,7 +105,7 @@ so the decision history stays legible.
 | 0044 | Reserved (Meridian roadmap Phase 12) | Reserved | — | 12 |
 | [0045](0045-document-source-provenance.md) | Pinned document source provenance for bridge-v1 graph artifacts | Accepted | P1, P4, P10, P12; §3.3, §6, §15.4, §17, §20; ADR-0004, ADR-0009 | AutoBuild integration Milestone C1 / roadmap Phase 4B |
 | [0046](0046-public-structural-diff.md) | Public deterministic structural diff for bridge-v1 | Accepted | P1, P4, P5, P7, P10, P12; §3.3, §6, §15.4, §17, §20; ADR-0004, ADR-0009 | AutoBuild integration Milestone C2 / roadmap Phase 4C |
-| [0047](0047-org-adapter.md) | `adapters/org`: organization definitions and run histories as semantic graphs | Proposed | §4.3 (U1), §4.5 (U3), §20; ADR-0001, ADR-0009, ADR-0033, ADR-0034, ADR-0037 | AutoBuild integration / AutoBuild roadmap Phase 14A–14B |
+| [0047](0047-org-adapter.md) | `adapters/org`: organization definitions and run histories as semantic graphs | Accepted | §4.3 (U1), §4.5 (U3), §20; ADR-0001, ADR-0009, ADR-0033, ADR-0034, ADR-0037 | AutoBuild integration / AutoBuild roadmap Phase 14A–14B |
 
 Later phases extend this registry (ADR-0009+ at Phase 2, and so on). The
 constitution's `ADR-A5…A12` are pre-recorded there and become numbered ADRs in

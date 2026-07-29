@@ -22,6 +22,7 @@
  */
 import { readFile } from 'node:fs/promises';
 import { stderrLine, stdoutLine } from './io.js';
+import { chainSpecFor } from './level-chains.js';
 import {
   decode,
   type GraphSpace,
@@ -230,7 +231,7 @@ export async function cmdCut(file: string, opts: CutOptions): Promise<number> {
     return 1;
   }
 
-  const chain = buildLevelChain(space);
+  const chain = buildLevelChain(space, chainSpecFor(space));
   const zoom = opts.level !== undefined ? zoomForLevel(chain, opts.level) : opts.zoom!;
 
   const policy = canonicalPolicy(chain);

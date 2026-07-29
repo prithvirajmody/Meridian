@@ -4,8 +4,9 @@
  * (LOD → layout → pure RenderModel) → 6D choreography. No service instance
  * enters React or Zustand state.
  */
-import { buildLevelChain, type LevelChain, type LodResult, type ZoomPolicy } from '@meridian/abstraction';
+import { buildLevelChain, maxDepth, type LevelChain, type LodResult, type ZoomPolicy } from '@meridian/abstraction';
 import { conversationPlugin } from '@meridian/adapter-conversation';
+import { orgPlugin } from '@meridian/adapter-org';
 import {
   CODE_PROJECT_MEDIA_TYPE,
   createCodePlugin,
@@ -37,7 +38,7 @@ import {
   type GraphStore,
 } from '@meridian/graph-store';
 import { BUILTIN_LAYOUT_PROVIDERS, type LayoutInput, type LayoutResult } from '@meridian/layout';
-import type { IdFacade, SourceDescriptor } from '@meridian/plugin-api';
+import type { IdFacade, LevelChainSpec, SourceDescriptor } from '@meridian/plugin-api';
 import { createPluginHost, type PluginHost } from '@meridian/plugin-host';
 import {
   createFocusState,
@@ -101,7 +102,7 @@ const idFacade: IdFacade = {
     }),
 };
 
-const BUILTIN_PLUGINS = [markdownPlugin, conversationPlugin] as const;
+const BUILTIN_PLUGINS = [markdownPlugin, conversationPlugin, orgPlugin] as const;
 
 function buildHost(codeMapper: CodeMapper): PluginHost {
   const host = createPluginHost({ ids: idFacade });
@@ -128,6 +129,25 @@ function temporalHintsForDomain(domain: string): TemporalDomainHints | undefined
       ...(temporal.endAttribute === undefined ? {} : { endAttribute: temporal.endAttribute }),
       ...(temporal.laneAttribute === undefined ? {} : { laneAttribute: temporal.laneAttribute }),
     };
+  }
+  return undefined;
+}
+
+
+/** Declared semantic-zoom chain of the plugin claiming `domain`, if any
+ * (ADR-0047 §6): manifest metadata in, named zoom levels out. Only honored
+ * while the space still fits the declared depth — an enriched document that
+ * outgrew its skeleton keeps the synthesized chain so no level is hidden. */
+function levelChainSpecForDomain(space: GraphSpace, domain: string): LevelChainSpec | undefined {
+  for (const plugin of BUILTIN_PLUGINS) {
+    const claims = plugin.manifest.capabilities.some(
+      (capability) => capability.kind === 'domain-parser' && capability.id === domain,
+    );
+    if (claims && plugin.manifest.levelChain !== undefined) {
+      return maxDepth(space) + 1 <= plugin.manifest.levelChain.levels.length
+        ? plugin.manifest.levelChain
+        : undefined;
+    }
   }
   return undefined;
 }
@@ -600,9 +620,11 @@ export class StudioSession {
       if (!this.isCurrent(generation)) return;
       signal.throwIfAborted();
       this.commands.stage('resolving', 'Resolving the visible abstraction…');
-      const chain = buildLevelChain(space);
-      const policy = canonicalPolicy(chain);
       const resolvedDomain = this.store.getState().adapter?.domain;
+      const chainSpec =
+        resolvedDomain === undefined ? undefined : levelChainSpecForDomain(space, resolvedDomain);
+      const chain = buildLevelChain(space, chainSpec);
+      const policy = canonicalPolicy(chain);
       const temporal =
         resolvedDomain === undefined ? undefined : temporalHintsForDomain(resolvedDomain);
 
@@ -610,6 +632,7 @@ export class StudioSession {
       const navigator = new StudioNavigator({
         space,
         policy,
+        ...(chainSpec === undefined ? {} : { chainSpec }),
         viewport: this.options.viewportProvider?.() ?? { width: 1280, height: 800 },
         initialZoom: initialZoom(chain),
         layoutService: this.layoutService,

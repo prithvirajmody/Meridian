@@ -56,6 +56,7 @@ import {
   type Size,
 } from '@meridian/layout';
 import { nodeWorkerFactory } from './layout-worker.js';
+import { chainSpecFor } from './level-chains.js';
 import { stderrLine, stdoutLine } from './io.js';
 
 function out(line: string): void {
@@ -168,7 +169,7 @@ export async function cmdLayout(file: string, opts: LayoutOptions): Promise<numb
   const space = decoded.space;
   const index = indexNodes(space);
 
-  const chain = buildLevelChain(space);
+  const chain = buildLevelChain(space, chainSpecFor(space));
   const level = opts.level ?? (opts.zoom === undefined ? 0 : undefined);
   const zoom = level !== undefined ? zoomForLevel(chain, level) : opts.zoom!;
   const policy = canonicalPolicy(chain);

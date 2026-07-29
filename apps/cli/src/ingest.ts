@@ -10,6 +10,7 @@ import { join, relative, sep } from 'node:path';
 import { argumentPlugin } from '@meridian/adapter-argument';
 import { conversationPlugin } from '@meridian/adapter-conversation';
 import { markdownPlugin } from '@meridian/adapter-markdown';
+import { orgPlugin } from '@meridian/adapter-org';
 import {
   CODE_PROJECT_MEDIA_TYPE,
   createCodePlugin,
@@ -88,7 +89,7 @@ export function buildHost(): BuiltHost {
   // the worker is lazy, so `plugins list` never spawns one.
   const parseHost = new ParseWorkerHost({ factory: codeWorkerFactory() });
   const mapper: CodeMapper = createWorkerMapper(parseHost);
-  const plugins = [markdownPlugin, createCodePlugin({ mapper }), conversationPlugin, argumentPlugin];
+  const plugins = [markdownPlugin, createCodePlugin({ mapper }), conversationPlugin, argumentPlugin, orgPlugin];
   for (const plugin of plugins) {
     const r = host.register(plugin);
     if (!r.ok) {

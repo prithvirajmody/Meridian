@@ -44,6 +44,9 @@ importers:
       '@meridian/adapter-markdown':
         specifier: workspace:*
         version: link:../../packages/adapters/markdown
+      '@meridian/adapter-org':
+        specifier: workspace:*
+        version: link:../../packages/adapters/org
       '@meridian/ai':
         specifier: workspace:*
         version: link:../../packages/ai
@@ -99,6 +102,9 @@ importers:
       '@meridian/adapter-markdown':
         specifier: workspace:*
         version: link:../../packages/adapters/markdown
+      '@meridian/adapter-org':
+        specifier: workspace:*
+        version: link:../../packages/adapters/org
       '@meridian/graph-core':
         specifier: workspace:*
         version: link:../../packages/graph-core
@@ -300,6 +306,28 @@ importers:
       '@types/markdown-it':
         specifier: ^14.1.2
         version: 14.1.2
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@24.13.2)
+
+  packages/adapters/org:
+    dependencies:
+      '@meridian/plugin-api':
+        specifier: workspace:*
+        version: link:../../plugin-api
+    devDependencies:
+      '@meridian/conformance-kit':
+        specifier: workspace:*
+        version: link:../../conformance-kit
+      '@meridian/graph-core':
+        specifier: workspace:*
+        version: link:../../graph-core
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.2

@@ -1,6 +1,6 @@
 # ADR-0047 — `adapters/org`: organization definitions and run histories as semantic graphs
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-29
 - **Phase:** AutoBuild integration / AutoBuild roadmap Phase 14A-14B
 - **Constitution:** ARCHITECTURE.md §4.3 (U1), §4.5 (U3), §20; ADR-0001, ADR-0009, ADR-0033, ADR-0034, ADR-0037
@@ -57,14 +57,14 @@ Recursion is detail graphs (ADR-0001). The ladder is
 **org → team → role → assignment → artifact**:
 
 1. `org:organization` root node — attrs include `org:id`, `org:version`,
-   `org:digest`, `org:brainStore`, `org:brainRootRef`.
+   `org:digest`, `org:brain-store`, `org:brain-root-ref`.
 2. `org:team` nodes in the organization's detail graph, one per declared team.
    Instances not owned by any team dock under a single deterministic implicit
    team node (`_direct`, label "Direct") so every branch of the tree has
    uniform depth — containment-depth-driven abstraction requires it. The
    implicit node is marked `org:implicit: true`.
 3. `org:role-instance` nodes in each team's detail graph — attrs
-   `org:roleType`, `org:engine`, `org:capabilities`, `org:capabilityRole`.
+   `org:role-type`, `org:engine`, `org:capabilities`, `org:capabilityRole`.
    `org:gate` nodes live at this level.
 4. `org:assignment` nodes in the owning instance's detail graph, built from
    run events. `org:state` uses the closed vocabulary
@@ -79,12 +79,12 @@ A structure-only ingest yields levels 1-3; a bundle with runs yields all five.
 ### 4. Temporal modeling: event and assignment **nodes**, never timestamped edges
 
 Meridian's timeline projection reads temporal hints from node attrs only
-(ADR-0037). Assignments carry `org:startedAt` / `org:endedAt` (intervals);
-events carry `org:startedAt` alone. The manifest declares
+(ADR-0037). Assignments carry `org:started-at` / `org:ended-at` (intervals);
+events carry `org:started-at` alone. The manifest declares
 
 ```ts
-presentation: { temporal: { startAttribute: 'org:startedAt',
-                            endAttribute: 'org:endedAt',
+presentation: { temporal: { startAttribute: 'org:started-at',
+                            endAttribute: 'org:ended-at',
                             laneAttribute: 'org:lane' } }
 ```
 
@@ -172,7 +172,6 @@ against the conversation adapter's goldens.
 
 ## Approval gate
 
-Pending. Acceptance authorizes the additive adapter package, the vendored
-`contracts/org-v1/` corpus, and the composition-root `chainSpec` wiring
-exactly as specified. Adapter implementation may not begin before acceptance
-(AutoBuild Rule 12).
+Accepted by the user on 2026-07-29. This authorizes the additive adapter
+package, the vendored `contracts/org-v1/` corpus (landed with the proposal),
+and the composition-root `chainSpec` wiring exactly as specified.

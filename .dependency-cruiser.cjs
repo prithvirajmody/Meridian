@@ -285,19 +285,19 @@ module.exports = {
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|store-sqlite|abstraction|layout|plugin-api|plugin-host|adapters/markdown|adapters/code|adapters/conversation|adapters/argument|ai-services|ai)(/|$)',
+          '^packages/(graph-core|graph-store|store-sqlite|abstraction|layout|plugin-api|plugin-host|adapters/markdown|adapters/code|adapters/conversation|adapters/argument|adapters/org|ai-services|ai)(/|$)',
       },
     },
     {
       name: 'studio-is-the-presentation-composition-root',
       severity: 'error',
       comment:
-        'ADR-0022/0037 · Phases 10/11: Studio composes the pipeline downward; it may use only the declared semantic, plugin, layout, view-model, projections, navigation, renderer, persistence, and built-in adapter (markdown, code, conversation) packages.',
+        'ADR-0022/0037 · Phases 10/11: Studio composes the pipeline downward; it may use only the declared semantic, plugin, layout, view-model, projections, navigation, renderer, persistence, and built-in adapter (markdown, code, conversation, org) packages.',
       from: { path: '^apps/studio/src' },
       to: {
         path: '^packages/',
         pathNot:
-          '^packages/(graph-core|graph-store|store-sqlite|abstraction|layout|view-model|projections|navigation|renderer|plugin-api|plugin-host|adapters/(markdown|code|conversation))',
+          '^packages/(graph-core|graph-store|store-sqlite|abstraction|layout|view-model|projections|navigation|renderer|plugin-api|plugin-host|adapters/(markdown|code|conversation|org))',
       },
     },
     {

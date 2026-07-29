@@ -1,5 +1,5 @@
 cut fixtures/.cut-inputs/conv-two-topics.meridian.json — level 1/2 · zoom 0.5
-  chain      conversation · 3 levels (level-0 → level-1 → level-2)
+  chain      conversation · 3 levels (session → exchange → message)
   coverage   12/12 leaves — covers ✓
   nodes (6):
     n5f76z22s3t75z4cgpbzt4uuel4 "Exchange 1" (conv:exchange) · level · covers 2

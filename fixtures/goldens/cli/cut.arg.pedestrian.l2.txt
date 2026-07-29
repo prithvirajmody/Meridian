@@ -1,5 +1,5 @@
 cut fixtures/.cut-inputs/arg-pedestrian.meridian.json — level 2/2 · zoom 0.8333
-  chain      argument · 3 levels (level-0 → level-1 → level-2)
+  chain      argument · 3 levels (essay → paragraph → sentence)
   coverage   24/24 leaves — covers ✓
   nodes (24):
     n372isvwdhrrzqiykrmfawhistq "Accessibility is the one objection that deserves a design answer rather than a rebuttal." (arg:sentence) · leaf · covers 1

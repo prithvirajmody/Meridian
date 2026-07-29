@@ -18,6 +18,7 @@
     "@meridian/adapter-code": "workspace:*",
     "@meridian/adapter-conversation": "workspace:*",
     "@meridian/adapter-markdown": "workspace:*",
+    "@meridian/adapter-org": "workspace:*",
     "@meridian/ai": "workspace:*",
     "@meridian/ai-services": "workspace:*",
     "@meridian/graph-core": "workspace:*",
