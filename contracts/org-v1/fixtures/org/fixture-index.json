@@ -1,0 +1,299 @@
+{
+  "fixtures": [
+    {
+      "citation": null,
+      "expect": "valid",
+      "path": "valid-minimal.json",
+      "reason": "Must load without repair.",
+      "rule_id": null
+    },
+    {
+      "citation": null,
+      "expect": "valid",
+      "path": "valid-research-fund.json",
+      "reason": "Must load without repair.",
+      "rule_id": null
+    },
+    {
+      "citation": null,
+      "expect": "valid",
+      "path": "valid-software-company-v1.json",
+      "reason": "Today's real PM\u2192EM\u2192Tech Lead\u2192Engineer\u2192QA chain loads as a mixed prose and code-defined capability organization.",
+      "rule_id": null
+    },
+    {
+      "citation": null,
+      "expect": "valid",
+      "path": "valid-team-substitution.json",
+      "reason": "A team stands where a role instance stood; the outside is unchanged.",
+      "rule_id": null
+    },
+    {
+      "citation": null,
+      "expect": "valid",
+      "path": "valid-nested-teams.json",
+      "reason": "A team containing a team stamps ids transitively without collision.",
+      "rule_id": null
+    },
+    {
+      "citation": "/instances/0/role_type",
+      "expect": "invalid",
+      "path": "invalid-unknown-role-reference.json",
+      "reason": "An instance names no declared role type.",
+      "rule_id": "ORG006_REFERENCES"
+    },
+    {
+      "citation": "/gates/0/over/0",
+      "expect": "invalid",
+      "path": "invalid-gate-over-nonexistent-check.json",
+      "reason": "A gate names an artifact/check that no input or workflow row provides.",
+      "rule_id": "ORG006_REFERENCES"
+    },
+    {
+      "citation": "/workflow/0/reviewer",
+      "expect": "invalid",
+      "path": "invalid-self-review.json",
+      "reason": "The writer is also its reviewer.",
+      "rule_id": "ORG001_WRITER_REVIEWER"
+    },
+    {
+      "citation": "/workflow/0/reviewer",
+      "expect": "invalid",
+      "path": "invalid-review-routing-cycle.json",
+      "reason": "Analyst and risk officer review each other in a cycle.",
+      "rule_id": "ORG001_WRITER_REVIEWER"
+    },
+    {
+      "citation": "/teams/0/bindings/reviewer",
+      "expect": "invalid",
+      "path": "invalid-team-boundary-self-review.json",
+      "reason": "A team binding aliases its writer and reviewer to one instance.",
+      "rule_id": "ORG001_WRITER_REVIEWER"
+    },
+    {
+      "citation": "/workflow/0/escalation_route",
+      "expect": "invalid",
+      "path": "invalid-escalation-cycle.json",
+      "reason": "Escalation cycles between two role instances instead of reaching user.",
+      "rule_id": "ORG002_ESCALATION_TERMINATES"
+    },
+    {
+      "citation": "/roles/0/output_schema_ref",
+      "expect": "invalid",
+      "path": "invalid-missing-schema-ref.json",
+      "reason": "The declared output schema file does not exist.",
+      "rule_id": "ORG006_REFERENCES"
+    },
+    {
+      "citation": "/roles/0/output_schema_ref",
+      "expect": "invalid",
+      "path": "invalid-mismatched-schema-ref.json",
+      "reason": "The ref version disagrees with the RoleContract output version.",
+      "rule_id": "ORG006_REFERENCES"
+    },
+    {
+      "citation": "/schema_version",
+      "expect": "invalid",
+      "path": "invalid-unsupported-version.json",
+      "reason": "The loader supports only org-definition-v1.",
+      "rule_id": "ORG000_SCHEMA"
+    },
+    {
+      "citation": "/digest_sha256",
+      "expect": "invalid",
+      "path": "invalid-digest-mismatch.json",
+      "reason": "Semantic content changed without updating its digest.",
+      "rule_id": "ORG000_DIGEST"
+    },
+    {
+      "citation": "/instances/2/instance_id",
+      "expect": "invalid",
+      "path": "invalid-duplicate-instance-id.json",
+      "reason": "Instance identifiers are not unique.",
+      "rule_id": "ORG006_REFERENCES"
+    },
+    {
+      "citation": "/capabilities/2",
+      "expect": "invalid",
+      "path": "invalid-unknown-capability.json",
+      "reason": "The capability name is outside the closed registry.",
+      "rule_id": "ORG007_CAPABILITIES"
+    },
+    {
+      "citation": "/roles/0/capabilities/0",
+      "expect": "invalid",
+      "path": "invalid-prose-execution-capability.json",
+      "reason": "A prompt-backed role attempts to acquire subprocess power.",
+      "rule_id": "ORG007_CAPABILITIES"
+    },
+    {
+      "citation": "/roles/0/capability_role",
+      "expect": "invalid",
+      "path": "invalid-prose-capability-role.json",
+      "reason": "A prompt-backed role attempts to name a code-defined capability implementation.",
+      "rule_id": "ORG007_CAPABILITIES"
+    },
+    {
+      "citation": "/roles/0/capability_role",
+      "expect": "invalid",
+      "path": "invalid-unknown-capability-role.json",
+      "reason": "A role names a capability implementation outside the closed registry.",
+      "rule_id": "ORG007_CAPABILITIES"
+    },
+    {
+      "citation": "/roles/0/capabilities/0",
+      "expect": "invalid",
+      "path": "invalid-unknown-role-capability.json",
+      "reason": "A role claims a power outside the closed registry.",
+      "rule_id": "ORG007_CAPABILITIES"
+    },
+    {
+      "citation": "/roles/0/capabilities/0",
+      "expect": "invalid",
+      "path": "invalid-role-capability-outside-budget.json",
+      "reason": "A role claims a registered power omitted from the org-level budget.",
+      "rule_id": "ORG007_CAPABILITIES"
+    },
+    {
+      "citation": "/workflow/0/produces_on_review/0",
+      "expect": "invalid",
+      "path": "invalid-review-output-collision.json",
+      "reason": "A review-produced artifact collides with another row's primary output.",
+      "rule_id": "ORG006_REFERENCES"
+    },
+    {
+      "citation": "/workflow/0/next",
+      "expect": "invalid",
+      "path": "invalid-workflow-cycle.json",
+      "reason": "The workflow graph contains a directed cycle.",
+      "rule_id": "ORG003_WORKFLOW_DAG"
+    },
+    {
+      "citation": "/workflow/1/required_inputs/2",
+      "expect": "invalid",
+      "path": "invalid-unproduced-required-input.json",
+      "reason": "A required input is neither upstream nor a declared user input.",
+      "rule_id": "ORG003_WORKFLOW_DAG"
+    },
+    {
+      "citation": "/workflow",
+      "expect": "invalid",
+      "path": "invalid-multiple-terminals.json",
+      "reason": "Two workflow rows are terminal.",
+      "rule_id": "ORG003_WORKFLOW_DAG"
+    },
+    {
+      "citation": "/workflow/1/kind",
+      "expect": "invalid",
+      "path": "invalid-unreachable-branch.json",
+      "reason": "A non-user-rooted conditional branch is unreachable from the entry.",
+      "rule_id": "ORG003_WORKFLOW_DAG"
+    },
+    {
+      "citation": "/workflow/2/required_inputs",
+      "expect": "invalid",
+      "path": "invalid-ungated-fan-in.json",
+      "reason": "A fan-in gate does not cover every incoming artifact.",
+      "rule_id": "ORG004_FAN_IN_AND_CONDITIONALS"
+    },
+    {
+      "citation": "/workflow/1/next/on_verdict",
+      "expect": "invalid",
+      "path": "invalid-conditional-without-gate.json",
+      "reason": "A verdict conditional has no gate over its inputs.",
+      "rule_id": "ORG004_FAN_IN_AND_CONDITIONALS"
+    },
+    {
+      "citation": "/workflow/0/retry_ceiling",
+      "expect": "invalid",
+      "path": "invalid-retry-over-contract.json",
+      "reason": "The graph retry ceiling exceeds the RoleContract maximum.",
+      "rule_id": "ORG005_BUDGETS_AND_CEILINGS"
+    },
+    {
+      "citation": "/roles/0/contract/budget/max_input_bytes",
+      "expect": "invalid",
+      "path": "invalid-budget-over-maximum.json",
+      "reason": "A role payload budget exceeds the enforced 10 MB bound.",
+      "rule_id": "ORG005_BUDGETS_AND_CEILINGS"
+    },
+    {
+      "citation": "(root)",
+      "expect": "invalid",
+      "path": "invalid-unknown-key.json",
+      "reason": "Closed schemas reject unknown keys.",
+      "rule_id": "ORG000_SCHEMA"
+    },
+    {
+      "citation": "/org_id",
+      "expect": "invalid",
+      "path": "invalid-bad-org-id.json",
+      "reason": "The organization identifier violates the frozen identifier grammar.",
+      "rule_id": "ORG000_SCHEMA"
+    },
+    {
+      "citation": "/org_version",
+      "expect": "invalid",
+      "path": "invalid-non-semver.json",
+      "reason": "The organization version is not semantic version syntax.",
+      "rule_id": "ORG000_SCHEMA"
+    },
+    {
+      "citation": "/workflow/0/next",
+      "expect": "invalid",
+      "path": "invalid-malformed-next.json",
+      "reason": "A conditional omits the fail verdict.",
+      "rule_id": "ORG004_FAN_IN_AND_CONDITIONALS"
+    },
+    {
+      "citation": "/roles/0/contract",
+      "expect": "invalid",
+      "path": "invalid-implicit-role-contract-default.json",
+      "reason": "The loader refuses to insert a RoleContract default.",
+      "rule_id": "ORG000_SCHEMA"
+    },
+    {
+      "citation": "/roles/0/output_schema_ref",
+      "expect": "invalid",
+      "path": "invalid-schema-digest-mismatch.json",
+      "reason": "The referenced schema bytes do not match their pin.",
+      "rule_id": "ORG006_REFERENCES"
+    },
+    {
+      "citation": "/workflow/1",
+      "expect": "invalid",
+      "path": "invalid-team-entry-bypass.json",
+      "reason": "An enclosing row points inside a team at something other than its entry.",
+      "rule_id": "ORG008_TEAM_EXPANSION"
+    },
+    {
+      "citation": "/workflow/2",
+      "expect": "invalid",
+      "path": "invalid-team-internal-instance-addressed.json",
+      "reason": "An enclosing row names an instance that lives inside a team.",
+      "rule_id": "ORG008_TEAM_EXPANSION"
+    },
+    {
+      "citation": "/teams",
+      "expect": "invalid",
+      "path": "invalid-team-stamped-id-collision.json",
+      "reason": "A stamped instance id collides with one the organization already declares.",
+      "rule_id": "ORG008_TEAM_EXPANSION"
+    },
+    {
+      "citation": "/teams/0",
+      "expect": "invalid",
+      "path": "invalid-team-prefix-too-long.json",
+      "reason": "A prefix long enough to overflow the identifier bound is refused, not truncated.",
+      "rule_id": "ORG008_TEAM_EXPANSION"
+    },
+    {
+      "citation": "/teams/1",
+      "expect": "invalid",
+      "path": "invalid-team-artifact-kind-collision.json",
+      "reason": "Two instantiations of one template would produce the same artifact kind.",
+      "rule_id": "ORG008_TEAM_EXPANSION"
+    }
+  ],
+  "schema_version": "autobuild-org-fixture-index-v1"
+}

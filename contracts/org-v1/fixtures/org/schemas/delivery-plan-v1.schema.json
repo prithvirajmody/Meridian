@@ -1,0 +1,464 @@
+{
+  "$defs": {
+    "ApprovalGateV1": {
+      "additionalProperties": false,
+      "properties": {
+        "approver_roles": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Approver Roles",
+          "type": "array"
+        },
+        "artifact_kind": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Artifact Kind",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "artifact_kind",
+        "approver_roles",
+        "reason"
+      ],
+      "title": "ApprovalGateV1",
+      "type": "object"
+    },
+    "ArchitecturePolicyV1": {
+      "additionalProperties": false,
+      "properties": {
+        "absence_approver_roles": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Absence Approver Roles",
+          "type": "array"
+        },
+        "absence_requires_approval": {
+          "title": "Absence Requires Approval",
+          "type": "boolean"
+        },
+        "analysis_required": {
+          "title": "Analysis Required",
+          "type": "boolean"
+        },
+        "baseline_required": {
+          "title": "Baseline Required",
+          "type": "boolean"
+        },
+        "policy_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Policy Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy_version",
+        "analysis_required",
+        "baseline_required",
+        "absence_requires_approval",
+        "absence_approver_roles"
+      ],
+      "title": "ArchitecturePolicyV1",
+      "type": "object"
+    },
+    "EscalationRuleV1": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "revise",
+            "escalate",
+            "stop"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "condition": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Condition",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "route_to": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Route To",
+          "type": "string"
+        },
+        "trigger": {
+          "enum": [
+            "budget_exhausted",
+            "required_evidence_missing",
+            "policy_conflict",
+            "quality_failure"
+          ],
+          "title": "Trigger",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "trigger",
+        "condition",
+        "action",
+        "route_to"
+      ],
+      "title": "EscalationRuleV1",
+      "type": "object"
+    },
+    "EvidenceRequirementV1": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_kind": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Artifact Kind",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "producer_role": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Producer Role",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "schema_version": {
+          "pattern": "^[a-z][a-z0-9_.-]*-v[1-9][0-9]*$",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "artifact_kind",
+        "schema_version",
+        "required",
+        "producer_role"
+      ],
+      "title": "EvidenceRequirementV1",
+      "type": "object"
+    },
+    "MilestoneV1": {
+      "additionalProperties": false,
+      "properties": {
+        "depends_on": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Depends On",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "outcome": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Outcome",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "outcome",
+        "requirement_ids"
+      ],
+      "title": "MilestoneV1",
+      "type": "object"
+    },
+    "PolicyConflictV1": {
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "enum": [
+            "scope",
+            "estimate",
+            "budget",
+            "evidence",
+            "architecture",
+            "release"
+          ],
+          "title": "Area",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "resolution_question": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Resolution Question",
+          "type": "string"
+        },
+        "route_to": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Route To",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "area",
+        "description",
+        "resolution_question",
+        "route_to"
+      ],
+      "title": "PolicyConflictV1",
+      "type": "object"
+    },
+    "ReleasePolicyV1": {
+      "additionalProperties": false,
+      "properties": {
+        "human_promotion_required": {
+          "const": true,
+          "default": true,
+          "title": "Human Promotion Required",
+          "type": "boolean"
+        },
+        "oracle_required": {
+          "const": true,
+          "default": true,
+          "title": "Oracle Required",
+          "type": "boolean"
+        },
+        "policy_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "promotion_authorities": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "title": "Promotion Authorities",
+          "type": "array"
+        },
+        "qa_recommendation_required": {
+          "const": true,
+          "default": true,
+          "title": "Qa Recommendation Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "policy_version",
+        "promotion_authorities"
+      ],
+      "title": "ReleasePolicyV1",
+      "type": "object"
+    },
+    "RoleExecutionBudgetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "max_actions": {
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Max Actions",
+          "type": "integer"
+        },
+        "max_attempts": {
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Max Attempts",
+          "type": "integer"
+        },
+        "max_llm_tokens": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max Llm Tokens",
+          "type": "integer"
+        },
+        "max_wall_clock_minutes": {
+          "maximum": 10080,
+          "minimum": 1,
+          "title": "Max Wall Clock Minutes",
+          "type": "integer"
+        },
+        "role": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "max_attempts",
+        "max_llm_tokens",
+        "max_actions",
+        "max_wall_clock_minutes"
+      ],
+      "title": "RoleExecutionBudgetV1",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accepted_product_brief_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Product Brief Sha256",
+      "type": "string"
+    },
+    "approval_gates": {
+      "items": {
+        "$ref": "#/$defs/ApprovalGateV1"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Approval Gates",
+      "type": "array"
+    },
+    "architecture_policy": {
+      "$ref": "#/$defs/ArchitecturePolicyV1"
+    },
+    "conflicts": {
+      "items": {
+        "$ref": "#/$defs/PolicyConflictV1"
+      },
+      "maxItems": 64,
+      "title": "Conflicts",
+      "type": "array"
+    },
+    "disposition": {
+      "enum": [
+        "ready",
+        "revise_scope",
+        "escalate"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "escalation_rules": {
+      "items": {
+        "$ref": "#/$defs/EscalationRuleV1"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Escalation Rules",
+      "type": "array"
+    },
+    "evidence_requirements": {
+      "items": {
+        "$ref": "#/$defs/EvidenceRequirementV1"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Evidence Requirements",
+      "type": "array"
+    },
+    "milestones": {
+      "items": {
+        "$ref": "#/$defs/MilestoneV1"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Milestones",
+      "type": "array"
+    },
+    "plan_summary": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "title": "Plan Summary",
+      "type": "string"
+    },
+    "release_policy": {
+      "$ref": "#/$defs/ReleasePolicyV1"
+    },
+    "role_budgets": {
+      "items": {
+        "$ref": "#/$defs/RoleExecutionBudgetV1"
+      },
+      "maxItems": 8,
+      "minItems": 3,
+      "title": "Role Budgets",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "autobuild-delivery-plan-v1",
+      "default": "autobuild-delivery-plan-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope_acceptance_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Scope Acceptance Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "disposition",
+    "plan_summary",
+    "milestones",
+    "role_budgets",
+    "escalation_rules",
+    "evidence_requirements",
+    "architecture_policy",
+    "release_policy",
+    "approval_gates",
+    "accepted_product_brief_sha256",
+    "scope_acceptance_sha256"
+  ],
+  "title": "DeliveryPlanV1",
+  "type": "object"
+}

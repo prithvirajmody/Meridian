@@ -1,0 +1,539 @@
+{
+  "$defs": {
+    "ArchitectureGroundingV1": {
+      "additionalProperties": false,
+      "description": "Whether the plan is grounded in verified architecture evidence.",
+      "properties": {
+        "detail": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Detail",
+          "type": "string"
+        },
+        "graph": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GraphEvidenceRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "mode": {
+          "enum": [
+            "required",
+            "optional"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "absent_required",
+            "absent_optional"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "status",
+        "detail"
+      ],
+      "title": "ArchitectureGroundingV1",
+      "type": "object"
+    },
+    "ChecklistItemV1": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "item": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Item",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "item"
+      ],
+      "title": "ChecklistItemV1",
+      "type": "object"
+    },
+    "GraphEvidenceRefV1": {
+      "additionalProperties": false,
+      "description": "The verified identity of a bridge-v1 graph the plan is grounded in.",
+      "properties": {
+        "descriptor_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Descriptor Sha256",
+          "type": "string"
+        },
+        "domains": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Domains",
+          "type": "array"
+        },
+        "edge_count": {
+          "minimum": 0,
+          "title": "Edge Count",
+          "type": "integer"
+        },
+        "node_count": {
+          "minimum": 0,
+          "title": "Node Count",
+          "type": "integer"
+        },
+        "ref": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Ref",
+          "type": "string"
+        },
+        "repo": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Repo",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repo",
+        "ref",
+        "node_count",
+        "edge_count",
+        "descriptor_sha256"
+      ],
+      "title": "GraphEvidenceRefV1",
+      "type": "object"
+    },
+    "InterfaceV1": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "requirement_ids"
+      ],
+      "title": "InterfaceV1",
+      "type": "object"
+    },
+    "MigrationV1": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "reversible": {
+          "title": "Reversible",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "reversible"
+      ],
+      "title": "MigrationV1",
+      "type": "object"
+    },
+    "PlanConflictV1": {
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "enum": [
+            "scope",
+            "architecture",
+            "estimate",
+            "interface",
+            "risk",
+            "test"
+          ],
+          "title": "Area",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "resolution_question": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Resolution Question",
+          "type": "string"
+        },
+        "route_to": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Route To",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "area",
+        "description",
+        "resolution_question",
+        "route_to"
+      ],
+      "title": "PlanConflictV1",
+      "type": "object"
+    },
+    "PlannedFileChangeV1": {
+      "additionalProperties": false,
+      "description": "One repository file the accepted plan says the change set will touch.\n\nThis is the *selection* half of the Phase 10C excerpt mechanism, and it lives\non the technical plan rather than on the Engineer's proposal on purpose: the\nEngineer must not choose which existing code it gets to see. A model that\npicks its own context is picking what it will be graded against, and the\nreviewer of that choice would be the same actor that made it.\n\n``modify`` and ``delete`` entries name files that must already exist at the\naccepted pin; they are what the Engineer receives excerpts for. ``create``\nentries name files that do not exist yet and therefore have nothing to read.",
+      "properties": {
+        "action": {
+          "enum": [
+            "create",
+            "modify",
+            "delete"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "action",
+        "reason"
+      ],
+      "title": "PlannedFileChangeV1",
+      "type": "object"
+    },
+    "RiskV1": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "mitigation": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Mitigation",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "severity",
+        "mitigation"
+      ],
+      "title": "RiskV1",
+      "type": "object"
+    },
+    "SutContractV1": {
+      "additionalProperties": false,
+      "properties": {
+        "build_steps": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Build Steps",
+          "type": "array"
+        },
+        "expected_artifacts": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Expected Artifacts",
+          "type": "array"
+        },
+        "network_policy": {
+          "default": "off",
+          "enum": [
+            "off",
+            "on-approved"
+          ],
+          "title": "Network Policy",
+          "type": "string"
+        },
+        "run_commands": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Run Commands",
+          "type": "array"
+        },
+        "test_commands": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Test Commands",
+          "type": "array"
+        }
+      },
+      "required": [
+        "build_steps",
+        "run_commands",
+        "test_commands"
+      ],
+      "title": "SutContractV1",
+      "type": "object"
+    },
+    "TestPlanItemV1": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "unit",
+            "integration",
+            "contract",
+            "security",
+            "end_to_end"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "description",
+        "requirement_ids"
+      ],
+      "title": "TestPlanItemV1",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Authoritative technical plan assembled from verified inputs and a proposal.",
+  "properties": {
+    "accepted_delivery_plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Delivery Plan Sha256",
+      "type": "string"
+    },
+    "accepted_product_brief_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Product Brief Sha256",
+      "type": "string"
+    },
+    "architecture_grounding": {
+      "$ref": "#/$defs/ArchitectureGroundingV1"
+    },
+    "change_set": {
+      "items": {
+        "$ref": "#/$defs/PlannedFileChangeV1"
+      },
+      "maxItems": 32,
+      "title": "Change Set",
+      "type": "array"
+    },
+    "conflicts": {
+      "items": {
+        "$ref": "#/$defs/PlanConflictV1"
+      },
+      "maxItems": 64,
+      "title": "Conflicts",
+      "type": "array"
+    },
+    "disposition": {
+      "enum": [
+        "ready",
+        "needs_scope_change",
+        "escalate"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "interfaces": {
+      "items": {
+        "$ref": "#/$defs/InterfaceV1"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Interfaces",
+      "type": "array"
+    },
+    "migrations": {
+      "items": {
+        "$ref": "#/$defs/MigrationV1"
+      },
+      "maxItems": 128,
+      "title": "Migrations",
+      "type": "array"
+    },
+    "plan_summary": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "title": "Plan Summary",
+      "type": "string"
+    },
+    "review_checklist": {
+      "items": {
+        "$ref": "#/$defs/ChecklistItemV1"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Review Checklist",
+      "type": "array"
+    },
+    "risks": {
+      "items": {
+        "$ref": "#/$defs/RiskV1"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Risks",
+      "type": "array"
+    },
+    "rollback_plan": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "title": "Rollback Plan",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "autobuild-technical-plan-v1",
+      "default": "autobuild-technical-plan-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sut_contract": {
+      "$ref": "#/$defs/SutContractV1"
+    },
+    "technical_approach": {
+      "maxLength": 20000,
+      "minLength": 1,
+      "title": "Technical Approach",
+      "type": "string"
+    },
+    "test_plan": {
+      "items": {
+        "$ref": "#/$defs/TestPlanItemV1"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "title": "Test Plan",
+      "type": "array"
+    }
+  },
+  "required": [
+    "disposition",
+    "plan_summary",
+    "technical_approach",
+    "sut_contract",
+    "interfaces",
+    "risks",
+    "test_plan",
+    "rollback_plan",
+    "review_checklist",
+    "accepted_delivery_plan_sha256",
+    "accepted_product_brief_sha256",
+    "architecture_grounding"
+  ],
+  "title": "TechnicalPlanV1",
+  "type": "object"
+}

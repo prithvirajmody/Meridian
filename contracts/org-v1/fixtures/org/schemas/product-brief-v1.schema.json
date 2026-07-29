@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "autobuild-product-brief-v1",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version"
+  ],
+  "type": "object"
+}

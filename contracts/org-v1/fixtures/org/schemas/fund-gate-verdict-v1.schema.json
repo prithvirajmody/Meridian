@@ -1,0 +1,188 @@
+{
+  "$defs": {
+    "FundCheckOutcomeV1": {
+      "additionalProperties": false,
+      "description": "One evaluated gate check.\n\n``status`` reuses the oracle-v1 check vocabulary verbatim so the aggregation\nin ``autobuild.oracle_contract.validator`` applies without translation.",
+      "properties": {
+        "expectation": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Expectation",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "observed": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Observed",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "error",
+            "timeout",
+            "skipped",
+            "unavailable",
+            "denied"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "required",
+        "status",
+        "expectation",
+        "observed",
+        "rationale"
+      ],
+      "title": "FundCheckOutcomeV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The Risk Officer's machine-derived verdict over the frozen evidence.",
+  "properties": {
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/FundCheckOutcomeV1"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Checks",
+      "type": "array"
+    },
+    "claim_discrepancies": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Claim Discrepancies",
+      "type": "array"
+    },
+    "disposition": {
+      "enum": [
+        "forward_test_paper_proposed",
+        "blocked"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "evidence_as_of": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "title": "Evidence As Of",
+      "type": "string"
+    },
+    "evidence_path": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Evidence Path",
+      "type": "string"
+    },
+    "evidence_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Evidence Sha256",
+      "type": "string"
+    },
+    "gate_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Gate Id",
+      "type": "string"
+    },
+    "gate_version": {
+      "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$",
+      "title": "Gate Version",
+      "type": "string"
+    },
+    "promotion_case_path": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Promotion Case Path",
+      "type": "string"
+    },
+    "promotion_case_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Promotion Case Sha256",
+      "type": "string"
+    },
+    "promotion_routes_to": {
+      "const": "user",
+      "default": "user",
+      "enum": [
+        "user"
+      ],
+      "title": "Promotion Routes To",
+      "type": "string"
+    },
+    "rationale": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Rationale",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "autobuild-fund-gate-verdict-v1",
+      "default": "autobuild-fund-gate-verdict-v1",
+      "enum": [
+        "autobuild-fund-gate-verdict-v1"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "standing_epistemic_risk": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Standing Epistemic Risk",
+      "type": "string"
+    },
+    "strategy_family": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Strategy Family",
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "fail",
+        "error"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "gate_id",
+    "gate_version",
+    "strategy_family",
+    "evidence_as_of",
+    "verdict",
+    "disposition",
+    "rationale",
+    "evidence_path",
+    "evidence_sha256",
+    "promotion_case_path",
+    "promotion_case_sha256",
+    "checks",
+    "standing_epistemic_risk"
+  ],
+  "title": "FundGateVerdictV1",
+  "type": "object"
+}

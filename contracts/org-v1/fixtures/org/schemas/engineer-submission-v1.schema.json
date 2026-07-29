@@ -1,0 +1,743 @@
+{
+  "$defs": {
+    "BuildRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "base_image": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Base Image",
+          "type": "string"
+        },
+        "setup": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "title": "Setup",
+          "type": "array"
+        }
+      },
+      "required": [
+        "base_image"
+      ],
+      "title": "BuildRecipe",
+      "type": "object"
+    },
+    "CleanTreeProof": {
+      "additionalProperties": false,
+      "description": "Engineer's proposal; AutoBuild recomputes every field before execution.",
+      "properties": {
+        "clean": {
+          "const": true,
+          "default": true,
+          "title": "Clean",
+          "type": "boolean"
+        },
+        "head_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Head Commit",
+          "type": "string"
+        },
+        "status_porcelain_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Status Porcelain Sha256",
+          "type": "string"
+        },
+        "tree_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Tree Sha",
+          "type": "string"
+        }
+      },
+      "required": [
+        "head_commit",
+        "tree_sha",
+        "status_porcelain_sha256"
+      ],
+      "title": "CleanTreeProof",
+      "type": "object"
+    },
+    "ContainmentOutcome": {
+      "enum": [
+        "passed",
+        "test_failure",
+        "timeout",
+        "policy_denial",
+        "contract_failure",
+        "infrastructure_failure",
+        "structural_violation",
+        "unmet_required_evidence"
+      ],
+      "title": "ContainmentOutcome",
+      "type": "string"
+    },
+    "ContainmentRoute": {
+      "enum": [
+        "accepted",
+        "revision",
+        "escalation"
+      ],
+      "title": "ContainmentRoute",
+      "type": "string"
+    },
+    "ContainmentSummaryV1": {
+      "additionalProperties": false,
+      "description": "Machine verdict from the containment boundary, recorded verbatim.",
+      "properties": {
+        "build_envelope_evidence_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Build Envelope Evidence Id"
+        },
+        "detail": {
+          "maxLength": 2000,
+          "title": "Detail",
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/ContainmentOutcome"
+        },
+        "outcome_evidence_path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Outcome Evidence Path",
+          "type": "string"
+        },
+        "route": {
+          "$ref": "#/$defs/ContainmentRoute"
+        },
+        "run_envelope_evidence_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Envelope Evidence Id"
+        },
+        "submission_evidence_id": {
+          "title": "Submission Evidence Id",
+          "type": "string"
+        },
+        "sut_spec_evidence_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sut Spec Evidence Id"
+        },
+        "sut_spec_origin_evidence_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sut Spec Origin Evidence Id"
+        }
+      },
+      "required": [
+        "outcome",
+        "route",
+        "detail",
+        "submission_evidence_id",
+        "outcome_evidence_path"
+      ],
+      "title": "ContainmentSummaryV1",
+      "type": "object"
+    },
+    "EngineerSubmission": {
+      "additionalProperties": false,
+      "description": "Versioned Engineer output accepted at the containment boundary.",
+      "properties": {
+        "assignment_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Assignment Id",
+          "type": "string"
+        },
+        "build_recipe": {
+          "$ref": "#/$defs/BuildRecipe"
+        },
+        "clean_tree_proof": {
+          "$ref": "#/$defs/CleanTreeProof"
+        },
+        "expected_artifacts": {
+          "items": {
+            "$ref": "#/$defs/ExpectedArtifact"
+          },
+          "maxItems": 256,
+          "title": "Expected Artifacts",
+          "type": "array"
+        },
+        "generated_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Generated Commit",
+          "type": "string"
+        },
+        "repository": {
+          "$ref": "#/$defs/RepositorySource"
+        },
+        "requested_execution_policy": {
+          "$ref": "#/$defs/ExecutionPolicyRequest"
+        },
+        "run_target": {
+          "pattern": "^[a-z0-9][a-z0-9_-]*$",
+          "title": "Run Target",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "submission_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+          "title": "Submission Id",
+          "type": "string"
+        },
+        "sut_spec": {
+          "$ref": "#/$defs/EngineerSutSpec"
+        }
+      },
+      "required": [
+        "submission_id",
+        "assignment_id",
+        "repository",
+        "generated_commit",
+        "clean_tree_proof",
+        "sut_spec",
+        "build_recipe",
+        "run_target"
+      ],
+      "title": "EngineerSubmission",
+      "type": "object"
+    },
+    "EngineerSutSpec": {
+      "additionalProperties": false,
+      "description": "Strict generic SUT document accepted by the Phase 3 SandBox surface.",
+      "properties": {
+        "adapter": {
+          "const": "generic",
+          "default": "generic",
+          "title": "Adapter",
+          "type": "string"
+        },
+        "base_image": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Base Image",
+          "type": "string"
+        },
+        "expected_artifacts": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 256,
+          "title": "Expected Artifacts",
+          "type": "array"
+        },
+        "limits": {
+          "$ref": "#/$defs/ResourceLimits"
+        },
+        "name": {
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "network": {
+          "default": "none",
+          "enum": [
+            "none",
+            "full"
+          ],
+          "title": "Network",
+          "type": "string"
+        },
+        "ref": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Ref",
+          "type": "string"
+        },
+        "repo": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Repo",
+          "type": "string"
+        },
+        "setup": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "title": "Setup",
+          "type": "array"
+        },
+        "targets": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "maxProperties": 64,
+          "minProperties": 1,
+          "title": "Targets",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "repo",
+        "ref",
+        "base_image",
+        "targets"
+      ],
+      "title": "EngineerSutSpec",
+      "type": "object"
+    },
+    "ExecutionPolicyRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "limits": {
+          "$ref": "#/$defs/ResourceLimits"
+        },
+        "network": {
+          "default": "none",
+          "enum": [
+            "none",
+            "full"
+          ],
+          "title": "Network",
+          "type": "string"
+        }
+      },
+      "title": "ExecutionPolicyRequest",
+      "type": "object"
+    },
+    "ExpectedArtifact": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "file",
+          "default": "file",
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "ExpectedArtifact",
+      "type": "object"
+    },
+    "FileDeleteV1": {
+      "additionalProperties": false,
+      "description": "One proposed file deletion.",
+      "properties": {
+        "path": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "FileDeleteV1",
+      "type": "object"
+    },
+    "FileWriteV1": {
+      "additionalProperties": false,
+      "description": "One proposed file write. Content is text; mode is never executable.",
+      "properties": {
+        "contents": {
+          "maxLength": 1000000,
+          "title": "Contents",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "contents"
+      ],
+      "title": "FileWriteV1",
+      "type": "object"
+    },
+    "ImplementationConflictV1": {
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "enum": [
+            "plan",
+            "interface",
+            "test",
+            "containment",
+            "scope"
+          ],
+          "title": "Area",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "resolution_question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Resolution Question",
+          "type": "string"
+        },
+        "route_to": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Route To",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "area",
+        "description",
+        "resolution_question",
+        "route_to"
+      ],
+      "title": "ImplementationConflictV1",
+      "type": "object"
+    },
+    "NetworkApprovalV1": {
+      "additionalProperties": false,
+      "description": "Independent approval for contained network egress.\n\nA technical plan may *request* ``network_policy=\"on-approved\"``, but the\nEngineer must never grant its own egress. This artifact is the separate\ndurable decision that authorizes it, and it commits to the exact plan digest,\nSUT name, and base ref it was granted for \u2014 so an approval cannot be replayed\nagainst a different plan or a different commit.",
+      "properties": {
+        "approver_role": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Approver Role",
+          "type": "string"
+        },
+        "base_ref": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Base Ref",
+          "type": "string"
+        },
+        "decision": {
+          "const": "approved",
+          "default": "approved",
+          "title": "Decision",
+          "type": "string"
+        },
+        "policy_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "autobuild-network-approval-v1",
+          "default": "autobuild-network-approval-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "sut_name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Sut Name",
+          "type": "string"
+        },
+        "technical_plan_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Technical Plan Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "approver_role",
+        "reason",
+        "policy_version",
+        "technical_plan_sha256",
+        "sut_name",
+        "base_ref"
+      ],
+      "title": "NetworkApprovalV1",
+      "type": "object"
+    },
+    "RepositorySource": {
+      "additionalProperties": false,
+      "description": "Repository identity plus the local checkout used for independent proof.",
+      "properties": {
+        "checkout_path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Checkout Path",
+          "type": "string"
+        },
+        "url": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "checkout_path"
+      ],
+      "title": "RepositorySource",
+      "type": "object"
+    },
+    "RequirementCoverageV1": {
+      "additionalProperties": false,
+      "properties": {
+        "file_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "File Paths",
+          "type": "array"
+        },
+        "requirement_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Requirement Id",
+          "type": "string"
+        },
+        "test_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Test Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "requirement_id",
+        "file_paths"
+      ],
+      "title": "RequirementCoverageV1",
+      "type": "object"
+    },
+    "ResourceLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "cpus": {
+          "default": 1.0,
+          "exclusiveMinimum": 0.0,
+          "maximum": 64.0,
+          "title": "Cpus",
+          "type": "number"
+        },
+        "memory": {
+          "default": "2g",
+          "pattern": "^[0-9]+[kmg]?$",
+          "title": "Memory",
+          "type": "string"
+        },
+        "pids": {
+          "default": 256,
+          "exclusiveMinimum": 0,
+          "maximum": 4096,
+          "title": "Pids",
+          "type": "integer"
+        },
+        "timeout_s": {
+          "default": 600.0,
+          "exclusiveMinimum": 0.0,
+          "maximum": 86400.0,
+          "title": "Timeout S",
+          "type": "number"
+        }
+      },
+      "title": "ResourceLimits",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The authoritative artifact: proposal plus role-computed trusted facts.",
+  "properties": {
+    "accepted_delivery_plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Delivery Plan Sha256",
+      "type": "string"
+    },
+    "accepted_product_brief_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Product Brief Sha256",
+      "type": "string"
+    },
+    "accepted_technical_plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Technical Plan Sha256",
+      "type": "string"
+    },
+    "base_ref": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Base Ref",
+      "type": "string"
+    },
+    "change_summary": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "title": "Change Summary",
+      "type": "string"
+    },
+    "clean_tree_proof": {
+      "$ref": "#/$defs/CleanTreeProof"
+    },
+    "commit_message": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Commit Message",
+      "type": "string"
+    },
+    "conflicts": {
+      "items": {
+        "$ref": "#/$defs/ImplementationConflictV1"
+      },
+      "maxItems": 64,
+      "title": "Conflicts",
+      "type": "array"
+    },
+    "containment": {
+      "$ref": "#/$defs/ContainmentSummaryV1"
+    },
+    "deletes": {
+      "items": {
+        "$ref": "#/$defs/FileDeleteV1"
+      },
+      "maxItems": 256,
+      "title": "Deletes",
+      "type": "array"
+    },
+    "disposition": {
+      "enum": [
+        "ready",
+        "needs_plan_change",
+        "escalate"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "generated_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Generated Commit",
+      "type": "string"
+    },
+    "implementation_notes": {
+      "maxLength": 20000,
+      "minLength": 1,
+      "title": "Implementation Notes",
+      "type": "string"
+    },
+    "network_approval": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NetworkApprovalV1"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "requirement_coverage": {
+      "items": {
+        "$ref": "#/$defs/RequirementCoverageV1"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "title": "Requirement Coverage",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "autobuild-engineer-submission-v1",
+      "default": "autobuild-engineer-submission-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_repo": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Source Repo",
+      "type": "string"
+    },
+    "submission": {
+      "$ref": "#/$defs/EngineerSubmission"
+    },
+    "tree_sha": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Tree Sha",
+      "type": "string"
+    },
+    "writes": {
+      "items": {
+        "$ref": "#/$defs/FileWriteV1"
+      },
+      "maxItems": 256,
+      "title": "Writes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "disposition",
+    "change_summary",
+    "implementation_notes",
+    "commit_message",
+    "requirement_coverage",
+    "accepted_technical_plan_sha256",
+    "accepted_delivery_plan_sha256",
+    "accepted_product_brief_sha256",
+    "source_repo",
+    "base_ref",
+    "generated_commit",
+    "tree_sha",
+    "clean_tree_proof",
+    "submission",
+    "containment"
+  ],
+  "title": "EngineerSubmissionRecordV1",
+  "type": "object"
+}

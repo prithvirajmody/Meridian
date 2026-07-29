@@ -1,0 +1,492 @@
+{
+  "brain_binding": {
+    "access": "proposals_only",
+    "root_ref": "orgs/software_company_teamed",
+    "store": "meridian"
+  },
+  "capabilities": [
+    "artifact_read",
+    "artifact_write",
+    "container",
+    "deterministic_gate",
+    "filesystem",
+    "subprocess"
+  ],
+  "digest_sha256": "0b448766bfea598ec8b8b9baba0267dcb3830cb679690fac06b5303e5283d337",
+  "gates": [],
+  "instances": [
+    {
+      "instance_id": "user",
+      "params": {},
+      "role_type": "user"
+    },
+    {
+      "instance_id": "pm",
+      "params": {},
+      "role_type": "pm"
+    },
+    {
+      "instance_id": "em",
+      "params": {},
+      "role_type": "em"
+    },
+    {
+      "instance_id": "tech_lead",
+      "params": {},
+      "role_type": "tech_lead"
+    },
+    {
+      "instance_id": "qa",
+      "params": {},
+      "role_type": "qa"
+    },
+    {
+      "instance_id": "impl.engineer",
+      "params": {},
+      "role_type": "engineer"
+    }
+  ],
+  "org_id": "software_company_teamed",
+  "org_version": "1.0.0",
+  "roles": [
+    {
+      "capabilities": [],
+      "capability_role": null,
+      "contract": {
+        "auxiliary_prompts": [],
+        "budget": {
+          "max_input_bytes": 256000,
+          "max_output_bytes": 256000,
+          "max_output_tokens": 4096
+        },
+        "contract_id": "pm.product_brief",
+        "contract_version": "1.0.0",
+        "deliverable_kind": "product_brief",
+        "human_output": {
+          "kind": "product_brief_markdown",
+          "required": true,
+          "schema_version": "autobuild-product-brief-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "user_request",
+            "required": true,
+            "schema_version": "autobuild-user-request-v1"
+          }
+        ],
+        "model": null,
+        "prompt": {
+          "name": "clarify_request",
+          "version": "v1"
+        },
+        "retry": {
+          "automatic_attempts": 2,
+          "escalation_route": "user",
+          "max_total_attempts": 3
+        },
+        "reviewer": "user",
+        "role": "pm",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "product_brief",
+          "required": true,
+          "schema_version": "autobuild-product-brief-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/software-product-brief-v1.schema.json",
+        "schema_version": "autobuild-product-brief-v1",
+        "sha256": "eadaec015e4a098628d9f4fbb751084642b1fc4e6a840548664b42c252f7510a"
+      },
+      "prompt_pack": {
+        "auxiliary": [],
+        "primary": {
+          "name": "clarify_request",
+          "version": "v1"
+        }
+      },
+      "role_type": "pm"
+    },
+    {
+      "capabilities": [],
+      "capability_role": null,
+      "contract": {
+        "auxiliary_prompts": [],
+        "budget": {
+          "max_input_bytes": 512000,
+          "max_output_bytes": 512000,
+          "max_output_tokens": 6000
+        },
+        "contract_id": "em.delivery_plan",
+        "contract_version": "1.1.0",
+        "deliverable_kind": "delivery_plan",
+        "human_output": {
+          "kind": "delivery_plan_markdown",
+          "required": true,
+          "schema_version": "autobuild-delivery-plan-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "product_brief",
+            "required": true,
+            "schema_version": "autobuild-product-brief-v1"
+          },
+          {
+            "kind": "scope_acceptance",
+            "required": true,
+            "schema_version": "autobuild-scope-acceptance-v1"
+          }
+        ],
+        "model": null,
+        "prompt": {
+          "name": "plan_delivery",
+          "version": "v2"
+        },
+        "retry": {
+          "automatic_attempts": 2,
+          "escalation_route": "user",
+          "max_total_attempts": 3
+        },
+        "reviewer": "user",
+        "role": "em",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "delivery_plan",
+          "required": true,
+          "schema_version": "autobuild-delivery-plan-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/delivery-plan-v1.schema.json",
+        "schema_version": "autobuild-delivery-plan-v1",
+        "sha256": "f9f2d08e44d1493dd72b6b3cd77f751ee2b86f0b3af23ad22a231a3542f9636e"
+      },
+      "prompt_pack": {
+        "auxiliary": [],
+        "primary": {
+          "name": "plan_delivery",
+          "version": "v2"
+        }
+      },
+      "role_type": "em"
+    },
+    {
+      "capabilities": [],
+      "capability_role": null,
+      "contract": {
+        "auxiliary_prompts": [],
+        "budget": {
+          "max_input_bytes": 1000000,
+          "max_output_bytes": 1000000,
+          "max_output_tokens": 8000
+        },
+        "contract_id": "tech_lead.technical_plan",
+        "contract_version": "1.3.0",
+        "deliverable_kind": "technical_plan",
+        "human_output": {
+          "kind": "technical_plan_markdown",
+          "required": true,
+          "schema_version": "autobuild-technical-plan-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "delivery_plan",
+            "required": true,
+            "schema_version": "autobuild-delivery-plan-v1"
+          },
+          {
+            "kind": "product_brief",
+            "required": true,
+            "schema_version": "autobuild-product-brief-v1"
+          },
+          {
+            "kind": "architecture_graph",
+            "required": false,
+            "schema_version": "bridge-graph-artifact-v1"
+          }
+        ],
+        "model": "opus",
+        "prompt": {
+          "name": "design_plan",
+          "version": "v3"
+        },
+        "retry": {
+          "automatic_attempts": 2,
+          "escalation_route": "em",
+          "max_total_attempts": 3
+        },
+        "reviewer": "em",
+        "role": "tech_lead",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "technical_plan",
+          "required": true,
+          "schema_version": "autobuild-technical-plan-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/technical-plan-v1.schema.json",
+        "schema_version": "autobuild-technical-plan-v1",
+        "sha256": "bf8dcfe200355dca4e75498026dad42970a8d356d037c10b79b435cbd1606ede"
+      },
+      "prompt_pack": {
+        "auxiliary": [],
+        "primary": {
+          "name": "design_plan",
+          "version": "v3"
+        }
+      },
+      "role_type": "tech_lead"
+    },
+    {
+      "capabilities": [
+        "artifact_read",
+        "artifact_write",
+        "container",
+        "filesystem",
+        "subprocess"
+      ],
+      "capability_role": "engineer",
+      "contract": {
+        "auxiliary_prompts": [
+          {
+            "name": "implement_manifest",
+            "version": "v2"
+          },
+          {
+            "name": "implement_batch",
+            "version": "v2"
+          }
+        ],
+        "budget": {
+          "max_input_bytes": 1000000,
+          "max_output_bytes": 1000000,
+          "max_output_tokens": 30000
+        },
+        "contract_id": "engineer.submission",
+        "contract_version": "1.3.0",
+        "deliverable_kind": "engineer_submission",
+        "human_output": {
+          "kind": "implementation_summary_markdown",
+          "required": true,
+          "schema_version": "autobuild-implementation-summary-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "technical_plan",
+            "required": true,
+            "schema_version": "autobuild-technical-plan-v1"
+          },
+          {
+            "kind": "delivery_plan",
+            "required": true,
+            "schema_version": "autobuild-delivery-plan-v1"
+          },
+          {
+            "kind": "product_brief",
+            "required": true,
+            "schema_version": "autobuild-product-brief-v1"
+          },
+          {
+            "kind": "network_approval",
+            "required": false,
+            "schema_version": "autobuild-network-approval-v1"
+          }
+        ],
+        "model": null,
+        "prompt": null,
+        "retry": {
+          "automatic_attempts": 2,
+          "escalation_route": "em",
+          "max_total_attempts": 3
+        },
+        "reviewer": "tech_lead",
+        "role": "engineer",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "engineer_submission",
+          "required": true,
+          "schema_version": "autobuild-engineer-submission-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/engineer-submission-v1.schema.json",
+        "schema_version": "autobuild-engineer-submission-v1",
+        "sha256": "3964ef352af901e3b8679ba3fadf9aaa450a5f6be3b2d4aa1975b1b23cf94916"
+      },
+      "prompt_pack": {
+        "auxiliary": [
+          {
+            "name": "implement_manifest",
+            "version": "v2"
+          },
+          {
+            "name": "implement_batch",
+            "version": "v2"
+          }
+        ],
+        "primary": null
+      },
+      "role_type": "engineer"
+    },
+    {
+      "capabilities": [
+        "artifact_read",
+        "artifact_write",
+        "deterministic_gate"
+      ],
+      "capability_role": "qa",
+      "contract": {
+        "auxiliary_prompts": [],
+        "budget": {
+          "max_input_bytes": 1000000,
+          "max_output_bytes": 1000000,
+          "max_output_tokens": 1
+        },
+        "contract_id": "qa.recommendation",
+        "contract_version": "1.0.0",
+        "deliverable_kind": "qa_recommendation",
+        "human_output": {
+          "kind": "qa_recommendation_markdown",
+          "required": true,
+          "schema_version": "autobuild-qa-recommendation-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "engineer_submission",
+            "required": true,
+            "schema_version": "autobuild-engineer-submission-v1"
+          },
+          {
+            "kind": "technical_plan",
+            "required": true,
+            "schema_version": "autobuild-technical-plan-v1"
+          },
+          {
+            "kind": "delivery_plan",
+            "required": true,
+            "schema_version": "autobuild-delivery-plan-v1"
+          },
+          {
+            "kind": "accepted_requirements",
+            "required": true,
+            "schema_version": "autobuild-accepted-requirements-v1"
+          },
+          {
+            "kind": "product_brief",
+            "required": true,
+            "schema_version": "autobuild-product-brief-v1"
+          }
+        ],
+        "model": null,
+        "prompt": null,
+        "retry": {
+          "automatic_attempts": 1,
+          "escalation_route": "em",
+          "max_total_attempts": 2
+        },
+        "reviewer": "em",
+        "role": "qa",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "qa_recommendation",
+          "required": true,
+          "schema_version": "autobuild-qa-recommendation-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/qa-recommendation-v1.schema.json",
+        "schema_version": "autobuild-qa-recommendation-v1",
+        "sha256": "f3130eecf8fbe1257c180aeb4d9fbd4270afbeae192728895d844b51bbe19021"
+      },
+      "prompt_pack": {
+        "auxiliary": [],
+        "primary": null
+      },
+      "role_type": "qa"
+    }
+  ],
+  "schema_version": "autobuild-org-definition-v1",
+  "teams": [
+    {
+      "bindings": {
+        "exit": "qa_recommendation",
+        "requester": "em",
+        "supervisor": "em"
+      },
+      "instance_prefix": "impl",
+      "template_ref": "engineer_reviewer",
+      "template_version": "1.0.0"
+    }
+  ],
+  "workflow": [
+    {
+      "assignee": "pm",
+      "escalation_route": "user",
+      "kind": "product_brief",
+      "next": [
+        "delivery_plan"
+      ],
+      "produces": "product_brief",
+      "produces_on_review": [
+        "accepted_requirements",
+        "scope_acceptance"
+      ],
+      "requested_by": "user",
+      "required_inputs": [
+        "user_request"
+      ],
+      "retry_ceiling": 2,
+      "reviewer": "user"
+    },
+    {
+      "assignee": "em",
+      "escalation_route": "user",
+      "kind": "delivery_plan",
+      "next": [
+        "technical_plan"
+      ],
+      "produces": "delivery_plan",
+      "requested_by": "user",
+      "required_inputs": [
+        "product_brief",
+        "scope_acceptance"
+      ],
+      "retry_ceiling": 2,
+      "reviewer": "user"
+    },
+    {
+      "assignee": "tech_lead",
+      "escalation_route": "em",
+      "kind": "technical_plan",
+      "next": [
+        "impl.implement"
+      ],
+      "produces": "technical_plan",
+      "requested_by": "em",
+      "required_inputs": [
+        "product_brief",
+        "delivery_plan"
+      ],
+      "retry_ceiling": 2,
+      "reviewer": "em"
+    },
+    {
+      "assignee": "qa",
+      "escalation_route": "em",
+      "kind": "qa_recommendation",
+      "next": [],
+      "produces": "qa_recommendation",
+      "requested_by": "em",
+      "required_inputs": [
+        "product_brief",
+        "delivery_plan",
+        "technical_plan",
+        "engineer_submission",
+        "accepted_requirements"
+      ],
+      "retry_ceiling": 2,
+      "reviewer": "em"
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "$defs": {
+    "QaCheckOutcomeV1": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "required",
+        "status"
+      ],
+      "title": "QaCheckOutcomeV1",
+      "type": "object"
+    },
+    "QaRecommendation": {
+      "enum": [
+        "accept",
+        "revise",
+        "escalate"
+      ],
+      "title": "QaRecommendation",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The authoritative QA artifact. Every field is machine-derived.\n\nThere is no proposal counterpart because no part of this document is\nmodel-authored: a recommendation that could be argued for in prose is not a\ngate. ``cited_evidence`` names the exact evidence ids the recommendation\nrests on, so a reviewer can re-verify each one independently.",
+  "properties": {
+    "accepted_delivery_plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Delivery Plan Sha256",
+      "type": "string"
+    },
+    "accepted_requirements_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Requirements Sha256",
+      "type": "string"
+    },
+    "accepted_technical_plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Technical Plan Sha256",
+      "type": "string"
+    },
+    "architecture_gate": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Architecture Gate"
+    },
+    "attempt": {
+      "minimum": 1,
+      "title": "Attempt",
+      "type": "integer"
+    },
+    "bundle_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Bundle Digest",
+      "type": "string"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/QaCheckOutcomeV1"
+      },
+      "maxItems": 64,
+      "title": "Checks",
+      "type": "array"
+    },
+    "cited_evidence": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Cited Evidence",
+      "type": "array"
+    },
+    "policy_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "rationale": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Rationale",
+      "type": "string"
+    },
+    "recommendation": {
+      "$ref": "#/$defs/QaRecommendation"
+    },
+    "request_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Request Digest",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Request Id",
+      "type": "string"
+    },
+    "reused": {
+      "title": "Reused",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "autobuild-qa-recommendation-v1",
+      "default": "autobuild-qa-recommendation-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "target_ref": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Target Ref",
+      "type": "string"
+    },
+    "target_repo": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Target Repo",
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "fail",
+        "error"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "recommendation",
+    "verdict",
+    "rationale",
+    "target_repo",
+    "target_ref",
+    "policy_version",
+    "accepted_requirements_sha256",
+    "accepted_technical_plan_sha256",
+    "accepted_delivery_plan_sha256",
+    "request_id",
+    "request_digest",
+    "bundle_digest",
+    "attempt",
+    "reused",
+    "checks",
+    "cited_evidence"
+  ],
+  "title": "QaRecommendationV1",
+  "type": "object"
+}

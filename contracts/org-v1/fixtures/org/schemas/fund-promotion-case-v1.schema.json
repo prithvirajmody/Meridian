@@ -1,0 +1,147 @@
+{
+  "$defs": {
+    "FundCitedObservationV1": {
+      "additionalProperties": false,
+      "description": "One observation the analyst claims to be relying on, with its value.\n\nRestating the value is what makes the citation checkable: the Risk Officer\ncompares each claim against the frozen artifact and records every\ndisagreement. An analyst who cannot be caught misquoting the evidence is an\nanalyst whose prose has to be taken on faith.",
+      "properties": {
+        "claimed_boolean_value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Claimed Boolean Value"
+        },
+        "claimed_numeric_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Claimed Numeric Value"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "interpretation": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Interpretation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "interpretation"
+      ],
+      "title": "FundCitedObservationV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The authoritative case: the proposal plus trusted, non-model fields.",
+  "properties": {
+    "cited_observations": {
+      "items": {
+        "$ref": "#/$defs/FundCitedObservationV1"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Cited Observations",
+      "type": "array"
+    },
+    "disconfirming_evidence": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Disconfirming Evidence",
+      "type": "array"
+    },
+    "epistemic_caveat": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Epistemic Caveat",
+      "type": "string"
+    },
+    "evidence_as_of": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "title": "Evidence As Of",
+      "type": "string"
+    },
+    "evidence_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Evidence Sha256",
+      "type": "string"
+    },
+    "known_weaknesses": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Known Weaknesses",
+      "type": "array"
+    },
+    "mechanism": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Mechanism",
+      "type": "string"
+    },
+    "proposed_next_step": {
+      "enum": [
+        "forward_test_paper",
+        "hold",
+        "retire"
+      ],
+      "title": "Proposed Next Step",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "autobuild-fund-promotion-case-v1",
+      "default": "autobuild-fund-promotion-case-v1",
+      "enum": [
+        "autobuild-fund-promotion-case-v1"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "strategy_family": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Strategy Family",
+      "type": "string"
+    },
+    "thesis": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Thesis",
+      "type": "string"
+    }
+  },
+  "required": [
+    "thesis",
+    "mechanism",
+    "cited_observations",
+    "known_weaknesses",
+    "disconfirming_evidence",
+    "proposed_next_step",
+    "epistemic_caveat",
+    "strategy_family",
+    "evidence_as_of",
+    "evidence_sha256"
+  ],
+  "title": "FundPromotionCaseV1",
+  "type": "object"
+}

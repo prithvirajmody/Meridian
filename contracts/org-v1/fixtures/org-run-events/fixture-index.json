@@ -1,0 +1,45 @@
+{
+  "fixtures": [
+    {
+      "expect": "accept",
+      "path": "accept/minimal-run-events.json",
+      "reason": "A minimal single-event run document loads without repair."
+    },
+    {
+      "expect": "accept",
+      "path": "accept/multi-job-bundle.json",
+      "reason": "A two-job teamed bundle covers seven canonical event kinds."
+    },
+    {
+      "expect": "reject",
+      "path": "reject/out-of-order-seq.json",
+      "reason": "events seq must be strictly increasing"
+    },
+    {
+      "expect": "reject",
+      "path": "reject/digest-mismatch.json",
+      "reason": "digest mismatch"
+    },
+    {
+      "expect": "reject",
+      "path": "reject/unknown-schema-version.json",
+      "reason": "schema validation failed at /schema_version"
+    },
+    {
+      "expect": "reject",
+      "path": "reject/unknown-kind.json",
+      "reason": "unknown event kind 'invented'"
+    },
+    {
+      "expect": "reject",
+      "path": "reject/missing-required-field.json",
+      "reason": "'detail' is a required property"
+    },
+    {
+      "expect": "reject",
+      "path": "reject/bundle-runs-out-of-order.json",
+      "reason": "bundle runs must be ordered by job_id"
+    }
+  ],
+  "schema_version": "autobuild-org-run-events-fixture-index-v1"
+}

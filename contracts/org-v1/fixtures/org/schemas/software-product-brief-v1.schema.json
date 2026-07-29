@@ -1,0 +1,213 @@
+{
+  "$defs": {
+    "ProductRequirementV1": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "must",
+            "should",
+            "could"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "statement",
+        "priority"
+      ],
+      "title": "ProductRequirementV1",
+      "type": "object"
+    },
+    "ProductScopeV1": {
+      "additionalProperties": false,
+      "properties": {
+        "in_scope": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "In Scope",
+          "type": "array"
+        },
+        "out_of_scope": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "title": "Out Of Scope",
+          "type": "array"
+        }
+      },
+      "required": [
+        "in_scope"
+      ],
+      "title": "ProductScopeV1",
+      "type": "object"
+    },
+    "SuccessCriterionV1": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        },
+        "statement": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "statement",
+        "requirement_ids"
+      ],
+      "title": "SuccessCriterionV1",
+      "type": "object"
+    },
+    "UnresolvedQuestionV1": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking": {
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "question",
+        "blocking",
+        "rationale"
+      ],
+      "title": "UnresolvedQuestionV1",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Authoritative PM artifact assembled from trusted input plus a proposal.",
+  "properties": {
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "constraints": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Constraints",
+      "type": "array"
+    },
+    "interpreted_intent": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "title": "Interpreted Intent",
+      "type": "string"
+    },
+    "non_goals": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Non Goals",
+      "type": "array"
+    },
+    "original_request": {
+      "maxLength": 100000,
+      "title": "Original Request",
+      "type": "string"
+    },
+    "requirements": {
+      "items": {
+        "$ref": "#/$defs/ProductRequirementV1"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "title": "Requirements",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "autobuild-product-brief-v1",
+      "default": "autobuild-product-brief-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/ProductScopeV1"
+    },
+    "success_criteria": {
+      "items": {
+        "$ref": "#/$defs/SuccessCriterionV1"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "title": "Success Criteria",
+      "type": "array"
+    },
+    "unresolved_questions": {
+      "items": {
+        "$ref": "#/$defs/UnresolvedQuestionV1"
+      },
+      "maxItems": 128,
+      "title": "Unresolved Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "interpreted_intent",
+    "requirements",
+    "success_criteria",
+    "scope",
+    "original_request"
+  ],
+  "title": "ProductBriefV1",
+  "type": "object"
+}

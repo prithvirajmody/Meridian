@@ -1,0 +1,338 @@
+{
+  "$defs": {
+    "FundCheckOutcomeV1": {
+      "additionalProperties": false,
+      "description": "One evaluated gate check.\n\n``status`` reuses the oracle-v1 check vocabulary verbatim so the aggregation\nin ``autobuild.oracle_contract.validator`` applies without translation.",
+      "properties": {
+        "expectation": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Expectation",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "observed": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Observed",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "error",
+            "timeout",
+            "skipped",
+            "unavailable",
+            "denied"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "required",
+        "status",
+        "expectation",
+        "observed",
+        "rationale"
+      ],
+      "title": "FundCheckOutcomeV1",
+      "type": "object"
+    },
+    "FundEvidenceLinkV1": {
+      "additionalProperties": false,
+      "description": "One link of the chain, addressable by path and digest.\n\nEvery field is copied from the artifact's *registration record*, not\ninferred: a link that names a path no evidence row covers cannot be built.",
+      "properties": {
+        "artifact_kind": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Artifact Kind",
+          "type": "string"
+        },
+        "artifact_path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Artifact Path",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "produced_by": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Produced By",
+          "type": "string"
+        },
+        "schema_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "produced_by",
+        "artifact_path",
+        "artifact_kind",
+        "schema_version",
+        "sha256"
+      ],
+      "title": "FundEvidenceLinkV1",
+      "type": "object"
+    },
+    "FundEvidenceProvenanceV1": {
+      "additionalProperties": false,
+      "description": "Where the frozen observations came from, in re-checkable terms.\n\n``export_sha256`` digests the raw platform export the observations were read\nfrom, and the committed-script triple pins the code that produced it. Both\nexist so the ``reproducible_from_committed_script`` check has something a\nhuman can independently repeat, rather than a claim to trust.",
+      "properties": {
+        "backtest_window_end": {
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "title": "Backtest Window End",
+          "type": "string"
+        },
+        "backtest_window_start": {
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "title": "Backtest Window Start",
+          "type": "string"
+        },
+        "committed_script_path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Committed Script Path",
+          "type": "string"
+        },
+        "committed_script_ref": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Committed Script Ref",
+          "type": "string"
+        },
+        "committed_script_repo": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Committed Script Repo",
+          "type": "string"
+        },
+        "export_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Export Id",
+          "type": "string"
+        },
+        "export_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Export Sha256",
+          "type": "string"
+        },
+        "recorded_by": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Recorded By",
+          "type": "string"
+        }
+      },
+      "required": [
+        "export_id",
+        "export_sha256",
+        "committed_script_repo",
+        "committed_script_ref",
+        "committed_script_path",
+        "backtest_window_start",
+        "backtest_window_end",
+        "recorded_by"
+      ],
+      "title": "FundEvidenceProvenanceV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The journal entry, assembled deterministically from the accepted chain.",
+  "properties": {
+    "analyst_epistemic_caveat": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Analyst Epistemic Caveat",
+      "type": "string"
+    },
+    "analyst_mechanism": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Analyst Mechanism",
+      "type": "string"
+    },
+    "analyst_proposed_next_step": {
+      "enum": [
+        "forward_test_paper",
+        "hold",
+        "retire"
+      ],
+      "title": "Analyst Proposed Next Step",
+      "type": "string"
+    },
+    "analyst_thesis": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Analyst Thesis",
+      "type": "string"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/FundCheckOutcomeV1"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Checks",
+      "type": "array"
+    },
+    "claim_discrepancies": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Claim Discrepancies",
+      "type": "array"
+    },
+    "decision_owed_description": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Decision Owed Description",
+      "type": "string"
+    },
+    "decision_owed_to": {
+      "const": "user",
+      "default": "user",
+      "enum": [
+        "user"
+      ],
+      "title": "Decision Owed To",
+      "type": "string"
+    },
+    "disconfirming_evidence": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Disconfirming Evidence",
+      "type": "array"
+    },
+    "disposition": {
+      "enum": [
+        "forward_test_paper_proposed",
+        "blocked"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "evidence_as_of": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "title": "Evidence As Of",
+      "type": "string"
+    },
+    "evidence_chain": {
+      "items": {
+        "$ref": "#/$defs/FundEvidenceLinkV1"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Evidence Chain",
+      "type": "array"
+    },
+    "gate_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Gate Id",
+      "type": "string"
+    },
+    "gate_version": {
+      "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$",
+      "title": "Gate Version",
+      "type": "string"
+    },
+    "known_weaknesses": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Known Weaknesses",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/FundEvidenceProvenanceV1"
+    },
+    "schema_version": {
+      "const": "autobuild-fund-journal-report-v1",
+      "default": "autobuild-fund-journal-report-v1",
+      "enum": [
+        "autobuild-fund-journal-report-v1"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "standing_epistemic_risk": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Standing Epistemic Risk",
+      "type": "string"
+    },
+    "strategy_family": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Strategy Family",
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "fail",
+        "error"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "strategy_family",
+    "evidence_as_of",
+    "gate_id",
+    "gate_version",
+    "verdict",
+    "disposition",
+    "analyst_thesis",
+    "analyst_mechanism",
+    "analyst_proposed_next_step",
+    "known_weaknesses",
+    "disconfirming_evidence",
+    "analyst_epistemic_caveat",
+    "checks",
+    "standing_epistemic_risk",
+    "provenance",
+    "evidence_chain",
+    "decision_owed_description"
+  ],
+  "title": "FundJournalReportV1",
+  "type": "object"
+}

@@ -1,0 +1,1009 @@
+{
+  "$defs": {
+    "ArtifactContract": {
+      "additionalProperties": false,
+      "description": "One accepted input or emitted artifact at a role boundary.",
+      "properties": {
+        "kind": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "schema_version": {
+          "pattern": "^[a-z][a-z0-9_.-]*-v[1-9][0-9]*$",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "schema_version"
+      ],
+      "title": "ArtifactContract",
+      "type": "object"
+    },
+    "BrainBindingV1": {
+      "additionalProperties": false,
+      "description": "The proposal-only organization-memory boundary.",
+      "properties": {
+        "access": {
+          "const": "proposals_only",
+          "title": "Access",
+          "type": "string"
+        },
+        "root_ref": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "pattern": "^[^\\x00\\r\\n]+$",
+          "title": "Root Ref",
+          "type": "string"
+        },
+        "store": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Store",
+          "type": "string"
+        }
+      },
+      "required": [
+        "store",
+        "root_ref",
+        "access"
+      ],
+      "title": "BrainBindingV1",
+      "type": "object"
+    },
+    "ConditionalNextV1": {
+      "additionalProperties": false,
+      "description": "The exhaustive verdict vocabulary supported by v1 graph rows.",
+      "properties": {
+        "on_verdict": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "maxProperties": 2,
+          "minProperties": 2,
+          "propertyNames": {
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "title": "On Verdict",
+          "type": "object"
+        }
+      },
+      "required": [
+        "on_verdict"
+      ],
+      "title": "ConditionalNextV1",
+      "type": "object"
+    },
+    "EventKind": {
+      "description": "Closed canonical vocabulary projected from the frozen run-log literals.",
+      "enum": [
+        "job_lifecycle",
+        "assignment_lifecycle",
+        "deliverable",
+        "review",
+        "question",
+        "escalation",
+        "gate",
+        "promotion",
+        "clarification",
+        "ceiling",
+        "quota",
+        "evidence",
+        "error",
+        "standing",
+        "other"
+      ],
+      "title": "EventKind",
+      "type": "string"
+    },
+    "ExpandedInstanceV1": {
+      "additionalProperties": false,
+      "properties": {
+        "engine": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Engine"
+        },
+        "instance_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Instance Id",
+          "type": "string"
+        },
+        "role_type": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Role Type",
+          "type": "string"
+        },
+        "team": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Team"
+        }
+      },
+      "required": [
+        "instance_id",
+        "role_type",
+        "team",
+        "engine"
+      ],
+      "title": "ExpandedInstanceV1",
+      "type": "object"
+    },
+    "GateCheckV1": {
+      "additionalProperties": false,
+      "description": "One generic check row in an org-authored aggregation rule.",
+      "properties": {
+        "comparison": {
+          "enum": [
+            "gte",
+            "lte",
+            "is_true"
+          ],
+          "title": "Comparison",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "observation_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Observation Id",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Threshold"
+        },
+        "unit": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "required",
+        "observation_id",
+        "comparison",
+        "threshold",
+        "unit",
+        "rationale"
+      ],
+      "title": "GateCheckV1",
+      "type": "object"
+    },
+    "GateRuleV1": {
+      "additionalProperties": false,
+      "description": "The complete data rule consumed by the deterministic gate evaluator.",
+      "properties": {
+        "aggregation": {
+          "const": "oracle-v1-required-total-order",
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/GateCheckV1"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        },
+        "gate_version": {
+          "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$",
+          "title": "Gate Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "gate_version",
+        "aggregation",
+        "checks"
+      ],
+      "title": "GateRuleV1",
+      "type": "object"
+    },
+    "GateV1": {
+      "additionalProperties": false,
+      "description": "A named aggregation rule over declared artifact/check kinds.",
+      "properties": {
+        "gate_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Gate Id",
+          "type": "string"
+        },
+        "over": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Over",
+          "type": "array"
+        },
+        "rule": {
+          "$ref": "#/$defs/GateRuleV1"
+        }
+      },
+      "required": [
+        "gate_id",
+        "over",
+        "rule"
+      ],
+      "title": "GateV1",
+      "type": "object"
+    },
+    "OrgDefinitionV1": {
+      "additionalProperties": false,
+      "description": "The complete frozen ``org-definition-v1`` artifact.",
+      "properties": {
+        "brain_binding": {
+          "$ref": "#/$defs/BrainBindingV1"
+        },
+        "capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "digest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest Sha256",
+          "type": "string"
+        },
+        "gates": {
+          "items": {
+            "$ref": "#/$defs/GateV1"
+          },
+          "maxItems": 256,
+          "title": "Gates",
+          "type": "array"
+        },
+        "instances": {
+          "items": {
+            "$ref": "#/$defs/RoleInstanceV1"
+          },
+          "maxItems": 1024,
+          "minItems": 2,
+          "title": "Instances",
+          "type": "array"
+        },
+        "org_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Org Id",
+          "type": "string"
+        },
+        "org_version": {
+          "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$",
+          "title": "Org Version",
+          "type": "string"
+        },
+        "roles": {
+          "items": {
+            "$ref": "#/$defs/OrgRoleV1"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "title": "Roles",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": "autobuild-org-definition-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/TeamV1"
+          },
+          "maxItems": 128,
+          "title": "Teams",
+          "type": "array"
+        },
+        "workflow": {
+          "items": {
+            "$ref": "#/$defs/WorkflowRowV1"
+          },
+          "maxItems": 2048,
+          "minItems": 1,
+          "title": "Workflow",
+          "type": "array"
+        }
+      },
+      "required": [
+        "schema_version",
+        "org_id",
+        "org_version",
+        "digest_sha256",
+        "roles",
+        "instances",
+        "capabilities",
+        "teams",
+        "workflow",
+        "gates",
+        "brain_binding"
+      ],
+      "title": "OrgDefinitionV1",
+      "type": "object"
+    },
+    "OrgExpansionV1": {
+      "additionalProperties": false,
+      "properties": {
+        "instances": {
+          "items": {
+            "$ref": "#/$defs/ExpandedInstanceV1"
+          },
+          "title": "Instances",
+          "type": "array"
+        }
+      },
+      "required": [
+        "instances"
+      ],
+      "title": "OrgExpansionV1",
+      "type": "object"
+    },
+    "OrgRoleV1": {
+      "additionalProperties": false,
+      "description": "One reusable role type and its exact existing ``RoleContract``.",
+      "properties": {
+        "capabilities": {
+          "default": [],
+          "description": "Attributes declared organization powers to this specific role.",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "capability_role": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Names the registered code implementation that realizes this role's powers.",
+          "title": "Capability Role"
+        },
+        "contract": {
+          "$ref": "#/$defs/RoleContract"
+        },
+        "output_schema_ref": {
+          "$ref": "#/$defs/OutputSchemaRefV1"
+        },
+        "prompt_pack": {
+          "$ref": "#/$defs/PromptPackV1"
+        },
+        "role_type": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Role Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role_type",
+        "contract",
+        "prompt_pack",
+        "output_schema_ref"
+      ],
+      "title": "OrgRoleV1",
+      "type": "object"
+    },
+    "OutputSchemaRefV1": {
+      "additionalProperties": false,
+      "description": "A contained JSON Schema path pinned to both version and exact bytes.",
+      "properties": {
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_.-]+(?:/[a-zA-Z0-9_.-]+)*\\.json$",
+          "title": "Path",
+          "type": "string"
+        },
+        "schema_version": {
+          "pattern": "^[a-z][a-z0-9_.-]*-v[1-9][0-9]*$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "schema_version",
+        "sha256"
+      ],
+      "title": "OutputSchemaRefV1",
+      "type": "object"
+    },
+    "PromptContract": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^v[1-9][0-9]*$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "PromptContract",
+      "type": "object"
+    },
+    "PromptPackV1": {
+      "additionalProperties": false,
+      "description": "The prompt identities a role type is allowed to load.",
+      "properties": {
+        "auxiliary": {
+          "items": {
+            "$ref": "#/$defs/PromptContract"
+          },
+          "maxItems": 32,
+          "title": "Auxiliary",
+          "type": "array"
+        },
+        "primary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PromptContract"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "primary",
+        "auxiliary"
+      ],
+      "title": "PromptPackV1",
+      "type": "object"
+    },
+    "RetryPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "automatic_attempts": {
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Automatic Attempts",
+          "type": "integer"
+        },
+        "escalation_route": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Escalation Route",
+          "type": "string"
+        },
+        "max_total_attempts": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Max Total Attempts",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "automatic_attempts",
+        "max_total_attempts",
+        "escalation_route"
+      ],
+      "title": "RetryPolicy",
+      "type": "object"
+    },
+    "RoleBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_input_bytes": {
+          "exclusiveMinimum": 0,
+          "maximum": 10000000,
+          "title": "Max Input Bytes",
+          "type": "integer"
+        },
+        "max_output_bytes": {
+          "exclusiveMinimum": 0,
+          "maximum": 10000000,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_input_bytes",
+        "max_output_bytes",
+        "max_output_tokens"
+      ],
+      "title": "RoleBudget",
+      "type": "object"
+    },
+    "RoleContract": {
+      "additionalProperties": false,
+      "description": "Declarative policy and artifact boundary for one role operation.",
+      "properties": {
+        "auxiliary_prompts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PromptContract"
+          },
+          "title": "Auxiliary Prompts",
+          "type": "array"
+        },
+        "budget": {
+          "$ref": "#/$defs/RoleBudget"
+        },
+        "contract_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "contract_version": {
+          "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "deliverable_kind": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Deliverable Kind",
+          "type": "string"
+        },
+        "human_output": {
+          "$ref": "#/$defs/ArtifactContract"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/ArtifactContract"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "prompt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PromptContract"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "retry": {
+          "$ref": "#/$defs/RetryPolicy"
+        },
+        "reviewer": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Reviewer",
+          "type": "string"
+        },
+        "role": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Role",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "autobuild-role-contract-v1",
+          "default": "autobuild-role-contract-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "structured_output": {
+          "$ref": "#/$defs/ArtifactContract"
+        }
+      },
+      "required": [
+        "contract_id",
+        "contract_version",
+        "role",
+        "deliverable_kind",
+        "reviewer",
+        "inputs",
+        "structured_output",
+        "human_output",
+        "budget",
+        "retry"
+      ],
+      "title": "RoleContract",
+      "type": "object"
+    },
+    "RoleInstanceV1": {
+      "additionalProperties": false,
+      "description": "One addressable worker; workflow references always point here.",
+      "properties": {
+        "engine": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allows later routing to select a model engine per role instance.",
+          "title": "Engine"
+        },
+        "instance_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Instance Id",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maxProperties": 64,
+          "title": "Params",
+          "type": "object"
+        },
+        "role_type": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Role Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "instance_id",
+        "role_type",
+        "params"
+      ],
+      "title": "RoleInstanceV1",
+      "type": "object"
+    },
+    "RunEventV1": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "event_id": {
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EventKind"
+        },
+        "raw_event": {
+          "minLength": 1,
+          "title": "Raw Event",
+          "type": "string"
+        },
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "seq",
+        "event_id",
+        "timestamp",
+        "role",
+        "kind",
+        "raw_event",
+        "detail"
+      ],
+      "title": "RunEventV1",
+      "type": "object"
+    },
+    "RunEventsDocumentV1": {
+      "additionalProperties": false,
+      "properties": {
+        "digest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest Sha256",
+          "type": "string"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/RunEventV1"
+          },
+          "title": "Events",
+          "type": "array"
+        },
+        "job_id": {
+          "minLength": 1,
+          "title": "Job Id",
+          "type": "string"
+        },
+        "org_digest": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Org Digest"
+        },
+        "schema_version": {
+          "const": "autobuild-org-run-events-v1",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "job_id",
+        "org_digest",
+        "events",
+        "digest_sha256"
+      ],
+      "title": "RunEventsDocumentV1",
+      "type": "object"
+    },
+    "TeamV1": {
+      "additionalProperties": false,
+      "description": "One expansion of a closed, versioned team template.",
+      "properties": {
+        "bindings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "maxProperties": 32,
+          "minProperties": 1,
+          "title": "Bindings",
+          "type": "object"
+        },
+        "instance_prefix": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Instance Prefix",
+          "type": "string"
+        },
+        "template_ref": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Template Ref",
+          "type": "string"
+        },
+        "template_version": {
+          "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$",
+          "title": "Template Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "template_ref",
+        "template_version",
+        "instance_prefix",
+        "bindings"
+      ],
+      "title": "TeamV1",
+      "type": "object"
+    },
+    "WorkflowRowV1": {
+      "additionalProperties": false,
+      "description": "One operation node in the organization workflow graph.",
+      "properties": {
+        "assignee": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Assignee",
+          "type": "string"
+        },
+        "escalation_route": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Escalation Route",
+          "type": "string"
+        },
+        "kind": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ConditionalNextV1"
+            }
+          ],
+          "title": "Next"
+        },
+        "produces": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Produces",
+          "type": "string"
+        },
+        "produces_on_review": {
+          "default": [],
+          "description": "Declares artifacts created by accepting this row's review decision.",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Produces On Review",
+          "type": "array"
+        },
+        "requested_by": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Requested By",
+          "type": "string"
+        },
+        "required_inputs": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Required Inputs",
+          "type": "array"
+        },
+        "retry_ceiling": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Retry Ceiling",
+          "type": "integer"
+        },
+        "reviewer": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Reviewer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "assignee",
+        "reviewer",
+        "requested_by",
+        "required_inputs",
+        "produces",
+        "retry_ceiling",
+        "escalation_route",
+        "next"
+      ],
+      "title": "WorkflowRowV1",
+      "type": "object"
+    }
+  },
+  "$id": "https://autobuild.local/contracts/org-bundle-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "definition": {
+      "$ref": "#/$defs/OrgDefinitionV1"
+    },
+    "digest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest Sha256",
+      "type": "string"
+    },
+    "expansion": {
+      "$ref": "#/$defs/OrgExpansionV1"
+    },
+    "runs": {
+      "items": {
+        "$ref": "#/$defs/RunEventsDocumentV1"
+      },
+      "title": "Runs",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "autobuild-org-bundle-v1",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "definition",
+    "expansion",
+    "runs",
+    "digest_sha256"
+  ],
+  "title": "OrgBundleDocumentV1",
+  "type": "object"
+}

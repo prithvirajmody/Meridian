@@ -1,0 +1,124 @@
+{
+  "brain_binding": {
+    "access": "proposals_only",
+    "root_ref": "orgs/neutral_minimal",
+    "store": "meridian"
+  },
+  "capabilities": [
+    "artifact_read",
+    "artifact_write"
+  ],
+  "digest_sha256": "103adff368c2658197e9ee2b41ea92c8621816d543bf0f4b16c146866631696f",
+  "gates": [
+    {
+      "gate_id": "acceptance",
+      "over": [
+        "missing_check"
+      ],
+      "rule": {
+        "aggregation": "oracle-v1-required-total-order",
+        "checks": [
+          {
+            "comparison": "is_true",
+            "id": "acceptance",
+            "observation_id": "acceptance",
+            "rationale": "The supplied acceptance check must pass.",
+            "required": true,
+            "threshold": null,
+            "unit": "boolean"
+          }
+        ],
+        "gate_version": "1.0.0"
+      }
+    }
+  ],
+  "instances": [
+    {
+      "instance_id": "pm",
+      "params": {},
+      "role_type": "pm"
+    },
+    {
+      "instance_id": "user",
+      "params": {},
+      "role_type": "user"
+    }
+  ],
+  "org_id": "neutral_minimal",
+  "org_version": "1.0.0",
+  "roles": [
+    {
+      "contract": {
+        "auxiliary_prompts": [],
+        "budget": {
+          "max_input_bytes": 256000,
+          "max_output_bytes": 256000,
+          "max_output_tokens": 4096
+        },
+        "contract_id": "pm.product_brief",
+        "contract_version": "1.0.0",
+        "deliverable_kind": "product_brief",
+        "human_output": {
+          "kind": "product_brief_markdown",
+          "required": true,
+          "schema_version": "autobuild-product-brief-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "user_request",
+            "required": true,
+            "schema_version": "autobuild-user-request-v1"
+          }
+        ],
+        "model": null,
+        "prompt": {
+          "name": "clarify_request",
+          "version": "v1"
+        },
+        "retry": {
+          "automatic_attempts": 2,
+          "escalation_route": "user",
+          "max_total_attempts": 3
+        },
+        "reviewer": "user",
+        "role": "pm",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "product_brief",
+          "required": true,
+          "schema_version": "autobuild-product-brief-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/product-brief-v1.schema.json",
+        "schema_version": "autobuild-product-brief-v1",
+        "sha256": "47f5aa67c2ec1fbb89b206152a710fc863cd46b2864653aa57b19f755c262b26"
+      },
+      "prompt_pack": {
+        "auxiliary": [],
+        "primary": {
+          "name": "clarify_request",
+          "version": "v1"
+        }
+      },
+      "role_type": "pm"
+    }
+  ],
+  "schema_version": "autobuild-org-definition-v1",
+  "teams": [],
+  "workflow": [
+    {
+      "assignee": "pm",
+      "escalation_route": "user",
+      "kind": "write_product_brief",
+      "next": [],
+      "produces": "product_brief",
+      "requested_by": "user",
+      "required_inputs": [
+        "user_request"
+      ],
+      "retry_ceiling": 3,
+      "reviewer": "user"
+    }
+  ]
+}

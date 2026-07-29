@@ -1,0 +1,368 @@
+{
+  "brain_binding": {
+    "access": "proposals_only",
+    "root_ref": "orgs/neutral_research_fund",
+    "store": "meridian"
+  },
+  "capabilities": [
+    "artifact_read",
+    "artifact_write",
+    "deterministic_gate",
+    "template_render"
+  ],
+  "digest_sha256": "fbaa2b964dc27e218a6604511213f5d302a36d997661d5bc73d016b608d713fd",
+  "gates": [
+    {
+      "gate_id": "fund_promotion_gate",
+      "over": [
+        "fund_evidence",
+        "fund_promotion_case"
+      ],
+      "rule": {
+        "aggregation": "oracle-v1-required-total-order",
+        "checks": [
+          {
+            "comparison": "gte",
+            "id": "win_rate",
+            "observation_id": "win_rate",
+            "rationale": "Closed trades won, as a fraction of closed trades, over the whole recorded window. Below 0.55 the strategy family does not clear the discipline's own floor and no amount of narrative substitutes.",
+            "required": true,
+            "threshold": 0.55,
+            "unit": "ratio"
+          },
+          {
+            "comparison": "gte",
+            "id": "reward_risk",
+            "observation_id": "reward_risk",
+            "rationale": "Mean winning R divided by mean losing R, both measured against the trade's own initial risk. The expectancy framing this stands in for is E = win_rate x avg_win_R - (1 - win_rate) x avg_loss_R; at win_rate 0.55 and reward_risk 2.0 that expectancy is +0.65R per trade. reward_risk is the required check because it is the term that degrades first when fills are modelled optimistically; expectancy_r is carried as an advisory cross-check so the two cannot silently disagree.",
+            "required": true,
+            "threshold": 2.0,
+            "unit": "r_multiple"
+          },
+          {
+            "comparison": "gte",
+            "id": "sample_size",
+            "observation_id": "sample_trades",
+            "rationale": "Fewer than 100 closed trades cannot separate an edge from a run of luck at these win rates, so a small sample is refused rather than reported with a caveat.",
+            "required": true,
+            "threshold": 100.0,
+            "unit": "trades"
+          },
+          {
+            "comparison": "is_true",
+            "id": "multi_year_positive",
+            "observation_id": "multi_year_positive",
+            "rationale": "Every complete calendar year in the recorded window is net positive in R. One dominant year carrying an otherwise flat record is a regime artefact, not an edge.",
+            "required": true,
+            "threshold": null,
+            "unit": "boolean"
+          },
+          {
+            "comparison": "is_true",
+            "id": "outlier_survival",
+            "observation_id": "outlier_survival",
+            "rationale": "The record stays net positive with the single best trade removed. A result that depends on one fill is a story about that fill.",
+            "required": true,
+            "threshold": null,
+            "unit": "boolean"
+          },
+          {
+            "comparison": "is_true",
+            "id": "no_opening_bar_fills",
+            "observation_id": "no_opening_bar_fills",
+            "rationale": "No modelled entry or exit is filled on the session's opening bar. This check encodes a fill-realism bug that was actually shipped: opening-bar fills are unobtainable at the modelled price and flattered a prior version of this family. It is here because it already went wrong once.",
+            "required": true,
+            "threshold": null,
+            "unit": "boolean"
+          },
+          {
+            "comparison": "is_true",
+            "id": "reproducible_from_committed_script",
+            "observation_id": "reproducible_from_committed_script",
+            "rationale": "Re-running the pinned committed script reproduces the exported figures. This check encodes a published figure that could not be reproduced from the code that supposedly generated it; an unreproducible number is not evidence, whatever it says.",
+            "required": true,
+            "threshold": null,
+            "unit": "boolean"
+          },
+          {
+            "comparison": "gte",
+            "id": "expectancy_positive",
+            "observation_id": "expectancy_r",
+            "rationale": "Advisory cross-check on the documented expectancy framing above. Non-required because it is arithmetically implied by the win_rate and reward_risk checks; it is reported so a disagreement between the three is visible rather than assumed impossible.",
+            "required": false,
+            "threshold": 0.0,
+            "unit": "r_multiple"
+          },
+          {
+            "comparison": "is_true",
+            "id": "analyst_citation_fidelity",
+            "observation_id": "analyst_claims_match_evidence",
+            "rationale": "Every value the analyst quoted matches the frozen evidence. Non-required by design: the analyst has no authority over this gate, so misquoting the data must be visible without being able to change the verdict either way.",
+            "required": false,
+            "threshold": null,
+            "unit": "boolean"
+          }
+        ],
+        "gate_version": "1.0.0"
+      }
+    }
+  ],
+  "instances": [
+    {
+      "instance_id": "research_analyst",
+      "params": {},
+      "role_type": "research_analyst"
+    },
+    {
+      "instance_id": "risk_officer",
+      "params": {},
+      "role_type": "risk_officer"
+    },
+    {
+      "instance_id": "paper_pm",
+      "params": {},
+      "role_type": "paper_pm"
+    },
+    {
+      "instance_id": "user",
+      "params": {},
+      "role_type": "user"
+    }
+  ],
+  "org_id": "neutral_research_fund",
+  "org_version": "1.0.0",
+  "roles": [
+    {
+      "contract": {
+        "auxiliary_prompts": [],
+        "budget": {
+          "max_input_bytes": 256000,
+          "max_output_bytes": 256000,
+          "max_output_tokens": 4096
+        },
+        "contract_id": "research_analyst.promotion_case",
+        "contract_version": "1.0.0",
+        "deliverable_kind": "fund_promotion_case",
+        "human_output": {
+          "kind": "fund_promotion_case_markdown",
+          "required": true,
+          "schema_version": "autobuild-fund-promotion-case-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "fund_evidence",
+            "required": true,
+            "schema_version": "autobuild-fund-evidence-v1"
+          }
+        ],
+        "model": null,
+        "prompt": {
+          "name": "promotion_case",
+          "version": "v1"
+        },
+        "retry": {
+          "automatic_attempts": 2,
+          "escalation_route": "user",
+          "max_total_attempts": 3
+        },
+        "reviewer": "risk_officer",
+        "role": "research_analyst",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "fund_promotion_case",
+          "required": true,
+          "schema_version": "autobuild-fund-promotion-case-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/fund-promotion-case-v1.schema.json",
+        "schema_version": "autobuild-fund-promotion-case-v1",
+        "sha256": "60fd97234b14266f471fbddec0713855ee65e8a72cd57cab993845a5aaff5418"
+      },
+      "prompt_pack": {
+        "auxiliary": [],
+        "primary": {
+          "name": "promotion_case",
+          "version": "v1"
+        }
+      },
+      "role_type": "research_analyst"
+    },
+    {
+      "contract": {
+        "auxiliary_prompts": [],
+        "budget": {
+          "max_input_bytes": 1000000,
+          "max_output_bytes": 1000000,
+          "max_output_tokens": 1
+        },
+        "contract_id": "risk_officer.gate_verdict",
+        "contract_version": "1.0.0",
+        "deliverable_kind": "fund_gate_verdict",
+        "human_output": {
+          "kind": "fund_gate_verdict_markdown",
+          "required": true,
+          "schema_version": "autobuild-fund-gate-verdict-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "fund_evidence",
+            "required": true,
+            "schema_version": "autobuild-fund-evidence-v1"
+          },
+          {
+            "kind": "fund_promotion_case",
+            "required": true,
+            "schema_version": "autobuild-fund-promotion-case-v1"
+          }
+        ],
+        "model": null,
+        "prompt": null,
+        "retry": {
+          "automatic_attempts": 1,
+          "escalation_route": "user",
+          "max_total_attempts": 2
+        },
+        "reviewer": "user",
+        "role": "risk_officer",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "fund_gate_verdict",
+          "required": true,
+          "schema_version": "autobuild-fund-gate-verdict-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/fund-gate-verdict-v1.schema.json",
+        "schema_version": "autobuild-fund-gate-verdict-v1",
+        "sha256": "86e81cc1214be2ad677304689fbc9f0c3f8bd53f71f3aecb33908cd721d86447"
+      },
+      "prompt_pack": {
+        "auxiliary": [],
+        "primary": null
+      },
+      "role_type": "risk_officer"
+    },
+    {
+      "contract": {
+        "auxiliary_prompts": [],
+        "budget": {
+          "max_input_bytes": 1000000,
+          "max_output_bytes": 1000000,
+          "max_output_tokens": 1
+        },
+        "contract_id": "paper_pm.journal_report",
+        "contract_version": "1.0.0",
+        "deliverable_kind": "fund_journal_report",
+        "human_output": {
+          "kind": "fund_journal_report_markdown",
+          "required": true,
+          "schema_version": "autobuild-fund-journal-report-markdown-v1"
+        },
+        "inputs": [
+          {
+            "kind": "fund_evidence",
+            "required": true,
+            "schema_version": "autobuild-fund-evidence-v1"
+          },
+          {
+            "kind": "fund_promotion_case",
+            "required": true,
+            "schema_version": "autobuild-fund-promotion-case-v1"
+          },
+          {
+            "kind": "fund_gate_verdict",
+            "required": true,
+            "schema_version": "autobuild-fund-gate-verdict-v1"
+          }
+        ],
+        "model": null,
+        "prompt": null,
+        "retry": {
+          "automatic_attempts": 1,
+          "escalation_route": "user",
+          "max_total_attempts": 2
+        },
+        "reviewer": "user",
+        "role": "paper_pm",
+        "schema_version": "autobuild-role-contract-v1",
+        "structured_output": {
+          "kind": "fund_journal_report",
+          "required": true,
+          "schema_version": "autobuild-fund-journal-report-v1"
+        }
+      },
+      "output_schema_ref": {
+        "path": "schemas/fund-journal-report-v1.schema.json",
+        "schema_version": "autobuild-fund-journal-report-v1",
+        "sha256": "d4ccb7e34d568ee52931bb35e5df09e488e2c130e6f68ee69c299f9590ec6997"
+      },
+      "prompt_pack": {
+        "auxiliary": [],
+        "primary": null
+      },
+      "role_type": "paper_pm"
+    }
+  ],
+  "schema_version": "autobuild-org-definition-v1",
+  "teams": [
+    {
+      "bindings": {
+        "reviewer": "risk_officer",
+        "writer": "research_analyst"
+      },
+      "instance_prefix": "fund_review",
+      "template_ref": "review_pair",
+      "template_version": "1.0.0"
+    }
+  ],
+  "workflow": [
+    {
+      "assignee": "research_analyst",
+      "escalation_route": "user",
+      "kind": "analyze_strategy",
+      "next": [],
+      "produces": "fund_promotion_case",
+      "requested_by": "user",
+      "required_inputs": [
+        "fund_evidence"
+      ],
+      "retry_ceiling": 3,
+      "reviewer": "risk_officer"
+    },
+    {
+      "assignee": "risk_officer",
+      "escalation_route": "user",
+      "kind": "evaluate_promotion_gate",
+      "next": {
+        "on_verdict": {
+          "fail": "write_journal",
+          "pass": "write_journal"
+        }
+      },
+      "produces": "fund_gate_verdict",
+      "requested_by": "research_analyst",
+      "required_inputs": [
+        "fund_evidence",
+        "fund_promotion_case"
+      ],
+      "retry_ceiling": 2,
+      "reviewer": "user"
+    },
+    {
+      "assignee": "paper_pm",
+      "escalation_route": "user",
+      "kind": "write_journal",
+      "next": [],
+      "produces": "fund_journal_report",
+      "requested_by": "risk_officer",
+      "required_inputs": [
+        "fund_evidence",
+        "fund_promotion_case",
+        "fund_gate_verdict"
+      ],
+      "retry_ceiling": 2,
+      "reviewer": "user"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "EventKind": {
+      "description": "Closed canonical vocabulary projected from the frozen run-log literals.",
+      "enum": [
+        "job_lifecycle",
+        "assignment_lifecycle",
+        "deliverable",
+        "review",
+        "question",
+        "escalation",
+        "gate",
+        "promotion",
+        "clarification",
+        "ceiling",
+        "quota",
+        "evidence",
+        "error",
+        "standing",
+        "other"
+      ],
+      "title": "EventKind",
+      "type": "string"
+    },
+    "RunEventV1": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "event_id": {
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EventKind"
+        },
+        "raw_event": {
+          "minLength": 1,
+          "title": "Raw Event",
+          "type": "string"
+        },
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "seq",
+        "event_id",
+        "timestamp",
+        "role",
+        "kind",
+        "raw_event",
+        "detail"
+      ],
+      "title": "RunEventV1",
+      "type": "object"
+    }
+  },
+  "$id": "https://autobuild.local/contracts/org-run-events-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "digest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest Sha256",
+      "type": "string"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/RunEventV1"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "job_id": {
+      "minLength": 1,
+      "title": "Job Id",
+      "type": "string"
+    },
+    "org_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Org Digest"
+    },
+    "schema_version": {
+      "const": "autobuild-org-run-events-v1",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "job_id",
+    "org_digest",
+    "events",
+    "digest_sha256"
+  ],
+  "title": "RunEventsDocumentV1",
+  "type": "object"
+}
