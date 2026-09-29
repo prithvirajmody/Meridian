@@ -1,61 +1,75 @@
 # Meridian
 
-A domain-blind semantic graph platform: many domains flow in through parsers,
-many visualizations flow out through projections, and the narrow waist is a
-single Universal Semantic Graph. See the governing documents:
+**A semantic graph platform for parsing, validating, comparing, and exploring structured knowledge.**
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — the architectural constitution
-  (*what* and *why*; wins all conflicts)
-- [docs/ROADMAP.md](docs/ROADMAP.md) — the phased implementation plan (*when*;
-  per-phase specs, verification tables, Definitions of Done)
-- [docs/DRIVING-OPUS.md](docs/DRIVING-OPUS.md) — operator's guide for
-  implementing the roadmap with Claude Opus 4.8 in Claude Code
-- [docs/CODEX-OPUS-ORCHESTRATION.md](docs/CODEX-OPUS-ORCHESTRATION.md) —
-  orchestrating the local Claude Code CLI (Opus) from a coordinating agent
-  (Codex); the plan→review→execute→gate pattern used for Phase 8
+Meridian turns sources such as Markdown notes and code repositories into a shared Universal Semantic Graph. Its CLI validates and compares graphs; its React Studio provides a visual interface for exploring them.
 
-## Status
+## What is implemented
 
-**Phases 0–2 built, gates green; ADR review pending.** ADR-0001…0011 are
-drafted ([docs/adr/](docs/adr/), status *Proposed* — human review pending).
-In place: the monorepo; `@meridian/graph-core` (model, IDs, validation,
-codec) with the Phase 2 U8 vocabulary gate; `@meridian/graph-store` (op-based
-deltas, the one write path); the plugin boundary — `@meridian/plugin-api`
-(versioned contract), `@meridian/plugin-host` (registry, arbitration,
-isolation), `@meridian/conformance-kit` (executable adapter law) — and the
-first domain adapter, `@meridian/adapter-markdown`; the `meridian` CLI
-(`validate` · `stats` · `inspect` · `mutate` · `invert` · `watch` · `ingest`
-· `diff` · `plugins list`); fixtures, corpora, goldens, and perf budgets as CI
-gates.
+| Layer | Repository components |
+|---|---|
+| Shared graph | Graph model, validation, encoding, operations, and storage |
+| Extensibility | Versioned plugin API, plugin host, and conformance kit |
+| Source adapters | Markdown, code, conversation, argument, and organization adapters |
+| Exploration | React Studio, projections, layout, navigation, and rendering |
+| Comparison | Structural graph differences and bridge-v1 provenance artifacts |
+| Verification | Unit/property tests, goldens, evaluations, browser tests, and performance budgets |
 
-```
+Implementation presence does not imply every current integration or CI gate passes. Consult [Actions](https://github.com/prithvirajmody/Meridian/actions) for recorded checks and [the roadmap](docs/ROADMAP.md) for remaining work.
+
+## Try the Studio
+
+Requires **Node.js 20+** and **pnpm 11.10.0**, as declared in package.json.
+
+```bash
+git clone https://github.com/prithvirajmody/Meridian.git
+cd Meridian
 pnpm install
-pnpm test                # unit + property + failure + golden + conformance suites
-pnpm run ci              # lint · typecheck · depcruise · string audit · build · test · evals · e2e · bench
+pnpm build
+pnpm dev
+```
+
+Open the URL printed by Vite. Use **Open corpus** to load a file under `fixtures/corpora/markdown/`. See [the Studio guide](apps/studio/README.md).
+
+This is a private source repository; cloning requires access.
+
+## Try the CLI
+
+After installing and building:
+
+```bash
 pnpm meridian ingest fixtures/corpora/markdown/links.md
 ```
 
-Bridge-v1 producers record exact repository/full-SHA provenance and emit their
-descriptor completion marker last:
+The CLI also supports validation, statistics, inspection, mutation, watching, structural diffs, and plugin discovery. See [the CLI guide](apps/cli/README.md).
 
-```bash
-pnpm meridian ingest ./repo --repo https://example.test/repo.git \
-  --ref 0123456789abcdef0123456789abcdef01234567 \
-  --out graph.json --descriptor graph-artifact.json
+## Architecture
 
-pnpm meridian diff baseline.json target.json --json \
-  --delta-out delta.json --descriptor diff-artifact.json
+```mermaid
+flowchart TD
+  A["Source files"] --> B["Domain adapter"]
+  B --> C["Universal Semantic Graph"]
+  C --> D["Validation and structural diff"]
+  C --> E["Projections and layout"]
+  E --> F["Studio rendering"]
 ```
 
-For `diff`, exit 0 means structurally identical, exit 1 means structurally
-different successful data, and exit 2 means invalid input, usage, contract, or
-I/O failure. See [ADR-0045](docs/adr/0045-document-source-provenance.md),
-[ADR-0046](docs/adr/0046-public-structural-diff.md), and
-[`contracts/bridge-v1/`](contracts/bridge-v1/).
+The shared graph separates source-specific parsing from visualization-specific projections. Plugin contracts and conformance checks keep adapters compatible with that boundary.
 
-(Use `pnpm run ci` — bare `pnpm ci` is pnpm's own clean-install command, not
-this script.)
+## Verification
 
-Golden files change only via `pnpm goldens:update` (reviewed), never by
-hand. Finalized decisions live as ADRs in [docs/adr/](docs/adr/) — a
-decision without a merged ADR is not finalized.
+```bash
+pnpm test
+pnpm run ci
+```
+
+Use `pnpm run ci`, not bare `pnpm ci`. The full script includes lint, type checks, dependency checks, build, tests, evaluations, browser tests, and benchmarks. Updating goldens is an explicit reviewed operation; see the package scripts and governing docs.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Architecture decisions](docs/adr/README.md)
+- [Bridge-v1 contract](contracts/bridge-v1/README.md)
+- [Plugin API](packages/plugin-api/README.md)
+- [Public project overview](https://github.com/prithvirajmody/prithvirajmody.github.io#meridian--semantic-graph-platform)
