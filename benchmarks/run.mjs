@@ -269,8 +269,9 @@ if (skippedMetrics.length > 0) {
 }
 if (perfGates === 'report') {
   const over = dashboard.metrics.filter((metric) => metric.absoluteStatus === 'report-only-fail');
+  const shown = (value) => (Number.isInteger(value) ? String(value) : value.toFixed(2));
   const rows = over.map((metric) =>
-    `${metric.id} = ${metric.value} ${metric.unit} vs budget ${metric.direction === 'min' ? '≥' : '≤'} ${metric.budget} ${metric.unit}`);
+    `${metric.id} = ${shown(metric.value)} ${metric.unit} vs budget ${metric.direction === 'min' ? '≥' : '≤'} ${metric.budget} ${metric.unit}`);
   log(
     `\nperf gates: report (MERIDIAN_PERF_GATES=report). Report-only on this runner: ${[...reportOnly].sort().join(', ')}.\n` +
       `Report-only budgets exceeded (${over.length}): recorded and shown, not enforced; budgets unchanged.\n` +

@@ -27,8 +27,10 @@ test('10k labelled fixture keeps the frame budget: draw p95 <= 18ms, >= 55fps su
   perfBudget('renderer-frame-p95-ms', result.p95DrawTimeMs, () =>
     expect(result.p95DrawTimeMs).toBeLessThanOrEqual(UI_BUDGETS['renderer-frame-p95-ms']),
   );
-  expect(1000 / result.meanFrameTimeMs).toBeGreaterThanOrEqual(
-    UI_BUDGETS['renderer-throughput-min-fps'],
+  perfBudget('renderer-throughput-min-fps', 1000 / result.meanFrameTimeMs, () =>
+    expect(1000 / result.meanFrameTimeMs).toBeGreaterThanOrEqual(
+      UI_BUDGETS['renderer-throughput-min-fps'],
+    ),
   );
   recordStudioBenchmarkMetrics([
     { id: 'renderer-frame-p95-ms', value: result.p95DrawTimeMs, unit: 'ms', sampleCount: result.frames },

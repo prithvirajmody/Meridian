@@ -98,7 +98,8 @@ measured there:
 
 | Metric | Budget | Hosted-runner values |
 |---|---|---|
-| `renderer-frame-p95-ms` | ≤ 18 ms | 77.6–289.5 ms |
+| `renderer-frame-p95-ms` | ≤ 18 ms | 77.6–303.7 ms |
+| `renderer-throughput-min-fps` | ≥ 55 fps | 19.0–21.0 fps (first measured once the draw gate stopped failing first) |
 | `outline-scroll-min-fps` | ≥ 55 fps | 18.5–27.5 fps |
 | `edit-to-pixel-p95-ms` | ≤ 1000 ms | 1090.9–1485 ms |
 | `hydrated-navigation-first-fine-cut-ms` | ≤ 1000 ms | 672.9–1109.8 ms, 4 of 7 runs over |
