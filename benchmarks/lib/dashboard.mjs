@@ -9,6 +9,25 @@ const RESULT_LINE = /^\s*(PASS|FAIL)\s{2,}(\S+)\s{2,}(-?\d+(?:\.\d+)?)([A-Za-z%/
 export const DASHBOARD_SCHEMA_VERSION = 1;
 export const EXTERNAL_SCHEMA_VERSION = 1;
 
+/** The values GitHub Actions reports as `steps.<id>.outcome`. */
+export const STEP_OUTCOMES = Object.freeze(['success', 'failure', 'cancelled', 'skipped']);
+
+/**
+ * Classify the CI outcome of the step that produces the external (Studio)
+ * result. Unset means nobody reported one (local runs): the require flags
+ * apply unchanged. `skipped` means the producer never ran in this job, so its
+ * rows are reported as skipped instead of missing. Any other outcome means it
+ * ran, and a missing row stays a failure. Unknown values throw, so a typo
+ * cannot silently relax the gate.
+ */
+export function externalProducerState(outcome) {
+  if (outcome === undefined || outcome === '') return 'unreported';
+  if (!STEP_OUTCOMES.includes(outcome)) {
+    throw new Error(`external producer outcome must be one of ${STEP_OUTCOMES.join(', ')}; got ${JSON.stringify(outcome)}`);
+  }
+  return outcome === 'skipped' ? 'skipped' : 'ran';
+}
+
 export function directionFor(id) {
   return id.includes('-min') ? 'min' : 'max';
 }
@@ -112,7 +131,9 @@ export function buildDashboard({
   relativeTolerance,
   run,
   scenarios,
+  skippedMetricIds = [],
 }) {
+  const skipped = new Set(skippedMetricIds);
   const byId = new Map();
   for (const measurement of measurements) {
     const bucket = byId.get(measurement.id) ?? [];
@@ -129,8 +150,10 @@ export function buildDashboard({
       const value = aggregate(samples, direction);
       const unit = expectedUnitFor(id);
       const unitMismatch = samples.some((sample) => sample.unit !== unit);
+      // A row whose producer did not run this job is skipped, never "missing".
+      const wasSkipped = value === undefined && skipped.has(id);
       const absoluteStatus = value === undefined
-        ? 'not-measured'
+        ? wasSkipped ? 'skipped' : 'not-measured'
         : unitMismatch
           ? 'invalid'
           : direction === 'min'
@@ -143,7 +166,7 @@ export function buildDashboard({
         : undefined;
       let relative;
       if (value === undefined) {
-        relative = { status: 'not-measured' };
+        relative = { status: wasSkipped ? 'skipped' : 'not-measured' };
       } else if (baseline?.runnerClass !== undefined && baseline.runnerClass !== run.runner.declaredClass) {
         relative = { status: 'runner-mismatch', baselineRunnerClass: baseline.runnerClass };
       } else if (base === undefined) {
@@ -181,6 +204,7 @@ export function buildDashboard({
     absolutePass: count('absoluteStatus', 'pass'),
     absoluteFail: count('absoluteStatus', 'fail') + count('absoluteStatus', 'invalid'),
     notMeasured: count('absoluteStatus', 'not-measured'),
+    skipped: count('absoluteStatus', 'skipped'),
     relativePass: metrics.filter((metric) => metric.relative.status === 'pass').length,
     relativeFail: metrics.filter((metric) => metric.relative.status === 'fail' || metric.relative.status === 'invalid-baseline').length,
     relativeNotCalibrated: metrics.filter((metric) => metric.relative.status === 'not-calibrated').length,
@@ -203,14 +227,33 @@ export function buildDashboard({
   };
 }
 
+/**
+ * Run-level completeness requirements (`--require-external`, `--require-all`).
+ * `externalStatus` is this run's Studio result state: pass, fail,
+ * not-measured, or skipped. Skipped rows (their producer did not run in this
+ * job) are never reported as missing; when the producer ran, an absent or
+ * incomplete result still fails.
+ */
+export function completenessFailures(dashboard, { externalStatus, requireExternal, requireAll }) {
+  const missingAbsolute = dashboard.metrics
+    .filter((metric) => metric.absoluteStatus === 'not-measured')
+    .map((metric) => metric.id);
+  return {
+    externalMissing: requireExternal && externalStatus !== 'pass' && externalStatus !== 'skipped',
+    missingAbsolute: requireAll ? missingAbsolute : [],
+  };
+}
+
 /** Strict relative-gate diagnostics. A calibrated run is acceptable only when
  * the baseline schema/status is valid and every current budget row compared
- * successfully on the same runner. */
+ * successfully on the same runner. Rows whose producer was skipped this job
+ * are reported as skipped by the dashboard, not failed here. */
 export function baselineRequirementFailures(metrics, baseline) {
   const failures = [];
   if (baseline?.schemaVersion !== 1) failures.push({ id: '*', status: 'invalid-baseline-schema' });
   if (baseline?.status !== 'measured') failures.push({ id: '*', status: 'baseline-not-measured' });
   for (const metric of metrics) {
+    if (metric.relative.status === 'skipped') continue;
     if (metric.relative.status !== 'pass') failures.push({ id: metric.id, status: metric.relative.status });
   }
   return failures;
@@ -226,6 +269,7 @@ function shown(value, unit) {
 function relativeText(relative) {
   if (relative.status === 'not-calibrated') return 'not calibrated';
   if (relative.status === 'not-measured') return 'not measured';
+  if (relative.status === 'skipped') return 'skipped';
   if (relative.status === 'runner-mismatch') return 'different runner';
   if (relative.changeRatio === undefined) return relative.status;
   const sign = relative.changeRatio >= 0 ? '+' : '';
@@ -240,7 +284,7 @@ export function renderMarkdown(dashboard) {
     `- Run: \`${run.id}\``,
     `- Commit: \`${run.commit}\``,
     `- Runner: \`${run.runner.declaredClass}\` (${run.runner.os} ${run.runner.arch}, Node ${run.runner.node})`,
-    `- Absolute: ${summary.absolutePass} pass, ${summary.absoluteFail} fail, ${summary.notMeasured} not measured`,
+    `- Absolute: ${summary.absolutePass} pass, ${summary.absoluteFail} fail, ${summary.notMeasured} not measured, ${summary.skipped ?? 0} skipped`,
     `- Relative (±${(dashboard.policy.relativeTolerance * 100).toFixed(0)}%): ${summary.relativePass} pass, ${summary.relativeFail} fail, ${summary.relativeNotCalibrated} not calibrated, ${summary.relativeRunnerMismatch} different runner`,
     '',
     '| Metric | Value | Contract | Absolute | Relative | Source |',
@@ -255,6 +299,12 @@ export function renderMarkdown(dashboard) {
     lines.push(`| \`${scenario.id}\` | ${scenario.durationMs.toFixed(0)} ms | ${scenario.exitCode} | ${scenario.status} |`);
   }
   lines.push('');
+  if ((summary.skipped ?? 0) > 0) {
+    const skippedIds = dashboard.metrics
+      .filter((metric) => metric.absoluteStatus === 'skipped')
+      .map((metric) => `\`${metric.id}\``);
+    lines.push(`> **${skippedIds.length} metrics skipped:** their producer did not run in this job, so they were not checked (neither pass nor fail): ${skippedIds.join(', ')}.`, '');
+  }
   if (summary.relativeNotCalibrated > 0) {
     lines.push('> Relative rows marked “not calibrated” have no measured value in `benchmarks/baseline.json`; see `docs/PERFORMANCE-PROFILING.md` for the pinned-runner calibration procedure.', '');
   }

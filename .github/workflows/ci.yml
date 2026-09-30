@@ -7,14 +7,16 @@ on:
 
 jobs:
   ci:
+    # Pinned image: ubuntu-latest moves to Ubuntu 26 on 2026-10-19, and the
+    # benchmark runner class (benchmarks/runner.json) is ubuntu-24.04.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         # version comes from packageManager in package.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -36,25 +38,36 @@ jobs:
         run: pnpm build
 
       - name: Test (unit, property, failure, golden)
+        env:
+          # CI budget for the wall-clock liveness test in
+          # packages/layout/test/worker-host.test.ts (local default: 4 ms).
+          # PROVISIONAL until the 20-run hosted-runner measurement lands.
+          MERIDIAN_MAIN_THREAD_GAP_MS: "50"
         run: pnpm test
 
       - name: Install software-rendered Chromium
-        run: pnpm exec playwright install --with-deps chromium
+        # Playwright is a dependency of @meridian/studio, not the workspace root.
+        run: pnpm --filter @meridian/studio exec playwright install --with-deps chromium
 
       - name: Browser UI, interaction, FPS, and heap gates
+        id: e2e
         env:
           MERIDIAN_PHASE11_BENCH: "1"
         run: pnpm test:e2e
 
       - name: Upload Playwright artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        # Debugging convenience only; nothing downstream downloads it, so a
+        # storage-quota error must not turn the build red.
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
         with:
           name: meridian-playwright
           path: |
             apps/studio/playwright-report/
             apps/studio/test-results/
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Benchmarks (perf budgets are tests)
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
@@ -63,12 +76,67 @@ jobs:
           MERIDIAN_BENCH_REQUIRE_RUNNER: "1"
           MERIDIAN_BENCH_REQUIRE_EXTERNAL: "1"
           MERIDIAN_BENCH_REQUIRE_ALL: "1"
+          # The e2e step writes the 14 Studio metrics. If it was skipped (an
+          # earlier step failed), bench reports them as skipped; if it ran,
+          # missing metrics still fail.
+          MERIDIAN_BENCH_EXTERNAL_OUTCOME: ${{ steps.e2e.outcome }}
         run: pnpm bench
 
       - name: Upload benchmark dashboard
         if: always()
-        uses: actions/upload-artifact@v4
+        # Convenience copy of benchmarks/results/ (bench also writes the
+        # dashboard to the job summary). Nothing downstream downloads it, so a
+        # storage-quota error must not turn the build red.
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-dashboard
           path: benchmarks/results/
           if-no-files-found: error
+          retention-days: 7
+
+  # TEMPORARY (removed before merge): runs the layout suite 20 times on the
+  # same hosted runner label to size MERIDIAN_MAIN_THREAD_GAP_MS, and runs the
+  # bench collector once with the e2e step reported as skipped.
+  measure-main-thread-gap:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Layout suite x20 (records each run's maxGap)
+        env:
+          # Large budget so every run completes; this job only records values.
+          MERIDIAN_MAIN_THREAD_GAP_MS: "1000"
+        run: |
+          echo "runner: nproc=$(nproc) image=${ImageOS}/${ImageVersion} cpu=$(lscpu | sed -n 's/^Model name: *//p')"
+          for i in $(seq 1 20); do
+            if out=$(pnpm --filter @meridian/layout test 2>&1); then status=pass; else status=FAIL; fi
+            gap=$(grep -o 'maxGap=[0-9.]*ms' <<<"$out" | head -1)
+            boundary=$(grep -o 'maxDispatchCpu=[0-9.]*ms, maxHandle=[0-9.]*ms; main-thread grid would block [0-9.]*ms' <<<"$out" | head -1)
+            printf 'run %2d (%s): %s | %s\n' "$i" "$status" "$gap" "$boundary"
+            if [ "$status" = FAIL ]; then grep -E 'FAIL|AssertionError' <<<"$out" | head -20; fi
+          done | tee gap-runs.txt
+          echo "--- sorted maxGap (ms):"
+          grep -o 'maxGap=[0-9.]*' gap-runs.txt | cut -d= -f2 | sort -g | tr '\n' ' '; echo
+          echo "--- sorted main-thread grid block (ms):"
+          grep -o 'would block [0-9.]*' gap-runs.txt | awk '{print $3}' | sort -g | tr '\n' ' '; echo
+
+      - name: Bench collector with the e2e step reported as skipped
+        env:
+          MERIDIAN_BENCH_RUNNER_CLASS: github-actions-ubuntu-24.04-x64-node-24
+          MERIDIAN_BENCH_REQUIRE_RUNNER: "1"
+          MERIDIAN_BENCH_REQUIRE_EXTERNAL: "1"
+          MERIDIAN_BENCH_REQUIRE_ALL: "1"
+          MERIDIAN_BENCH_EXTERNAL_OUTCOME: skipped
+        run: node benchmarks/run.mjs

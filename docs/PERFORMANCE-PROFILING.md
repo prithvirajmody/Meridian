@@ -5,7 +5,8 @@ Meridian treats performance rows as tests. `pnpm bench` (or the built CLI's
 contracts in `benchmarks/budgets.json`, applies the relative-regression rule,
 and writes both `benchmarks/results/dashboard.json` and
 `benchmarks/results/dashboard.md`. Scenario logs live beside them. The result
-directory is generated and uploaded by CI; it is intentionally not committed.
+directory is generated and uploaded by CI (kept 7 days), and CI also writes the
+dashboard to the job summary; it is intentionally not committed.
 
 ## Reference runner and relative gate
 
@@ -66,7 +67,13 @@ runs. Its minimal schema is:
 Local absence is shown as `not-measured`. CI sets
 `MERIDIAN_BENCH_REQUIRE_EXTERNAL=1` and `MERIDIAN_BENCH_REQUIRE_ALL=1`, making
 an absent, malformed, or missing row a located failure rather than silently
-substituting a Node proxy for real pixels. The same external file contains the
+substituting a Node proxy for real pixels. CI also passes the e2e step's
+outcome as `MERIDIAN_BENCH_EXTERNAL_OUTCOME` (or `--external-outcome`). When it
+is `skipped` (an earlier step failed, so Playwright never ran), the Studio rows
+are reported as `skipped`, which is neither pass nor fail, in the log, the
+dashboard and the job summary, and any `studio.json` on disk is ignored as
+stale. For any other outcome the Studio rows stay required. Unknown values are
+rejected. The same external file contains the
 measurements produced by the existing renderer, projection, heap, and
 transition owners; repeated IDs are conservatively combined (worst ceiling or
 worst floor).

@@ -7,7 +7,7 @@
     },
     "test": {
       "dependsOn": ["build"],
-      "env": ["UPDATE_GOLDENS", "FC_SEED"]
+      "env": ["UPDATE_GOLDENS", "FC_SEED", "MERIDIAN_MAIN_THREAD_GAP_MS"]
     },
     "typecheck": {
       "dependsOn": ["^build"]

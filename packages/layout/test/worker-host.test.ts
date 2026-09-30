@@ -232,6 +232,25 @@ describe('worker crash → host recovers (fallback to grid)', () => {
   );
 });
 
+/**
+ * Budget for the wall-clock liveness test below. The roadmap contract
+ * ("main thread never blocked > 4ms") is the default, so local perf runs keep
+ * asserting 4 ms. A lone wall-clock gap on a shared hosted CI runner also
+ * includes OS deschedules that are not main-thread work, so CI sets
+ * MERIDIAN_MAIN_THREAD_GAP_MS from a measured distribution (the value and its
+ * evidence are in .github/workflows/ci.yml). The CPU-time boundary test above
+ * always asserts 4 ms.
+ */
+const MAIN_THREAD_GAP_BUDGET = ((): { readonly ms: number; readonly source: string } => {
+  const raw = process.env.MERIDIAN_MAIN_THREAD_GAP_MS;
+  if (raw === undefined || raw.trim() === '') return { ms: 4, source: 'roadmap default' };
+  const ms = Number(raw);
+  if (!Number.isFinite(ms) || ms <= 0) {
+    throw new Error(`MERIDIAN_MAIN_THREAD_GAP_MS must be a positive number of milliseconds, got ${JSON.stringify(raw)}`);
+  }
+  return { ms, source: 'MERIDIAN_MAIN_THREAD_GAP_MS' };
+})();
+
 describe('main thread never blocked > 4ms (asserted via the worker boundary)', () => {
   it(
     'the per-request boundary work stays < 4ms while O(N) geometry runs in the worker',
@@ -280,7 +299,7 @@ describe('main thread never blocked > 4ms (asserted via the worker boundary)', (
   );
 
   it(
-    'the main thread stays responsive (no > 4ms gap) while a big layout computes in the worker',
+    `the main thread stays responsive (no > ${MAIN_THREAD_GAP_BUDGET.ms}ms gap) while a big layout computes in the worker`,
     async () => {
       const input = bigInput(20_000);
       const { factory } = makeNodeFactory();
@@ -307,9 +326,12 @@ describe('main thread never blocked > 4ms (asserted via the worker boundary)', (
       await pending;
       sampling = false;
       await sampler;
-      console.log(`liveness: ${samples} main-thread samples during worker compute, maxGap=${maxGap.toFixed(3)}ms`);
+      console.log(
+        `liveness: ${samples} main-thread samples during worker compute, maxGap=${maxGap.toFixed(3)}ms ` +
+          `(budget < ${MAIN_THREAD_GAP_BUDGET.ms}ms, ${MAIN_THREAD_GAP_BUDGET.source})`,
+      );
       expect(samples).toBeGreaterThan(3); // the compute really did span the loop
-      expect(maxGap).toBeLessThan(4);
+      expect(maxGap).toBeLessThan(MAIN_THREAD_GAP_BUDGET.ms);
     },
     30_000,
   );

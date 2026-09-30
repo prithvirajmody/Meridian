@@ -3,7 +3,9 @@ import { describe, it } from 'node:test';
 import {
   baselineRequirementFailures,
   buildDashboard,
+  completenessFailures,
   expectedUnitFor,
+  externalProducerState,
   parseBudgetOutput,
   parseExternalResult,
   renderMarkdown,
@@ -126,5 +128,86 @@ describe('benchmark result collector', () => {
       baselineRequirementFailures(metrics.slice(0, 1), { schemaVersion: 1, status: 'unmeasured' }),
       [{ id: '*', status: 'baseline-not-measured' }],
     );
+  });
+});
+
+describe('Studio producer coupling (CI e2e step outcome)', () => {
+  const budgets = { 'node-latency-ms': 100, 'studio-frame-p95-ms': 18, 'studio-min-fps': 55 };
+  const studioIds = ['studio-frame-p95-ms', 'studio-min-fps'];
+  const run = { id: 'test', commit: 'abc', runner: { declaredClass: 'test', os: 'linux', arch: 'x64', node: '24' } };
+  const nodeRow = { id: 'node-latency-ms', value: 40, unit: 'ms', source: 'node.bench.mjs' };
+  const build = (measurements, skippedMetricIds) => buildDashboard({
+    budgets,
+    measurements,
+    baseline: { schemaVersion: 1, status: 'unmeasured', metrics: {} },
+    relativeTolerance: 0.15,
+    run,
+    scenarios: [],
+    skippedMetricIds,
+  });
+  const strict = { requireExternal: true, requireAll: true };
+
+  it('classifies GitHub step outcomes and rejects anything else', () => {
+    assert.equal(externalProducerState(undefined), 'unreported');
+    assert.equal(externalProducerState(''), 'unreported');
+    assert.equal(externalProducerState('skipped'), 'skipped');
+    for (const outcome of ['success', 'failure', 'cancelled']) {
+      assert.equal(externalProducerState(outcome), 'ran');
+    }
+    for (const typo of ['Skipped', 'true', '1', 'skip']) {
+      assert.throws(() => externalProducerState(typo), /must be one of success, failure, cancelled, skipped/u);
+    }
+  });
+
+  it('e2e skipped: Studio rows are reported as skipped, not missing, and do not fail', () => {
+    const dashboard = build([nodeRow], studioIds);
+    for (const id of studioIds) {
+      const metric = dashboard.metrics.find((row) => row.id === id);
+      assert.equal(metric.value, null);
+      assert.equal(metric.absoluteStatus, 'skipped');
+      assert.equal(metric.relative.status, 'skipped');
+    }
+    assert.equal(dashboard.summary.skipped, 2);
+    assert.equal(dashboard.summary.notMeasured, 0);
+    assert.equal(dashboard.summary.absoluteFail, 0);
+    assert.deepEqual(completenessFailures(dashboard, { ...strict, externalStatus: 'skipped' }), {
+      externalMissing: false,
+      missingAbsolute: [],
+    });
+    assert.deepEqual(baselineRequirementFailures(dashboard.metrics, { schemaVersion: 1, status: 'measured' }), [
+      { id: 'node-latency-ms', status: 'not-calibrated' },
+    ]);
+    const markdown = renderMarkdown(dashboard);
+    assert.match(markdown, /0 not measured, 2 skipped/u);
+    assert.match(markdown, /\| `studio-min-fps` \| — \| ≥ 55\.00 fps \| skipped \| skipped \| — \|/u);
+    assert.match(markdown, /2 metrics skipped:\*\* .*`studio-frame-p95-ms`, `studio-min-fps`/u);
+  });
+
+  it('e2e skipped still fails a missing or failing Node row', () => {
+    const missing = build([], studioIds);
+    assert.deepEqual(completenessFailures(missing, { ...strict, externalStatus: 'skipped' }).missingAbsolute, ['node-latency-ms']);
+    const failing = build([{ ...nodeRow, value: 400 }], studioIds);
+    assert.equal(failing.summary.absoluteFail, 1);
+  });
+
+  it('e2e ran: an absent or incomplete studio.json still fails', () => {
+    const absent = build([nodeRow], []);
+    assert.equal(absent.summary.skipped, 0);
+    assert.deepEqual(completenessFailures(absent, { ...strict, externalStatus: 'not-measured' }), {
+      externalMissing: true,
+      missingAbsolute: studioIds,
+    });
+    const partial = build([nodeRow, { id: 'studio-min-fps', value: 60, unit: 'fps', source: 'studio-playwright' }], []);
+    assert.deepEqual(completenessFailures(partial, { ...strict, externalStatus: 'fail' }), {
+      externalMissing: true,
+      missingAbsolute: ['studio-frame-p95-ms'],
+    });
+  });
+
+  it('a skipped id that was measured anyway is gated normally', () => {
+    const dashboard = build([nodeRow, { id: 'studio-min-fps', value: 30, unit: 'fps', source: 'studio-playwright' }], studioIds);
+    const fps = dashboard.metrics.find((row) => row.id === 'studio-min-fps');
+    assert.equal(fps.absoluteStatus, 'fail');
+    assert.equal(dashboard.summary.skipped, 1);
   });
 });
