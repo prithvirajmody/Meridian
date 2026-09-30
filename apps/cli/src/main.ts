@@ -616,9 +616,10 @@ async function cmdWatch(
   });
   store.subscribe((change) => printChange(change, opts.json));
   const s = stats(store.snapshot());
-  out(`watching ${file} — ${formatVersion(store.version())} · ${s.graphs} graphs · ${s.nodes} nodes · ${s.edges} edges`);
+  const banner = `watching ${file} — ${formatVersion(store.version())} · ${s.graphs} graphs · ${s.nodes} nodes · ${s.edges} edges`;
 
   if (opts.apply !== undefined) {
+    out(banner);
     return watchApply(store, opts.apply.split(',').filter((p) => p.length > 0));
   }
 
@@ -651,6 +652,8 @@ async function cmdWatch(
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => void onChange(), 60);
   });
+  // Announce only once the watcher is armed, so an immediate save is seen.
+  out(banner);
   await new Promise<void>((resolve) => process.once('SIGINT', () => resolve()));
   return 0;
 }

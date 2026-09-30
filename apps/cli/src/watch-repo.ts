@@ -132,14 +132,13 @@ export async function cmdWatchRepo(
       onListenerError: (e) => stderrLine(`listener error: ${String(e)}`),
     });
     store.subscribe(printChange);
-    out(
-      `watching ${dir} — ${formatVersion(store.version())} · ${files.length} file${files.length === 1 ? '' : 's'} · ${gate.space.graphs.size} graphs`,
-    );
+    const banner = `watching ${dir} — ${formatVersion(store.version())} · ${files.length} file${files.length === 1 ? '' : 's'} · ${gate.space.graphs.size} graphs`;
 
     if (opts.edits !== undefined) {
+      out(banner);
       return await replayEdits(session, store, dir, opts.edits);
     }
-    await liveWatch(session, store, dir, routedUnder(opts));
+    await liveWatch(session, store, dir, routedUnder(opts), () => out(banner));
     return 0;
   } finally {
     await dispose();
@@ -178,12 +177,17 @@ async function replayEdits(
   return 0;
 }
 
-/** Live mode: follow the tree; each save is re-parsed into a minimal delta. */
+/**
+ * Live mode: follow the tree; each save is re-parsed into a minimal delta.
+ * `onReady` announces the session only after the watcher is armed, so a save
+ * made as soon as the banner appears is never missed.
+ */
 async function liveWatch(
   session: CodeIncrementalSession,
   store: GraphStore,
   dir: string,
   routed: (rel: string) => boolean,
+  onReady: () => void,
 ): Promise<void> {
   const pending = new Map<string, NodeJS.Timeout>();
   const onEvent = (filename: string | null): void => {
@@ -201,6 +205,7 @@ async function liveWatch(
     );
   };
   fsWatch(dir, { recursive: true }, (_event, filename) => onEvent(filename ? String(filename) : null));
+  onReady();
   await new Promise<void>((resolve) => process.once('SIGINT', () => resolve()));
 }
 
