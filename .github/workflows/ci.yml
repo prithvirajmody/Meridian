@@ -39,10 +39,18 @@ jobs:
 
       - name: Test (unit, property, failure, golden)
         env:
-          # CI budget for the wall-clock liveness test in
-          # packages/layout/test/worker-host.test.ts (local default: 4 ms).
-          # PROVISIONAL until the 20-run hosted-runner measurement lands.
-          MERIDIAN_MAIN_THREAD_GAP_MS: "50"
+          # CI budgets for the two main-thread tests in
+          # packages/layout/test/worker-host.test.ts; the local default for
+          # both stays the roadmap's 4 ms. Measured by running the layout suite
+          # 20 times on ubuntu-24.04 (2 vCPU) in PR #1, run 36748044283:
+          #   wall-clock gap:       median 6.2 ms, max 10.4 ms (19/20 over 4 ms)
+          #   per-request CPU time: median 2.0 ms, max 4.6 ms (2/20 over 4 ms)
+          # Budget = 2x the 20-run max, rounded up. Twenty runs only bound the
+          # ~95th percentile and the tail is long (13.0 ms gap in an earlier CI
+          # run). The budgets stay far below what the tests exist to catch: the
+          # same layout computed on the main thread took 55-76 ms.
+          MERIDIAN_MAIN_THREAD_BOUNDARY_MS: "10"
+          MERIDIAN_MAIN_THREAD_GAP_MS: "21"
         run: pnpm test
 
       - name: Install software-rendered Chromium
@@ -94,49 +102,3 @@ jobs:
           path: benchmarks/results/
           if-no-files-found: error
           retention-days: 7
-
-  # TEMPORARY (removed before merge): runs the layout suite 20 times on the
-  # same hosted runner label to size MERIDIAN_MAIN_THREAD_GAP_MS, and runs the
-  # bench collector once with the e2e step reported as skipped.
-  measure-main-thread-gap:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm build
-
-      - name: Layout suite x20 (records each run's maxGap)
-        env:
-          # Large budget so every run completes; this job only records values.
-          MERIDIAN_MAIN_THREAD_GAP_MS: "1000"
-        run: |
-          echo "runner: nproc=$(nproc) image=${ImageOS}/${ImageVersion} cpu=$(lscpu | sed -n 's/^Model name: *//p')"
-          for i in $(seq 1 20); do
-            if out=$(pnpm --filter @meridian/layout test 2>&1); then status=pass; else status=FAIL; fi
-            gap=$(grep -o 'maxGap=[0-9.]*ms' <<<"$out" | head -1)
-            boundary=$(grep -o 'maxDispatchCpu=[0-9.]*ms, maxHandle=[0-9.]*ms; main-thread grid would block [0-9.]*ms' <<<"$out" | head -1)
-            printf 'run %2d (%s): %s | %s\n' "$i" "$status" "$gap" "$boundary"
-            if [ "$status" = FAIL ]; then grep -E 'FAIL|AssertionError' <<<"$out" | head -20; fi
-          done | tee gap-runs.txt
-          echo "--- sorted maxGap (ms):"
-          grep -o 'maxGap=[0-9.]*' gap-runs.txt | cut -d= -f2 | sort -g | tr '\n' ' '; echo
-          echo "--- sorted main-thread grid block (ms):"
-          grep -o 'would block [0-9.]*' gap-runs.txt | awk '{print $3}' | sort -g | tr '\n' ' '; echo
-
-      - name: Bench collector with the e2e step reported as skipped
-        env:
-          MERIDIAN_BENCH_RUNNER_CLASS: github-actions-ubuntu-24.04-x64-node-24
-          MERIDIAN_BENCH_REQUIRE_RUNNER: "1"
-          MERIDIAN_BENCH_REQUIRE_EXTERNAL: "1"
-          MERIDIAN_BENCH_REQUIRE_ALL: "1"
-          MERIDIAN_BENCH_EXTERNAL_OUTCOME: skipped
-        run: node benchmarks/run.mjs
