@@ -9,7 +9,9 @@ pnpm goldens:update
 ```
 
 Review the resulting diff like a design decision — a changed golden is a
-changed contract.
+changed contract. The screenshot half (`pnpm goldens:update:ui:docker`) runs
+in the pinned Playwright Docker image, so it needs Docker; see
+`apps/studio/README.md`.
 
 ## Layout
 
