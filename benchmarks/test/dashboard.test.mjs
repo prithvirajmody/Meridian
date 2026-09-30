@@ -211,3 +211,95 @@ describe('Studio producer coupling (CI e2e step outcome)', () => {
     assert.equal(dashboard.summary.skipped, 1);
   });
 });
+
+describe('report-only perf budgets (MERIDIAN_PERF_GATES=report)', () => {
+  const budgets = { 'edit-latency-ms': 1000, 'scroll-min-fps': 55, 'other-latency-ms': 100 };
+  const run = { id: 'test', commit: 'abc', runner: { declaredClass: 'test', os: 'linux', arch: 'x64', node: '24' } };
+  const overBudget = [
+    { id: 'edit-latency-ms', value: 1330.8, unit: 'ms', source: 'studio-playwright' },
+    { id: 'scroll-min-fps', value: 18.5, unit: 'fps', source: 'studio-playwright' },
+    { id: 'other-latency-ms', value: 40, unit: 'ms', source: 'node.bench.mjs' },
+  ];
+  const build = (measurements, perfGates, reportOnlyMetricIds = ['edit-latency-ms', 'scroll-min-fps']) => buildDashboard({
+    budgets,
+    measurements,
+    baseline: { schemaVersion: 1, status: 'unmeasured', metrics: {} },
+    relativeTolerance: 0.15,
+    run,
+    scenarios: [],
+    perfGates,
+    reportOnlyMetricIds,
+  });
+  const byId = (dashboard, id) => dashboard.metrics.find((metric) => metric.id === id);
+
+  it('report mode records exceeded report-only budgets without failing', () => {
+    const dashboard = build(overBudget, 'report');
+    assert.equal(byId(dashboard, 'edit-latency-ms').absoluteStatus, 'report-only-fail');
+    assert.equal(byId(dashboard, 'edit-latency-ms').value, 1330.8);
+    assert.equal(byId(dashboard, 'edit-latency-ms').reportOnly, true);
+    assert.equal(byId(dashboard, 'scroll-min-fps').absoluteStatus, 'report-only-fail');
+    assert.equal(byId(dashboard, 'other-latency-ms').absoluteStatus, 'pass');
+    assert.equal(dashboard.summary.reportOnlyFail, 2);
+    assert.equal(dashboard.summary.absoluteFail, 0);
+    assert.equal(dashboard.policy.perfGates, 'report');
+    assert.deepEqual(dashboard.policy.reportOnlyMetrics, ['edit-latency-ms', 'scroll-min-fps']);
+    const markdown = renderMarkdown(dashboard);
+    assert.match(markdown, /2 over budget \(report-only\)/u);
+    assert.match(markdown, /\| `scroll-min-fps` \| 18\.50 fps \| ≥ 55\.00 fps \| over budget \(report-only\) \|/u);
+    assert.match(markdown, /2 report-only budgets exceeded.*`edit-latency-ms` 1330\.80 ms vs ≤ 1000\.00 ms/u);
+  });
+
+  it('enforce mode (the default) fails the same values exactly as before', () => {
+    for (const perfGates of ['enforce', undefined]) {
+      const dashboard = build(overBudget, perfGates);
+      assert.equal(byId(dashboard, 'edit-latency-ms').absoluteStatus, 'fail');
+      assert.equal(byId(dashboard, 'edit-latency-ms').reportOnly, undefined);
+      assert.equal(dashboard.summary.absoluteFail, 2);
+      assert.equal(dashboard.summary.reportOnlyFail, 0);
+      assert.deepEqual(dashboard.policy.reportOnlyMetrics, []);
+    }
+  });
+
+  it('report mode still fails unlisted budgets, unit errors, and missing rows', () => {
+    const unlisted = build([...overBudget.slice(0, 2), { ...overBudget[2], value: 400 }], 'report');
+    assert.equal(byId(unlisted, 'other-latency-ms').absoluteStatus, 'fail');
+    assert.equal(unlisted.summary.absoluteFail, 1);
+    const wrongUnit = build([{ ...overBudget[0], unit: 's' }, ...overBudget.slice(1)], 'report');
+    assert.equal(byId(wrongUnit, 'edit-latency-ms').absoluteStatus, 'invalid');
+    assert.equal(wrongUnit.summary.absoluteFail, 1);
+    const missing = build(overBudget.slice(1), 'report');
+    assert.equal(byId(missing, 'edit-latency-ms').absoluteStatus, 'not-measured');
+    assert.deepEqual(completenessFailures(missing, { externalStatus: 'fail', requireExternal: true, requireAll: true }), {
+      externalMissing: true,
+      missingAbsolute: ['edit-latency-ms'],
+    });
+  });
+
+  it('relative gates follow the same rule and the strict baseline check skips report-only rows', () => {
+    const dashboard = buildDashboard({
+      budgets,
+      measurements: overBudget,
+      baseline: {
+        schemaVersion: 1,
+        status: 'measured',
+        runnerClass: 'test',
+        metrics: {
+          'edit-latency-ms': { value: 900, unit: 'ms' },
+          'scroll-min-fps': { value: 60, unit: 'fps' },
+          'other-latency-ms': { value: 20, unit: 'ms' },
+        },
+      },
+      relativeTolerance: 0.15,
+      run,
+      scenarios: [],
+      perfGates: 'report',
+      reportOnlyMetricIds: ['edit-latency-ms', 'scroll-min-fps'],
+    });
+    assert.equal(byId(dashboard, 'edit-latency-ms').relative.status, 'report-only-fail');
+    assert.equal(byId(dashboard, 'other-latency-ms').relative.status, 'fail');
+    assert.equal(dashboard.summary.relativeFail, 1);
+    assert.deepEqual(baselineRequirementFailures(dashboard.metrics, { schemaVersion: 1, status: 'measured' }), [
+      { id: 'other-latency-ms', status: 'fail' },
+    ]);
+  });
+});

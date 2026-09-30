@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   boot,
   percentile95,
+  perfBudget,
   recordStudioBenchmarkMetrics,
   UI_BUDGETS,
 } from './support.js';
@@ -64,7 +65,9 @@ test('Phase 11 edit-to-pixel p95 emits the dashboard input', async ({ page }) =>
     `[11F edit→model] p95=${percentile95(modelSamples).toFixed(1)}ms ` +
       `min=${Math.min(...modelSamples).toFixed(1)}ms max=${Math.max(...modelSamples).toFixed(1)}ms`,
   );
-  expect(p95).toBeLessThanOrEqual(UI_BUDGETS['edit-to-pixel-p95-ms']);
+  perfBudget('edit-to-pixel-p95-ms', p95, () =>
+    expect(p95).toBeLessThanOrEqual(UI_BUDGETS['edit-to-pixel-p95-ms']),
+  );
   recordStudioBenchmarkMetrics([
     {
       id: 'edit-to-pixel-p95-ms',
