@@ -1,6 +1,7 @@
 {
   "name": "@meridian/projections",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Headless view-projection contracts, registry, and built-ins behind capability-scoped rendering-medium ports.",

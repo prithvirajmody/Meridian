@@ -1,6 +1,7 @@
 {
   "name": "@meridian/adapter-code",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Source-code domain adapter (tree-sitter, isomorphic, worker-hosted per ADR-0017). 7B: grammar-loading shim + vendored TS/Python WASM grammars. 7C/7D: TypeScript and Python mapping at eager levels (project→package→module→class/function/method signatures), stable IDs per ADR-0002/0028.",

@@ -1,6 +1,7 @@
 {
   "name": "@meridian/abstraction",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Meridian abstraction engine (ROADMAP Phase 3): level chains, cuts, and (later) induced edges and LOD resolution as pure functions over immutable snapshots. Imports @meridian/graph-core and @meridian/graph-store only.",

@@ -1,6 +1,7 @@
 {
   "name": "@meridian/ai",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "AI gateway (ROADMAP Phase 8, ARCHITECTURE §8). Vendor-neutral AiProvider abstraction + AiSession pipeline (cache/replay → budget → provider → zod validate → one repair → typed rejection). First-class AnthropicProvider and OpenAiProvider adapters; MockProvider for offline tests. Vendor SDK imports are confined to src/providers/*-client.ts (§20). Keys enter only from env/config edges, never graph documents.",

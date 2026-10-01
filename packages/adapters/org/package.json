@@ -1,6 +1,7 @@
 {
   "name": "@meridian/adapter-org",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Meridian's organization domain adapter (AutoBuild integration, ADR-0047): org-definition-v1 / org-bundle-v1 documents → a deterministic org → team → role → assignment → artifact skeleton with run timelines. Deterministic, AI-free, isomorphic. Imports @meridian/plugin-api and nothing else of Meridian; no external parser (JSON is native).",

@@ -1,6 +1,7 @@
 {
   "name": "@meridian/layout",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Meridian layout engine: stable worker-hosted world-space positions behind the shared @meridian/view-model presentation contracts.",

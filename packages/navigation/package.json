@@ -1,6 +1,7 @@
 {
   "name": "@meridian/navigation",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Semantic-zoom navigation planners (ROADMAP Phase 6): pure cut-diff → RefinementMap, TransitionChoreographer plans (ADR-0023), and anchor-preservation math (ADR-0024). Headless and deterministic; imports @meridian/abstraction and @meridian/view-model only (§20).",

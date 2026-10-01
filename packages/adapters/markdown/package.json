@@ -1,6 +1,7 @@
 {
   "name": "@meridian/adapter-markdown",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Meridian's first domain adapter: CommonMark documents → nested semantic graphs (sections, blocks, internal links). Deterministic, AI-free, isomorphic. Imports @meridian/plugin-api and the micromark/mdast parser, nothing else of Meridian.",

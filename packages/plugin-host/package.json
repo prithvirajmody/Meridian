@@ -1,6 +1,7 @@
 {
   "name": "@meridian/plugin-host",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Meridian plugin host: registration, manifest validation, capability resolution, sniff arbitration, error isolation. Imports @meridian/plugin-api and zod, nothing else — it registers, validates, resolves, and isolates; nothing more.",
