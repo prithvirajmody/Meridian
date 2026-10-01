@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { boot, recordStudioBenchmarkMetrics, settleFrames, UI_BUDGETS } from './support.js';
+import { boot, perfBudget, recordStudioBenchmarkMetrics, settleFrames, UI_BUDGETS } from './support.js';
 
 test('10k labelled fixture keeps the frame budget: draw p95 <= 18ms, >= 55fps sustained', async ({ page }) => {
   test.setTimeout(90_000);
@@ -24,9 +24,13 @@ test('10k labelled fixture keeps the frame budget: draw p95 <= 18ms, >= 55fps su
   // @meridian/renderer fps probe and docs/checklists/phase-05.md): SwiftShader
   // needs >1 vsync to raster this canvas no matter what the renderer does. CI
   // asserts the renderer's own per-frame cost plus sustained throughput.
-  expect(result.p95DrawTimeMs).toBeLessThanOrEqual(UI_BUDGETS['renderer-frame-p95-ms']);
-  expect(1000 / result.meanFrameTimeMs).toBeGreaterThanOrEqual(
-    UI_BUDGETS['renderer-throughput-min-fps'],
+  perfBudget('renderer-frame-p95-ms', result.p95DrawTimeMs, () =>
+    expect(result.p95DrawTimeMs).toBeLessThanOrEqual(UI_BUDGETS['renderer-frame-p95-ms']),
+  );
+  perfBudget('renderer-throughput-min-fps', 1000 / result.meanFrameTimeMs, () =>
+    expect(1000 / result.meanFrameTimeMs).toBeGreaterThanOrEqual(
+      UI_BUDGETS['renderer-throughput-min-fps'],
+    ),
   );
   recordStudioBenchmarkMetrics([
     { id: 'renderer-frame-p95-ms', value: result.p95DrawTimeMs, unit: 'ms', sampleCount: result.frames },

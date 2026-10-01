@@ -5,7 +5,8 @@ Meridian treats performance rows as tests. `pnpm bench` (or the built CLI's
 contracts in `benchmarks/budgets.json`, applies the relative-regression rule,
 and writes both `benchmarks/results/dashboard.json` and
 `benchmarks/results/dashboard.md`. Scenario logs live beside them. The result
-directory is generated and uploaded by CI; it is intentionally not committed.
+directory is generated and uploaded by CI (kept 7 days), and CI also writes the
+dashboard to the job summary; it is intentionally not committed.
 
 ## Reference runner and relative gate
 
@@ -66,10 +67,47 @@ runs. Its minimal schema is:
 Local absence is shown as `not-measured`. CI sets
 `MERIDIAN_BENCH_REQUIRE_EXTERNAL=1` and `MERIDIAN_BENCH_REQUIRE_ALL=1`, making
 an absent, malformed, or missing row a located failure rather than silently
-substituting a Node proxy for real pixels. The same external file contains the
-measurements produced by the existing renderer, projection, heap, and
-transition owners; repeated IDs are conservatively combined (worst ceiling or
-worst floor).
+substituting a Node proxy for real pixels. CI runs Playwright in its own `e2e`
+job (inside the pinned Playwright image), passes `studio.json` to the `bench`
+job as a job output, and passes the e2e job's result as
+`MERIDIAN_BENCH_EXTERNAL_OUTCOME` (or `--external-outcome`). When it is
+`skipped` (an earlier job failed, so Playwright never ran), the Studio rows
+are reported as `skipped`, which is neither pass nor fail, in the log, the
+dashboard and the job summary, and any `studio.json` on disk is ignored as
+stale. For any other outcome the Studio rows stay required. Unknown values are
+rejected. The same external file contains the measurements produced by the
+existing renderer, projection, heap, and transition owners; repeated IDs are
+conservatively combined (worst ceiling or worst floor).
+
+## Hosted CI: report-only budgets
+
+`MERIDIAN_PERF_GATES` selects how budgets apply. The default, `enforce`, fails
+on any exceeded budget; every local and manual run behaves this way. CI sets
+`MERIDIAN_PERF_GATES=report` on its e2e and bench steps, and nowhere else. In
+report mode the metrics listed in `benchmarks/runner.json` `reportOnlyMetrics`
+are still measured, recorded, and compared with their unchanged budgets. An
+exceeded one shows as `over budget (report-only)` in the dashboard and job
+summary and raises a `::warning` annotation instead of failing. Every other
+budget stays enforced in CI, and a missing measurement still fails: that is a
+correctness check, not a budget. A dashboard with report-only rows over budget
+cannot calibrate a relative baseline.
+
+The list holds the rows that GitHub-hosted 2-vCPU `ubuntu-24.04` runners
+(SwiftShader, with host CPUs that vary from job to job) cannot meet. PR #1
+measured there:
+
+| Metric | Budget | Hosted-runner values |
+|---|---|---|
+| `renderer-frame-p95-ms` | ≤ 18 ms | 77.6–303.7 ms |
+| `renderer-throughput-min-fps` | ≥ 55 fps | 19.0–21.0 fps (first measured once the draw gate stopped failing first) |
+| `outline-scroll-min-fps` | ≥ 55 fps | 18.5–27.5 fps |
+| `edit-to-pixel-p95-ms` | ≤ 1000 ms | 1090.9–1485 ms |
+| `hydrated-navigation-first-fine-cut-ms` | ≤ 1000 ms | 672.9–1109.8 ms, 4 of 7 runs over |
+
+The budgets themselves are unchanged; they only ratchet down. Hosted CI
+reports these rows only until a pinned runner or a 4-core runner (for example,
+once the repository is public) exists. At that point, remove them from
+`reportOnlyMetrics` and drop the variable from `.github/workflows/ci.yml`.
 
 ## Reproducing and profiling a regression
 

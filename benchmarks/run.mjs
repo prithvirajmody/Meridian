@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { cpus, totalmem } from 'node:os';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   baselineRequirementFailures,
   buildDashboard,
+  completenessFailures,
+  externalProducerState,
   parseBudgetOutput,
   parseExternalResult,
   renderMarkdown,
 } from './lib/dashboard.mjs';
+import { perfGateMode, reportOnlyMetricIds } from './lib/perf-gates.mjs';
 
 const benchmarkRoot = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(benchmarkRoot, '..');
@@ -38,6 +41,10 @@ function parseArgs(argv) {
     requireAll: process.env.MERIDIAN_BENCH_REQUIRE_ALL === '1',
     requireBaseline: process.env.MERIDIAN_BENCH_REQUIRE_BASELINE === '1',
     requireRunner: process.env.MERIDIAN_BENCH_REQUIRE_RUNNER === '1',
+    // CI outcome of the step that writes the external (Studio) result.
+    externalOutcome: process.env.MERIDIAN_BENCH_EXTERNAL_OUTCOME,
+    // enforce (default) or report; see lib/perf-gates.mjs.
+    perfGates: process.env.MERIDIAN_PERF_GATES,
   };
   for (let index = 0; index < argv.length; index++) {
     const arg = argv[index];
@@ -53,6 +60,14 @@ function parseArgs(argv) {
       if (arg === '--output-dir') options.outputDir = path;
       else if (arg === '--external') options.external = path;
       else options.baseline = path;
+    } else if (arg === '--external-outcome') {
+      const value = argv[++index];
+      if (value === undefined) throw new Error(`${arg} requires a step outcome`);
+      options.externalOutcome = value;
+    } else if (arg === '--perf-gates') {
+      const value = argv[++index];
+      if (value === undefined) throw new Error(`${arg} requires enforce or report`);
+      options.perfGates = value;
     } else {
       throw new Error(`unknown benchmark option: ${arg}`);
     }
@@ -101,8 +116,12 @@ function runnerMetadata(profile) {
 }
 
 let options;
+let externalState;
+let perfGates;
 try {
   options = parseArgs(process.argv.slice(2));
+  externalState = externalProducerState(options.externalOutcome);
+  perfGates = perfGateMode(options.perfGates);
 } catch (error) {
   process.stderr.write(`${error.message}\n`);
   process.exit(2);
@@ -110,6 +129,7 @@ try {
 
 const budgets = readJson(resolve(benchmarkRoot, 'budgets.json'), 'cannot read budget manifest');
 const profile = readJson(resolve(benchmarkRoot, 'runner.json'), 'cannot read runner profile');
+const reportOnly = reportOnlyMetricIds(perfGates, profile);
 const baseline = existsSync(options.baseline)
   ? readJson(options.baseline, 'cannot read relative baseline')
   : { schemaVersion: 1, status: 'missing', runnerClass: profile.declaredClass, metrics: {} };
@@ -129,7 +149,8 @@ for (const id of SCENARIOS) {
     cwd: repoRoot,
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
-    env: process.env,
+    // Scenario owners decide their own exit code, so they get the resolved mode.
+    env: { ...process.env, MERIDIAN_PERF_GATES: perfGates },
   });
   const durationMs = Number(process.hrtime.bigint() - started) / 1e6;
   const stdout = child.stdout ?? '';
@@ -147,7 +168,14 @@ for (const id of SCENARIOS) {
 
 const externalPath = options.external ?? resolve(repoRoot, profile.externalResult);
 let externalStatus = 'not-measured';
-if (existsSync(externalPath)) {
+if (externalState === 'skipped') {
+  // The producer did not run in this job, so a file at this path would be
+  // left over from another run. Never mix it into this run's results.
+  externalStatus = 'skipped';
+  if (existsSync(externalPath)) {
+    process.stderr.write(`ignoring ${externalPath}: its producer did not run in this job\n`);
+  }
+} else if (existsSync(externalPath)) {
   try {
     const externalMeasurements = parseExternalResult(readJson(externalPath, 'cannot read external result'), externalPath);
     measurements.push(...externalMeasurements);
@@ -190,6 +218,9 @@ const dashboard = buildDashboard({
     runner,
   },
   scenarios,
+  skippedMetricIds: externalState === 'skipped' ? profile.externalMetrics : [],
+  perfGates,
+  reportOnlyMetricIds: [...reportOnly],
 });
 
 const jsonPath = resolve(options.outputDir, 'dashboard.json');
@@ -197,11 +228,17 @@ const markdownPath = resolve(options.outputDir, 'dashboard.md');
 writeFileSync(jsonPath, `${JSON.stringify(dashboard, null, 2)}\n`);
 writeFileSync(markdownPath, `${renderMarkdown(dashboard)}\n`);
 
-const requiredExternalMissing = options.requireExternal && externalStatus !== 'pass';
-const missingAbsoluteMetrics = dashboard.metrics
-  .filter((metric) => metric.value === null)
+const completeness = completenessFailures(dashboard, {
+  externalStatus,
+  requireExternal: options.requireExternal,
+  requireAll: options.requireAll,
+});
+const requiredExternalMissing = completeness.externalMissing;
+const missingAbsoluteMetrics = completeness.missingAbsolute;
+const requiredAbsoluteMissing = missingAbsoluteMetrics.length > 0;
+const skippedMetrics = dashboard.metrics
+  .filter((metric) => metric.absoluteStatus === 'skipped')
   .map((metric) => metric.id);
-const requiredAbsoluteMissing = options.requireAll && missingAbsoluteMetrics.length > 0;
 const baselineFailures = options.requireBaseline
   ? baselineRequirementFailures(dashboard.metrics, baseline)
   : [];
@@ -218,6 +255,39 @@ if (options.json) {
   process.stdout.write(`${JSON.stringify(dashboard, null, 2)}\n`);
 } else {
   log(`\ndashboard: ${markdownPath}\nmachine results: ${jsonPath}\n`);
+}
+if (skippedMetrics.length > 0) {
+  const producer = relative(repoRoot, externalPath);
+  log(
+    `\nStudio metrics SKIPPED (${skippedMetrics.length}): the step that writes ${producer} did not run in this job ` +
+      `(outcome: ${options.externalOutcome}), so these rows were not checked. Skipped is neither pass nor fail:\n` +
+      `${skippedMetrics.map((id) => `  - ${id}`).join('\n')}\n`,
+  );
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    log(`::warning title=Studio metrics skipped::${skippedMetrics.length} Studio metrics were not checked because the step that writes ${producer} did not run in this job.\n`);
+  }
+}
+if (perfGates === 'report') {
+  const over = dashboard.metrics.filter((metric) => metric.absoluteStatus === 'report-only-fail');
+  const shown = (value) => (Number.isInteger(value) ? String(value) : value.toFixed(2));
+  const rows = over.map((metric) =>
+    `${metric.id} = ${shown(metric.value)} ${metric.unit} vs budget ${metric.direction === 'min' ? '≥' : '≤'} ${metric.budget} ${metric.unit}`);
+  log(
+    `\nperf gates: report (MERIDIAN_PERF_GATES=report). Report-only on this runner: ${[...reportOnly].sort().join(', ')}.\n` +
+      `Report-only budgets exceeded (${over.length}): recorded and shown, not enforced; budgets unchanged.\n` +
+      `${rows.map((row) => `  - ${row}`).join('\n')}${rows.length > 0 ? '\n' : ''}`,
+  );
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    for (const row of rows) log(`::warning title=Perf budget exceeded (report-only)::${row}\n`);
+  }
+}
+if (process.env.GITHUB_STEP_SUMMARY) {
+  // The job summary shows the dashboard even when no artifact is uploaded.
+  try {
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${renderMarkdown(dashboard)}\n`);
+  } catch (error) {
+    process.stderr.write(`cannot write job summary: ${error.message}\n`);
+  }
 }
 if (requiredExternalMissing) {
   process.stderr.write(`required Studio external metric set is incomplete or invalid: ${externalPath}\n`);

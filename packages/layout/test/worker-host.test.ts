@@ -232,9 +232,31 @@ describe('worker crash → host recovers (fallback to grid)', () => {
   );
 });
 
+/**
+ * Budgets for the two tests below. The roadmap contract ("main thread never
+ * blocked > 4ms") is the default, so local perf runs keep asserting 4 ms. On a
+ * shared 2-vCPU hosted CI runner both measurements also absorb contention that
+ * is not main-thread work: OS deschedules in the wall-clock gap, and a busy
+ * sibling hyperthread or GC in the per-request CPU time. CI therefore sets
+ * MERIDIAN_MAIN_THREAD_BOUNDARY_MS and MERIDIAN_MAIN_THREAD_GAP_MS from a
+ * measured distribution; the values and their evidence are in
+ * .github/workflows/ci.yml.
+ */
+function budgetFromEnv(name: string): { readonly ms: number; readonly source: string } {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === '') return { ms: 4, source: 'roadmap default' };
+  const ms = Number(raw);
+  if (!Number.isFinite(ms) || ms <= 0) {
+    throw new Error(`${name} must be a positive number of milliseconds, got ${JSON.stringify(raw)}`);
+  }
+  return { ms, source: name };
+}
+const BOUNDARY_CPU_BUDGET = budgetFromEnv('MERIDIAN_MAIN_THREAD_BOUNDARY_MS');
+const MAIN_THREAD_GAP_BUDGET = budgetFromEnv('MERIDIAN_MAIN_THREAD_GAP_MS');
+
 describe('main thread never blocked > 4ms (asserted via the worker boundary)', () => {
   it(
-    'the per-request boundary work stays < 4ms while O(N) geometry runs in the worker',
+    `the per-request boundary work stays < ${BOUNDARY_CPU_BUDGET.ms}ms while O(N) geometry runs in the worker`,
     async () => {
       const N = 20_000;
       const input = bigInput(N);
@@ -267,12 +289,13 @@ describe('main thread never blocked > 4ms (asserted via the worker boundary)', (
       const s = host.stats();
       console.log(
         `4ms boundary (N=${N}): maxDispatchCpu=${s.maxDispatchMs.toFixed(3)}ms, ` +
-          `maxHandle=${s.maxHandleMs.toFixed(3)}ms; main-thread grid would block ${mainThreadMs.toFixed(1)}ms`,
+          `maxHandle=${s.maxHandleMs.toFixed(3)}ms; main-thread grid would block ${mainThreadMs.toFixed(1)}ms ` +
+          `(budget < ${BOUNDARY_CPU_BUDGET.ms}ms, ${BOUNDARY_CPU_BUDGET.source})`,
       );
       // Encoding (O(N), light) on dispatch and lazy O(1) re-hydration on
       // response are all the main thread does — both well under 4ms.
-      expect(s.maxDispatchMs).toBeLessThan(4);
-      expect(s.maxHandleMs).toBeLessThan(4);
+      expect(s.maxDispatchMs).toBeLessThan(BOUNDARY_CPU_BUDGET.ms);
+      expect(s.maxHandleMs).toBeLessThan(BOUNDARY_CPU_BUDGET.ms);
       // The worker genuinely offloaded the O(N) geometry (tens of ms).
       expect(mainThreadMs).toBeGreaterThan(4 * s.maxHandleMs + 4 * s.maxDispatchMs);
     },
@@ -280,7 +303,7 @@ describe('main thread never blocked > 4ms (asserted via the worker boundary)', (
   );
 
   it(
-    'the main thread stays responsive (no > 4ms gap) while a big layout computes in the worker',
+    `the main thread stays responsive (no > ${MAIN_THREAD_GAP_BUDGET.ms}ms gap) while a big layout computes in the worker`,
     async () => {
       const input = bigInput(20_000);
       const { factory } = makeNodeFactory();
@@ -307,9 +330,12 @@ describe('main thread never blocked > 4ms (asserted via the worker boundary)', (
       await pending;
       sampling = false;
       await sampler;
-      console.log(`liveness: ${samples} main-thread samples during worker compute, maxGap=${maxGap.toFixed(3)}ms`);
+      console.log(
+        `liveness: ${samples} main-thread samples during worker compute, maxGap=${maxGap.toFixed(3)}ms ` +
+          `(budget < ${MAIN_THREAD_GAP_BUDGET.ms}ms, ${MAIN_THREAD_GAP_BUDGET.source})`,
+      );
       expect(samples).toBeGreaterThan(3); // the compute really did span the loop
-      expect(maxGap).toBeLessThan(4);
+      expect(maxGap).toBeLessThan(MAIN_THREAD_GAP_BUDGET.ms);
     },
     30_000,
   );

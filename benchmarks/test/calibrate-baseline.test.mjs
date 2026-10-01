@@ -101,4 +101,14 @@ describe('pinned benchmark baseline calibration', () => {
     missingSource.metrics.find((metric) => metric.id === 'edit-to-pixel-p95-ms').sources = ['node-benchmark'];
     rejected([missingSource, dashboard('101.1'), dashboard('102.1')], /lacks studio-playwright provenance/u);
   });
+
+  it('rejects a run whose Studio rows were skipped', () => {
+    const skipped = dashboard('100.1');
+    for (const metric of skipped.metrics) {
+      if (!profile.externalMetrics.includes(metric.id)) continue;
+      Object.assign(metric, { value: null, absoluteStatus: 'skipped', sources: [] });
+    }
+    skipped.summary.skipped = profile.externalMetrics.length;
+    rejected([skipped, dashboard('101.1'), dashboard('102.1')], /is not measured and green/u);
+  });
 });

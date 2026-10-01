@@ -13,9 +13,15 @@ import { fileURLToPath } from 'node:url';
 import { buildLevelChain, LodResolver } from '../packages/abstraction/dist/index.js';
 import { BetterSqlite3Driver, openProjectStore } from '../packages/store-sqlite/dist/node/index.js';
 import { initializeSchema } from '../packages/store-sqlite/dist/index.js';
+import { perfGateMode, reportOnlyMetricIds } from './lib/perf-gates.mjs';
 
 const budgets = JSON.parse(
   readFileSync(fileURLToPath(new URL('./budgets.json', import.meta.url)), 'utf8'),
+);
+// Empty unless MERIDIAN_PERF_GATES=report (hosted CI only): see lib/perf-gates.mjs.
+const reportOnly = reportOnlyMetricIds(
+  perfGateMode(process.env.MERIDIAN_PERF_GATES),
+  JSON.parse(readFileSync(fileURLToPath(new URL('./runner.json', import.meta.url)), 'utf8')),
 );
 
 const CHILD_GRAPHS = 500;
@@ -171,10 +177,11 @@ for (const [name, value] of results) {
   const budget = budgets[name];
   const isFloor = name.includes('-min');
   const ok = isFloor ? value >= budget : value <= budget;
-  if (!ok) failed = true;
+  const reported = !ok && reportOnly.has(name);
+  if (!ok && !reported) failed = true;
   const unit = name.endsWith('-ms') ? 'ms' : name.endsWith('-bytes') ? 'bytes' : '';
   const comparator = isFloor ? '≥' : '≤';
-  console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}  ${value.toFixed(name.endsWith('-ms') ? 1 : 0)}${unit}  (budget ${comparator} ${budget}${unit})`);
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}  ${value.toFixed(name.endsWith('-ms') ? 1 : 0)}${unit}  (budget ${comparator} ${budget}${unit})${reported ? '  [report-only on this runner]' : ''}`);
 }
 if (failed) {
   console.error('\nperf budget exceeded — budgets are CI contracts (ADR-A12)');

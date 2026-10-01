@@ -30,6 +30,25 @@ collector run is diagnostic only; it is not Phase 11 evidence. In particular,
 no local timing is a substitute for the declared
 `github-actions-ubuntu-24.04-x64-node-24` runner.
 
+**Hosted CI update (2026-09-30).** The first CI runs to reach the browser gates
+(PR #1) showed that the GitHub-hosted 2-vCPU `ubuntu-24.04` runner cannot meet
+five budgets:
+
+- `renderer-frame-p95-ms`
+- `renderer-throughput-min-fps`
+- `outline-scroll-min-fps`
+- `edit-to-pixel-p95-ms`
+- `hydrated-navigation-first-fine-cut-ms`
+
+Hosted CI therefore **reports these five only** (`MERIDIAN_PERF_GATES=report`;
+see `docs/PERFORMANCE-PROFILING.md`) until a pinned runner or a 4-core runner
+exists. They stay enforced by default everywhere else, and no budget changed.
+For those five rows, the "PINNED CI" evidence above still needs that runner.
+Hosted CI also runs Playwright inside the pinned
+`mcr.microsoft.com/playwright` image. The screenshot goldens were regenerated
+there (`pnpm goldens:update:ui:docker`), replacing desktop renders that
+predated the Phase 10 header controls and AI panel.
+
 ## Subphase implementation ledger
 
 | Subphase | Implementation state | Concrete evidence | Remaining exit evidence |

@@ -7,20 +7,21 @@ on:
 
 jobs:
   ci:
+    # Pinned image: ubuntu-latest moves to Ubuntu 26 on 2026-10-19, and the
+    # benchmark runner class (benchmarks/runner.json) is ubuntu-24.04.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         # version comes from packageManager in package.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
 
       - name: Install
-        id: install
         run: pnpm install --frozen-lockfile
 
       - name: Lint
@@ -32,43 +33,143 @@ jobs:
       - name: Dependency rules (architecture verification)
         run: pnpm depcruise
 
+      - name: Domain-word audit (core packages)
+        run: pnpm audit:strings
+
       - name: Build
         run: pnpm build
 
       - name: Test (unit, property, failure, golden)
+        env:
+          # CI budgets for the two main-thread tests in
+          # packages/layout/test/worker-host.test.ts; the local default for
+          # both stays the roadmap's 4 ms. Measured by running the layout suite
+          # 20 times on ubuntu-24.04 (2 vCPU) in PR #1, run 36748044283:
+          #   wall-clock gap:       median 6.2 ms, max 10.4 ms (19/20 over 4 ms)
+          #   per-request CPU time: median 2.0 ms, max 4.6 ms (2/20 over 4 ms)
+          # Budget = 2x the 20-run max, rounded up. Twenty runs only bound the
+          # ~95th percentile and the tail is long (13.0 ms gap in an earlier CI
+          # run). The budgets stay far below what the tests exist to catch: the
+          # same layout computed on the main thread took 55-76 ms.
+          MERIDIAN_MAIN_THREAD_BOUNDARY_MS: "10"
+          MERIDIAN_MAIN_THREAD_GAP_MS: "21"
         run: pnpm test
 
-      - name: Install software-rendered Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Eval record/replay tests
+        run: pnpm test:evals
+
+  e2e:
+    needs: ci
+    runs-on: ubuntu-24.04
+    # The official Playwright image pins Chromium, fonts, and fontconfig, so the
+    # screenshot goldens render the same here and in
+    # `pnpm goldens:update:ui:docker`. Keep the tag equal to the
+    # @playwright/test version in apps/studio/package.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
+      options: --ipc=host --init
+    outputs:
+      studio_json: ${{ steps.studio.outputs.json }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
 
       - name: Browser UI, interaction, FPS, and heap gates
         env:
           MERIDIAN_PHASE11_BENCH: "1"
+          # Hosted runners measure and record the benchmarks/runner.json
+          # reportOnlyMetrics but do not fail on them (docs/PERFORMANCE-PROFILING.md).
+          MERIDIAN_PERF_GATES: report
         run: pnpm test:e2e
+
+      - name: Hand the Studio metrics to the bench job
+        id: studio
+        if: ${{ !cancelled() }}
+        # A job output instead of an artifact: studio.json is a few KB.
+        run: |
+          if [ -f benchmarks/results/studio.json ]; then
+            {
+              echo 'json<<MERIDIAN_STUDIO_JSON'
+              cat benchmarks/results/studio.json
+              echo 'MERIDIAN_STUDIO_JSON'
+            } >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload Playwright artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        # Debugging convenience only; nothing downstream downloads it, so a
+        # storage-quota error must not turn the build red.
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
         with:
           name: meridian-playwright
           path: |
             apps/studio/playwright-report/
             apps/studio/test-results/
           if-no-files-found: ignore
+          retention-days: 7
+
+  bench:
+    needs: [ci, e2e]
+    # Runs even when an earlier job failed, as the old single-job step did.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Studio metrics from the e2e job
+        if: ${{ needs.e2e.outputs.studio_json != '' }}
+        env:
+          STUDIO_JSON: ${{ needs.e2e.outputs.studio_json }}
+        run: |
+          mkdir -p benchmarks/results
+          printf '%s\n' "$STUDIO_JSON" > benchmarks/results/studio.json
 
       - name: Benchmarks (perf budgets are tests)
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         env:
           MERIDIAN_BENCH_RUNNER_CLASS: github-actions-ubuntu-24.04-x64-node-24
           MERIDIAN_BENCH_REQUIRE_RUNNER: "1"
           MERIDIAN_BENCH_REQUIRE_EXTERNAL: "1"
           MERIDIAN_BENCH_REQUIRE_ALL: "1"
+          # The e2e job writes the 14 Studio metrics. If it was skipped (an
+          # earlier job failed), bench reports them as skipped; if it ran,
+          # missing metrics still fail.
+          MERIDIAN_BENCH_EXTERNAL_OUTCOME: ${{ needs.e2e.result }}
+          # Report, don't fail, the runner.json reportOnlyMetrics on hosted CI.
+          MERIDIAN_PERF_GATES: report
         run: pnpm bench
 
       - name: Upload benchmark dashboard
         if: always()
-        uses: actions/upload-artifact@v4
+        # Convenience copy of benchmarks/results/ (bench also writes the
+        # dashboard to the job summary). Nothing downstream downloads it, so a
+        # storage-quota error must not turn the build red.
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-dashboard
           path: benchmarks/results/
           if-no-files-found: error
+          retention-days: 7

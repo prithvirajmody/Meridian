@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { perfGateMode, reportOnlyMetricIds } from './perf-gates.js';
 
 interface UiBudgets {
   readonly 'renderer-frame-p95-ms': number;
@@ -22,6 +23,30 @@ interface UiBudgets {
 export const UI_BUDGETS = JSON.parse(
   readFileSync(new URL('../../../benchmarks/budgets.json', import.meta.url), 'utf8'),
 ) as UiBudgets;
+
+// Empty unless MERIDIAN_PERF_GATES=report (set only by CI): see perf-gates.ts.
+const REPORT_ONLY = reportOnlyMetricIds(
+  perfGateMode(process.env.MERIDIAN_PERF_GATES),
+  JSON.parse(
+    readFileSync(new URL('../../../benchmarks/runner.json', import.meta.url), 'utf8'),
+  ) as { readonly reportOnlyMetrics?: unknown },
+);
+
+/**
+ * Apply one perf budget. By default this is exactly `assertion()`. With
+ * MERIDIAN_PERF_GATES=report, a metric listed as report-only for the hosted CI
+ * runner is not asserted here; the caller still records its value, and the
+ * bench collector compares it with the unchanged budget and warns on excess.
+ */
+export function perfBudget(id: keyof UiBudgets, value: number, assertion: () => void): void {
+  if (!REPORT_ONLY.has(id)) {
+    assertion();
+    return;
+  }
+  console.info(
+    `[perf report-only] ${id}=${value} (budget ${UI_BUDGETS[id]}): not asserted with MERIDIAN_PERF_GATES=report; the bench collector reports it`,
+  );
+}
 
 export const CORPUS_ROOT = fileURLToPath(
   new URL('../../../fixtures/corpora/markdown/', import.meta.url),

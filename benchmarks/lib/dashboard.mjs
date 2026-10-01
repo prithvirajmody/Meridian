@@ -9,6 +9,25 @@ const RESULT_LINE = /^\s*(PASS|FAIL)\s{2,}(\S+)\s{2,}(-?\d+(?:\.\d+)?)([A-Za-z%/
 export const DASHBOARD_SCHEMA_VERSION = 1;
 export const EXTERNAL_SCHEMA_VERSION = 1;
 
+/** The values GitHub Actions reports as `steps.<id>.outcome`. */
+export const STEP_OUTCOMES = Object.freeze(['success', 'failure', 'cancelled', 'skipped']);
+
+/**
+ * Classify the CI outcome of the step that produces the external (Studio)
+ * result. Unset means nobody reported one (local runs): the require flags
+ * apply unchanged. `skipped` means the producer never ran in this job, so its
+ * rows are reported as skipped instead of missing. Any other outcome means it
+ * ran, and a missing row stays a failure. Unknown values throw, so a typo
+ * cannot silently relax the gate.
+ */
+export function externalProducerState(outcome) {
+  if (outcome === undefined || outcome === '') return 'unreported';
+  if (!STEP_OUTCOMES.includes(outcome)) {
+    throw new Error(`external producer outcome must be one of ${STEP_OUTCOMES.join(', ')}; got ${JSON.stringify(outcome)}`);
+  }
+  return outcome === 'skipped' ? 'skipped' : 'ran';
+}
+
 export function directionFor(id) {
   return id.includes('-min') ? 'min' : 'max';
 }
@@ -112,7 +131,13 @@ export function buildDashboard({
   relativeTolerance,
   run,
   scenarios,
+  skippedMetricIds = [],
+  perfGates = 'enforce',
+  reportOnlyMetricIds = [],
 }) {
+  const skipped = new Set(skippedMetricIds);
+  // Only meaningful in report mode (see lib/perf-gates.mjs); empty otherwise.
+  const reportOnly = new Set(perfGates === 'report' ? reportOnlyMetricIds : []);
   const byId = new Map();
   for (const measurement of measurements) {
     const bucket = byId.get(measurement.id) ?? [];
@@ -129,13 +154,18 @@ export function buildDashboard({
       const value = aggregate(samples, direction);
       const unit = expectedUnitFor(id);
       const unitMismatch = samples.some((sample) => sample.unit !== unit);
+      // A row whose producer did not run this job is skipped, never "missing".
+      const wasSkipped = value === undefined && skipped.has(id);
+      // An exceeded report-only budget is recorded and shown, not failed. A
+      // unit mismatch is a correctness error and stays `invalid` regardless.
+      const overBudget = reportOnly.has(id) ? 'report-only-fail' : 'fail';
       const absoluteStatus = value === undefined
-        ? 'not-measured'
+        ? wasSkipped ? 'skipped' : 'not-measured'
         : unitMismatch
           ? 'invalid'
           : direction === 'min'
-            ? value >= budget ? 'pass' : 'fail'
-            : value <= budget ? 'pass' : 'fail';
+            ? value >= budget ? 'pass' : overBudget
+            : value <= budget ? 'pass' : overBudget;
       const baselineEntry = baseline?.metrics?.[id];
       const base = baselineValue(baselineEntry);
       const baselineUnit = baselineEntry !== null && typeof baselineEntry === 'object'
@@ -143,7 +173,7 @@ export function buildDashboard({
         : undefined;
       let relative;
       if (value === undefined) {
-        relative = { status: 'not-measured' };
+        relative = { status: wasSkipped ? 'skipped' : 'not-measured' };
       } else if (baseline?.runnerClass !== undefined && baseline.runnerClass !== run.runner.declaredClass) {
         relative = { status: 'runner-mismatch', baselineRunnerClass: baseline.runnerClass };
       } else if (base === undefined) {
@@ -157,7 +187,7 @@ export function buildDashboard({
       } else {
         const changeRatio = direction === 'min' ? (base - value) / base : (value - base) / base;
         relative = {
-          status: changeRatio <= relativeTolerance ? 'pass' : 'fail',
+          status: changeRatio <= relativeTolerance ? 'pass' : overBudget,
           baseline: base,
           changeRatio,
         };
@@ -169,6 +199,7 @@ export function buildDashboard({
         direction,
         budget,
         absoluteStatus,
+        ...(reportOnly.has(id) ? { reportOnly: true } : {}),
         relative,
         sampleCount: samples.reduce((total, sample) => total + (sample.sampleCount ?? 1), 0),
         sources: [...new Set(samples.map((sample) => sample.source))].sort(),
@@ -181,6 +212,8 @@ export function buildDashboard({
     absolutePass: count('absoluteStatus', 'pass'),
     absoluteFail: count('absoluteStatus', 'fail') + count('absoluteStatus', 'invalid'),
     notMeasured: count('absoluteStatus', 'not-measured'),
+    skipped: count('absoluteStatus', 'skipped'),
+    reportOnlyFail: count('absoluteStatus', 'report-only-fail'),
     relativePass: metrics.filter((metric) => metric.relative.status === 'pass').length,
     relativeFail: metrics.filter((metric) => metric.relative.status === 'fail' || metric.relative.status === 'invalid-baseline').length,
     relativeNotCalibrated: metrics.filter((metric) => metric.relative.status === 'not-calibrated').length,
@@ -196,6 +229,8 @@ export function buildDashboard({
       relativeTolerance,
       baselineStatus: baseline?.status ?? 'missing',
       baselineRunnerClass: baseline?.runnerClass ?? null,
+      perfGates,
+      reportOnlyMetrics: [...reportOnly].sort(),
     },
     summary,
     metrics,
@@ -203,14 +238,34 @@ export function buildDashboard({
   };
 }
 
+/**
+ * Run-level completeness requirements (`--require-external`, `--require-all`).
+ * `externalStatus` is this run's Studio result state: pass, fail,
+ * not-measured, or skipped. Skipped rows (their producer did not run in this
+ * job) are never reported as missing; when the producer ran, an absent or
+ * incomplete result still fails.
+ */
+export function completenessFailures(dashboard, { externalStatus, requireExternal, requireAll }) {
+  const missingAbsolute = dashboard.metrics
+    .filter((metric) => metric.absoluteStatus === 'not-measured')
+    .map((metric) => metric.id);
+  return {
+    externalMissing: requireExternal && externalStatus !== 'pass' && externalStatus !== 'skipped',
+    missingAbsolute: requireAll ? missingAbsolute : [],
+  };
+}
+
 /** Strict relative-gate diagnostics. A calibrated run is acceptable only when
  * the baseline schema/status is valid and every current budget row compared
- * successfully on the same runner. */
+ * successfully on the same runner. Rows whose producer was skipped this job,
+ * and report-only rows over budget, are shown by the dashboard, not failed
+ * here. */
 export function baselineRequirementFailures(metrics, baseline) {
   const failures = [];
   if (baseline?.schemaVersion !== 1) failures.push({ id: '*', status: 'invalid-baseline-schema' });
   if (baseline?.status !== 'measured') failures.push({ id: '*', status: 'baseline-not-measured' });
   for (const metric of metrics) {
+    if (metric.relative.status === 'skipped' || metric.relative.status === 'report-only-fail') continue;
     if (metric.relative.status !== 'pass') failures.push({ id: metric.id, status: metric.relative.status });
   }
   return failures;
@@ -226,10 +281,15 @@ function shown(value, unit) {
 function relativeText(relative) {
   if (relative.status === 'not-calibrated') return 'not calibrated';
   if (relative.status === 'not-measured') return 'not measured';
+  if (relative.status === 'skipped') return 'skipped';
   if (relative.status === 'runner-mismatch') return 'different runner';
   if (relative.changeRatio === undefined) return relative.status;
   const sign = relative.changeRatio >= 0 ? '+' : '';
-  return `${relative.status} (${sign}${(relative.changeRatio * 100).toFixed(1)}%)`;
+  return `${statusText(relative.status)} (${sign}${(relative.changeRatio * 100).toFixed(1)}%)`;
+}
+
+function statusText(status) {
+  return status === 'report-only-fail' ? 'over budget (report-only)' : status;
 }
 
 export function renderMarkdown(dashboard) {
@@ -240,7 +300,8 @@ export function renderMarkdown(dashboard) {
     `- Run: \`${run.id}\``,
     `- Commit: \`${run.commit}\``,
     `- Runner: \`${run.runner.declaredClass}\` (${run.runner.os} ${run.runner.arch}, Node ${run.runner.node})`,
-    `- Absolute: ${summary.absolutePass} pass, ${summary.absoluteFail} fail, ${summary.notMeasured} not measured`,
+    `- Absolute: ${summary.absolutePass} pass, ${summary.absoluteFail} fail, ${summary.notMeasured} not measured, ${summary.skipped ?? 0} skipped, ${summary.reportOnlyFail ?? 0} over budget (report-only)`,
+    `- Perf gates: \`${dashboard.policy.perfGates ?? 'enforce'}\``,
     `- Relative (±${(dashboard.policy.relativeTolerance * 100).toFixed(0)}%): ${summary.relativePass} pass, ${summary.relativeFail} fail, ${summary.relativeNotCalibrated} not calibrated, ${summary.relativeRunnerMismatch} different runner`,
     '',
     '| Metric | Value | Contract | Absolute | Relative | Source |',
@@ -248,13 +309,25 @@ export function renderMarkdown(dashboard) {
   ];
   for (const metric of dashboard.metrics) {
     const comparator = metric.direction === 'min' ? '≥' : '≤';
-    lines.push(`| \`${metric.id}\` | ${shown(metric.value, metric.unit)} | ${comparator} ${shown(metric.budget, metric.unit)} | ${metric.absoluteStatus} | ${relativeText(metric.relative)} | ${metric.sources.join(', ') || '—'} |`);
+    lines.push(`| \`${metric.id}\` | ${shown(metric.value, metric.unit)} | ${comparator} ${shown(metric.budget, metric.unit)} | ${statusText(metric.absoluteStatus)} | ${relativeText(metric.relative)} | ${metric.sources.join(', ') || '—'} |`);
   }
   lines.push('', '## Scenarios', '', '| Scenario | Duration | Exit | Status |', '|---|---:|---:|---|');
   for (const scenario of dashboard.scenarios) {
     lines.push(`| \`${scenario.id}\` | ${scenario.durationMs.toFixed(0)} ms | ${scenario.exitCode} | ${scenario.status} |`);
   }
   lines.push('');
+  if ((summary.skipped ?? 0) > 0) {
+    const skippedIds = dashboard.metrics
+      .filter((metric) => metric.absoluteStatus === 'skipped')
+      .map((metric) => `\`${metric.id}\``);
+    lines.push(`> **${skippedIds.length} metrics skipped:** their producer did not run in this job, so they were not checked (neither pass nor fail): ${skippedIds.join(', ')}.`, '');
+  }
+  if ((summary.reportOnlyFail ?? 0) > 0) {
+    const overIds = dashboard.metrics
+      .filter((metric) => metric.absoluteStatus === 'report-only-fail')
+      .map((metric) => `\`${metric.id}\` ${shown(metric.value, metric.unit)} vs ${metric.direction === 'min' ? '≥' : '≤'} ${shown(metric.budget, metric.unit)}`);
+    lines.push(`> **${overIds.length} report-only budgets exceeded** (\`MERIDIAN_PERF_GATES=report\`: recorded, not enforced on this runner; budgets unchanged): ${overIds.join('; ')}.`, '');
+  }
   if (summary.relativeNotCalibrated > 0) {
     lines.push('> Relative rows marked “not calibrated” have no measured value in `benchmarks/baseline.json`; see `docs/PERFORMANCE-PROFILING.md` for the pinned-runner calibration procedure.', '');
   }
