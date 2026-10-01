@@ -1,6 +1,7 @@
 {
   "name": "@meridian/conformance-kit",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Executable law for Meridian plugin capabilities: a Vitest suite factory every domain parser must pass (IR validity, determinism, identity stability, crash containment). Imports @meridian/plugin-api and @meridian/graph-core only.",

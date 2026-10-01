@@ -2,13 +2,14 @@
   "name": "meridian-monorepo",
   "private": true,
   "version": "0.0.0",
+  "license": "MIT",
   "packageManager": "pnpm@11.10.0",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "pnpm --filter @meridian/studio dev",
+    "dev": "turbo run build --filter=@meridian/studio^... --output-logs=errors-only && pnpm --filter @meridian/studio dev",
     "test": "turbo run test --concurrency=1",
     "test:e2e": "pnpm --filter @meridian/studio test:e2e",
     "test:evals": "turbo run build && node --test evals/test/*.test.mjs",

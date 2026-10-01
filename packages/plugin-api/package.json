@@ -1,6 +1,7 @@
 {
   "name": "@meridian/plugin-api",
   "version": "1.0.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Meridian plugin contract: types, capability descriptors, and the API version constant. Deliberately dependency-thin \u2014 type-only imports from @meridian/graph-core, nothing else.",

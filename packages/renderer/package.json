@@ -1,6 +1,7 @@
 {
   "name": "@meridian/renderer",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Pixi-backed presentation adapter with pure camera, spatial-index, and culling machinery.",

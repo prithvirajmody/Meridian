@@ -1,6 +1,7 @@
 {
   "name": "@meridian/graph-store",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Meridian mutation layer: immutable snapshots, op-based deltas, transactions, subscriptions, indices, queries. Imports @meridian/graph-core and nothing else.",

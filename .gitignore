@@ -25,6 +25,10 @@ test-results/
 .idea/
 .DS_Store
 
+# Local coding-agent state (worktrees, settings, transcripts). CLAUDE.md at the
+# root is the committed project instruction file and is not affected.
+.claude/
+
 # Logs
 *.log
 

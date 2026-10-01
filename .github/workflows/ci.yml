@@ -5,18 +5,33 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: no job writes to the repository, issues, or packages.
+permissions:
+  contents: read
+
+# A newer push to the same pull request cancels its older run. Each push to
+# main gets its own group (the run id), so main runs are never queued behind
+# or cancelled by one another, and every main commit gets a status.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+# Actions are pinned to full commit SHAs (tag in the trailing comment).
 jobs:
   ci:
     # Pinned image: ubuntu-latest moves to Ubuntu 26 on 2026-10-19, and the
     # benchmark runner class (benchmarks/runner.json) is ubuntu-24.04.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing after checkout talks to GitHub; keep the token out of .git/config.
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         # version comes from packageManager in package.json
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: pnpm
@@ -71,11 +86,14 @@ jobs:
     outputs:
       studio_json: ${{ steps.studio.outputs.json }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing after checkout talks to GitHub; keep the token out of .git/config.
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: pnpm
@@ -112,7 +130,7 @@ jobs:
         # Debugging convenience only; nothing downstream downloads it, so a
         # storage-quota error must not turn the build red.
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: meridian-playwright
           path: |
@@ -127,11 +145,14 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing after checkout talks to GitHub; keep the token out of .git/config.
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: pnpm
@@ -167,7 +188,7 @@ jobs:
         # dashboard to the job summary). Nothing downstream downloads it, so a
         # storage-quota error must not turn the build red.
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: benchmark-dashboard
           path: benchmarks/results/
