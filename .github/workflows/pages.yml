@@ -1,0 +1,61 @@
+name: Pages demo
+
+# Builds the static Studio with Meridian's own source as the sample corpus
+# (apps/studio/tools/build-pages.sh) and deploys it to GitHub Pages.
+#
+# Manual only. Before the first run, Pages must be enabled with "GitHub
+# Actions" as the source (Settings > Pages), which needs a public repository
+# or a paid plan.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a queued run waits instead of cancelling a live one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+# Actions are pinned to full commit SHAs (tag in the trailing comment).
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the static Studio and its samples
+        env:
+          # Project site: https://<owner>.github.io/<repository>/
+          PAGES_BASE: /${{ github.event.repository.name }}/
+        run: bash apps/studio/tools/build-pages.sh "$PAGES_BASE"
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: apps/studio/dist
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write # deploy-pages publishes the uploaded artifact
+      id-token: write # deploy-pages authenticates to Pages with an OIDC token
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
