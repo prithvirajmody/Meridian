@@ -30,6 +30,22 @@ if (params.get('e2e') === '1') {
   });
 }
 
+// Hosted demo: open a bundled sample on load. `?sample=<file>` names a file in
+// `samples/` next to the page; the Pages build sets a default for the landing
+// view. Dev, tests and the default build set neither, so nothing loads there.
+const sample = params.get('sample') ?? import.meta.env.VITE_MERIDIAN_DEFAULT_SAMPLE ?? '';
+if (/^[\w][\w.-]*$/.test(sample)) {
+  void fetch(`${import.meta.env.BASE_URL}samples/${sample}`)
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.text();
+    })
+    .then((text) => runtime.session.openText(sample, text))
+    .catch((error: unknown) => {
+      console.error(`Meridian Studio: could not load sample "${sample}"`, error);
+    });
+}
+
 createRoot(rootElement).render(
   <StrictMode>
     <App runtime={runtime} />

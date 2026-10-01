@@ -126,7 +126,10 @@ export class StudioSceneBridge {
       devicePixelRatio: win?.devicePixelRatio ?? 1,
     });
     this.cameraUnsubscribe = this.camera.on('change', (camera) => this.cameraChanged(camera));
-    this.scene = this.sceneFactory({ fontUrl: '/fonts/meridian-msdf.fnt' });
+    // BASE_URL is '/' in dev, tests and the default build, so this stays
+    // '/fonts/meridian-msdf.fnt' there; a sub-path build (GitHub Pages) needs
+    // the prefix or the label atlas 404s.
+    this.scene = this.sceneFactory({ fontUrl: `${import.meta.env.BASE_URL}fonts/meridian-msdf.fnt` });
     this.bindRendererEvents(this.scene);
     this.storeUnsubscribe = this.store.subscribe((state, previous) => {
       if (state.camera !== previous.camera && !sameCamera(state.camera, this.camera!.state())) {
