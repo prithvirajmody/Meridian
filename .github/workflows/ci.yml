@@ -9,11 +9,12 @@ on:
 permissions:
   contents: read
 
-# A newer push to the same pull request cancels its older run. Runs on main
-# are never cancelled, so every main commit gets a status.
+# A newer push to the same pull request cancels its older run. Each push to
+# main gets its own group (the run id), so main runs are never queued behind
+# or cancelled by one another, and every main commit gets a status.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 # Actions are pinned to full commit SHAs (tag in the trailing comment).
 jobs:
