@@ -11,7 +11,7 @@ const contract = resolve(repoRoot, 'contracts/org-v1');
 const fixtures = resolve(contract, 'fixtures');
 const orgFixtures = resolve(fixtures, 'org');
 const runEventFixtures = resolve(fixtures, 'org-run-events');
-const EXPECTED_CONTRACT_SHA256 = '58ea523315a3a1b00ba1442be6afdf06352315704754173bfa0830a21cb2fb82';
+const EXPECTED_CONTRACT_SHA256 = '8adc8e0be710f68456ded17294b9690ab5f1917e7014e10b91a881064c0d17e8';
 
 function bytes(path: string): Buffer {
   return readFileSync(path);

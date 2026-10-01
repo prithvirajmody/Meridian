@@ -8,8 +8,7 @@ fixture byte.
 
 ## Provenance
 
-- Source repository: `/home/prithviraj/PRITHVIRAJ MODY/SecondBrain/AutoBuild/AutoBuild-main`
-  (`https://github.com/prithvirajmody/AutoBuild.git`)
+- Source repository: AutoBuild (`https://github.com/prithvirajmody/AutoBuild.git`)
 - Source commit: `032e4a141a9ee4a2d0047adb2f3e79b169853025`
 - Vendoring date: 2026-07-29
 - Source schemas: `src/autobuild/org/schemas/`
